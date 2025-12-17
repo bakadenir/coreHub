@@ -1,0 +1,81 @@
+
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
+
+type ToastType = 'success' | 'error' | 'info';
+
+interface Toast {
+    id: string;
+    message: string;
+    type: ToastType;
+}
+
+interface ToastContextType {
+    showToast: (message: string, type?: ToastType) => void;
+}
+
+export const ToastContext = createContext<ToastContextType | undefined>(undefined);
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+    const [toasts, setToasts] = useState<Toast[]>([]);
+
+    const showToast = (message: string, type: ToastType = 'success') => {
+        const id = Math.random().toString(36).substring(2, 9);
+        setToasts((prev) => [...prev, { id, message, type }]);
+    };
+
+    const removeToast = (id: string) => {
+        setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    };
+
+    return (
+        <ToastContext.Provider value={{ showToast }}>
+            {children}
+            <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
+                {toasts.map((toast) => (
+                    <ToastItem key={toast.id} toast={toast} onRemove={removeToast} />
+                ))}
+            </div>
+        </ToastContext.Provider>
+    );
+}
+
+function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onRemove(toast.id);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [toast.id, onRemove]);
+
+    const bgColors = {
+        success: 'bg-black text-white',
+        error: 'bg-red-600 text-white',
+        info: 'bg-white text-black border border-gray-200',
+    };
+
+    return (
+        <div
+            className={`pointer-events-auto px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-fade-in-up flex items-center gap-2 min-w-[300px] ${bgColors[toast.type]}`}
+        >
+            {toast.type === 'success' && (
+                <span className="material-icons-outlined text-[18px]">check_circle</span>
+            )}
+            {toast.type === 'error' && (
+                <span className="material-icons-outlined text-[18px]">error</span>
+            )}
+            {toast.type === 'info' && (
+                <span className="material-icons-outlined text-[18px]">info</span>
+            )}
+            <span>{toast.message}</span>
+        </div>
+    );
+}
+
+export function useToast() {
+    const context = useContext(ToastContext);
+    if (context === undefined) {
+        throw new Error('useToast must be used within a ToastProvider');
+    }
+    return context;
+}

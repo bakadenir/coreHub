@@ -1,11 +1,21 @@
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 interface HeaderProps {
     subtitle?: string;
 }
 
 export default function Header({ subtitle = 'Productivity, Simplified' }: HeaderProps) {
+    const navigate = useNavigate();
+    const { showToast } = useToast();
+
+    const handleLogout = (e: React.MouseEvent) => {
+        e.preventDefault();
+        // Here you would clear auth tokens/state
+        showToast('Logout successful', 'success');
+        navigate('/landing');
+    };
 
     return (
         <header className="w-full border-b border-gray-200 bg-background-light/80 backdrop-blur-md sticky top-0 z-50">
@@ -108,13 +118,13 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                                 Donate
                             </Link>
                             <div className="h-px bg-gray-200 my-1"></div>
-                            <a
-                                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg"
-                                href="#"
+                            <button
+                                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg w-full text-left"
+                                onClick={handleLogout}
                             >
                                 <span className="material-icons-outlined text-lg">logout</span>
                                 Logout
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>

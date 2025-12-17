@@ -1,5 +1,6 @@
 
 import { useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 
 interface AddScheduleModalProps {
     isOpen: boolean;
@@ -7,6 +8,13 @@ interface AddScheduleModalProps {
 }
 
 export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalProps) {
+    const { showToast } = useToast();
+
+    const handleSave = () => {
+        showToast('Schedule added successfully!', 'success');
+        onClose();
+    };
+
     // Prevent scrolling when modal is open and compensate for scrollbar width
     useEffect(() => {
         if (isOpen) {
@@ -34,7 +42,7 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
             ></div>
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-[540px] flex flex-col bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 transform transition-all">
+            <div className="relative w-full max-w-[540px] flex flex-col bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h2 className="text-lg font-bold tracking-tight text-gray-900">Add Schedule</h2>
@@ -139,7 +147,10 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
                     >
                         Cancel
                     </button>
-                    <button className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5">
+                    <button
+                        onClick={handleSave}
+                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5"
+                    >
                         Save Schedule
                     </button>
                 </div>

@@ -1,53 +1,35 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import AddNoteModal from '../components/AddNoteModal';
+import NavigationSidebar from '../components/NavigationSidebar';
+
+interface Note {
+    id: number;
+    title: string;
+    content: string;
+    date: string;
+    tag: string;
+}
 
 export default function Notes() {
     const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+    const [selectedNote, setSelectedNote] = useState<number>(0);
+
+    const notes: Note[] = [
+        { id: 0, title: 'Project Everest Meeting', content: 'Discussed Q3 strategy, budget allocation, and team responsibilities. Follow-up actions include...', date: '2h ago', tag: 'Work' },
+        { id: 1, title: 'Grocery List', content: 'Milk, eggs, bread, spinach, tomatoes, chicken breast, olive oil. Dont forget to check for discounts.', date: 'Yesterday', tag: 'Personal' },
+        { id: 2, title: 'Book Recommendations', content: 'Atomic Habits, Deep Work, The Psychology of Money, Clean Code. Need to order them from Amazon.', date: '3 days ago', tag: 'Learning' },
+        { id: 3, title: 'Gym Workout Routine', content: 'Monday: Chest & Triceps, Tuesday: Back & Biceps, Wednesday: Legs & Shoulders. Cardio on weekends.', date: '1 week ago', tag: 'Health' },
+        { id: 4, title: 'Startup Ideas', content: 'AI-powered meal planner, decentralized social network, vertical farming for urban areas.', date: '2 weeks ago', tag: 'Ideas' },
+    ];
 
     return (
         <div className="flex flex-col h-screen w-full bg-background-light text-text-primary font-sans overflow-hidden">
             <AddNoteModal isOpen={isAddNoteOpen} onClose={() => setIsAddNoteOpen(false)} />
             <Header subtitle="Workspace" />
             <div className="flex flex-1 overflow-hidden w-full">
-                {/* Sidebar */}
-                <aside className="w-20 lg:w-64 flex flex-col border-r border-border-light bg-white shrink-0 transition-all duration-300">
-                    <nav className="flex flex-col gap-2 px-3 py-4 flex-1">
-                        <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/">
-                            <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
-                                <span className="material-icons-outlined text-sm">dashboard</span>
-                            </span>
-                            <span className="hidden lg:block">Dashboard</span>
-                        </Link>
-                        <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/habits' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/habits">
-                            <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/habits' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
-                                <span className="material-icons-outlined text-sm">check_circle</span>
-                            </span>
-                            <span className="hidden lg:block">Habits</span>
-                        </Link>
-                        <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/schedule' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/schedule">
-                            <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/schedule' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
-                                <span className="material-icons-outlined text-sm">calendar_today</span>
-                            </span>
-                            <span className="hidden lg:block">Schedule</span>
-                        </Link>
-                        <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/notes' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/notes">
-                            <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/notes' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
-                                <span className="material-icons-outlined text-sm">description</span>
-                            </span>
-                            <span className="hidden lg:block">Notes</span>
-                        </Link>
-                        <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/links' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/links">
-                            <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/links' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
-                                <span className="material-icons-outlined text-sm">link</span>
-                            </span>
-                            <span className="hidden lg:block">Links</span>
-                        </Link>
-                    </nav>
-                    {/* User Profile Removed */}
-                </aside>
+                <NavigationSidebar />
 
                 {/* Main Content */}
                 <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-white">
@@ -173,20 +155,20 @@ Date: September 10, 2023
 Time: 09:00 - 10:00 AM
 Key Discussion Points:
 1. Q3 Strategy Review:
-    - Overall performance alignment with annual goals.
+- Overall performance alignment with annual goals.
     - Identified key areas of overperformance and underperformance.
     - Agreed to double down on mobile app engagement, which saw significant growth.
 2. Budget Allocation:
-    - Reallocated 15% of the marketing budget to digital ads based on recent performance data.
+- Reallocated 15 % of the marketing budget to digital ads based on recent performance data.
     - Approved additional budget for cloud infrastructure upgrades to support anticipated user growth.
 3. Team Responsibilities:
-    - Sarah Chen to lead the mobile app engagement initiatives.
+- Sarah Chen to lead the mobile app engagement initiatives.
     - Mike Johnson to oversee cloud infrastructure project and report weekly.
-    - Alex Morgan to coordinate inter-departmental efforts and stakeholder communication.
+    - Alex Morgan to coordinate inter - departmental efforts and stakeholder communication.
 Action Items:
-- Sarah: Draft detailed plan for mobile app engagement (Due: Sep 15).
-- Mike: Get quotes for cloud infrastructure upgrades (Due: Sep 17).
-- Alex: Schedule follow-up meeting with stakeholders (Due: Sep 12).
+- Sarah: Draft detailed plan for mobile app engagement(Due: Sep 15).
+- Mike: Get quotes for cloud infrastructure upgrades(Due: Sep 17).
+- Alex: Schedule follow - up meeting with stakeholders(Due: Sep 12).
 - All: Review current Q4 roadmap and provide feedback by end of week.
 Next Meeting: September 17, 2023.`}
                                 ></textarea>

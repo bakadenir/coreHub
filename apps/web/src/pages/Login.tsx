@@ -1,15 +1,88 @@
-
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
+import FloatingInput from '../components/FloatingInput';
 
 export default function Login() {
+    const navigate = useNavigate();
+    const { showToast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+    });
+    const [errors, setErrors] = useState({
+        email: '',
+        password: '',
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        const newErrors = {
+            email: '',
+            password: '',
+        };
+        let hasError = false;
+
+        // Validation
+        if (!formData.email) {
+            newErrors.email = 'Enter an email / username';
+            hasError = true;
+        }
+        if (!formData.password) {
+            newErrors.password = 'Enter your password';
+            hasError = true;
+        }
+
+        setErrors(newErrors);
+
+        if (hasError) {
+            setIsLoading(false);
+            return;
+        }
+
+        // Mock Auth
+        try {
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+
+            // Mock Validation
+            if (formData.password.length < 6) {
+                setErrors({ ...newErrors, password: 'Password must be at least 6 characters' });
+                setIsLoading(false);
+                return;
+            }
+
+            if (formData.email === 'error@example.com') {
+                showToast('Invalid credentials provided.', 'error');
+                setIsLoading(false);
+                return;
+            }
+
+            if (formData.email === 'admin@corehub.dev') {
+                showToast('Welcome back! Redirecting to admin...', 'success');
+                navigate('/admin');
+                return;
+            }
+
+            showToast('Welcome back! Login successful.', 'success');
+            navigate('/');
+        } catch (_) {
+            showToast('An error occurred during login', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="bg-background-light text-gray-900 font-sans antialiased min-h-screen flex flex-col transition-colors duration-300">
             {/* Header */}
-            <header className="w-full border-b border-gray-200 bg-background-light/80 backdrop-blur-md sticky top-0 z-50">
+            <header className="w-full border-b border-gray-200 bg-background-light/80 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center justify-center rounded-lg bg-black text-white size-8">
+                        <div className="flex items-center gap-2 select-none cursor-default">
+                            <div className="flex items-center justify-center rounded-lg bg-black text-white size-8 shadow-md">
                                 <span className="material-icons-outlined text-[20px]">hub</span>
                             </div>
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">coreHub</h1>
@@ -21,40 +94,50 @@ export default function Login() {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
+            <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 animate-fade-in-up">
                 <div className="w-full max-w-md space-y-8">
-                    <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-sm">
+                    <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-lg shadow-gray-200/50">
                         <div className="text-center mb-8">
                             <h2 className="text-2xl font-bold tracking-tight text-gray-900">Welcome back</h2>
                             <p className="mt-2 text-sm text-gray-500">Please enter your details to sign in.</p>
                         </div>
-                        <form action="#" className="space-y-5" method="POST">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="email">Email or Username</label>
-                                <input
-                                    autoComplete="email"
-                                    className="block w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2.5 transition-shadow"
-                                    id="email"
-                                    name="email"
-                                    required
-                                    type="text"
-                                />
+                        <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3" noValidate>
+                            <FloatingInput
+                                label="Email / Username"
+                                id="email"
+                                name="email"
+                                type="text"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                autoComplete="username"
+                                className="mb-0"
+                            />
+
+                            <FloatingInput
+                                label="Password"
+                                id="password"
+                                name="password"
+                                type="password"
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                autoComplete="current-password"
+                                className="!mb-1"
+                            />
+
+                            {/* Consolidated Error Display */}
+                            <div className="min-h-[20px] -mt-1 mb-2">
+                                {(errors.email || errors.password) && (
+                                    <p className="flex items-center gap-2 text-sm text-red-600 font-medium animate-fade-in pl-1">
+                                        <span className="material-icons-outlined text-[16px]">error</span>
+                                        {errors.email || errors.password}
+                                    </p>
+                                )}
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="password">Password</label>
-                                <input
-                                    autoComplete="current-password"
-                                    className="block w-full rounded-lg border-gray-300 bg-white text-gray-900 shadow-sm focus:border-primary focus:ring-primary sm:text-sm py-2.5 transition-shadow"
-                                    id="password"
-                                    name="password"
-                                    required
-                                    type="password"
-                                />
-                            </div>
-                            <div className="flex items-center justify-between">
+
+                            <div className="flex items-center justify-between pt-0 pb-0">
                                 <div className="flex items-center">
                                     <input
-                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                        className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer"
                                         id="remember-me"
                                         name="remember-me"
                                         type="checkbox"
@@ -62,15 +145,26 @@ export default function Login() {
                                     <label className="ml-2 block text-sm text-gray-600 cursor-pointer select-none" htmlFor="remember-me">Remember me</label>
                                 </div>
                                 <div className="text-sm">
-                                    <a className="font-medium text-primary hover:underline decoration-1 underline-offset-2" href="#">Forgot Password?</a>
+                                    <Link className="font-medium text-black hover:underline decoration-1 underline-offset-2" to="/forgot-password">Forgot Password?</Link>
                                 </div>
                             </div>
-                            <div className="pt-2">
+                            <div className="pt-0">
                                 <button
-                                    className="flex w-full justify-center rounded-lg bg-primary px-3 py-2.5 text-sm font-bold text-white shadow-sm hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all"
+                                    className="flex w-full justify-center items-center gap-2 rounded-lg bg-black px-3 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
                                     type="submit"
+                                    disabled={isLoading}
                                 >
-                                    Login
+                                    {isLoading ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Signing in...
+                                        </>
+                                    ) : (
+                                        'Login'
+                                    )}
                                 </button>
                             </div>
                         </form>

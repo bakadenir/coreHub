@@ -1,5 +1,5 @@
-
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 
 interface AddHabitModalProps {
     isOpen: boolean;
@@ -7,7 +7,10 @@ interface AddHabitModalProps {
 }
 
 export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
+    const { showToast } = useToast();
     const [frequency, setFrequency] = useState('Specific Days');
+
+
 
 
     // Prevent scrolling when modal is open and compensate for scrollbar width
@@ -30,6 +33,11 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
 
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+    const handleSave = () => {
+        showToast('Habit added successfully!', 'success');
+        onClose();
+    };
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
@@ -39,7 +47,7 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
             ></div>
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-[540px] flex flex-col bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 transform transition-all">
+            <div className="relative w-full max-w-[540px] flex flex-col bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h2 className="text-lg font-bold tracking-tight text-gray-900">Add Habit</h2>
@@ -150,7 +158,10 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                     >
                         Cancel
                     </button>
-                    <button className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5">
+                    <button
+                        onClick={handleSave}
+                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5"
+                    >
                         Save Habit
                     </button>
                 </div>
