@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
+import { habitsApi } from '../lib';
 
 interface AddHabitModalProps {
     isOpen: boolean;
@@ -8,12 +9,27 @@ interface AddHabitModalProps {
 
 export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
     const { showToast } = useToast();
-    const [frequency, setFrequency] = useState('Specific Days');
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [frequency, setFrequency] = useState('daily');
+    const [startDate, setStartDate] = useState('');
+    const [reminderTime, setReminderTime] = useState('09:00');
+    const [selectedDays, setSelectedDays] = useState<number[]>([1, 3]); // Tue, Thu
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Reset form when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setName('');
+            setDescription('');
+            setFrequency('daily');
+            setStartDate('');
+            setReminderTime('09:00');
+            setSelectedDays([1, 3]);
+        }
+    }, [isOpen]);
 
-
-
-    // Prevent scrolling when modal is open and compensate for scrollbar width
+    // Prevent scrolling when modal is open
     useEffect(() => {
         if (isOpen) {
             const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -33,9 +49,42 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
 
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-    const handleSave = () => {
-        showToast('Habit added successfully!', 'success');
-        onClose();
+    const toggleDay = (index: number) => {
+        setSelectedDays(prev =>
+            prev.includes(index)
+                ? prev.filter(d => d !== index)
+                : [...prev, index]
+        );
+    };
+
+    const handleSave = async () => {
+        if (!name.trim()) {
+            showToast('Please enter a habit name', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const result = await habitsApi.create({
+                name: name.trim(),
+                description: description.trim() || undefined,
+                frequency: frequency.toLowerCase(),
+                specificDays: frequency === 'specific' ? selectedDays : undefined,
+                startDate: startDate || undefined,
+                reminderTime: reminderTime || undefined,
+            });
+
+            if (result.success) {
+                showToast('Habit added successfully!', 'success');
+                onClose();
+            } else {
+                showToast(result.error || 'Failed to add habit', 'error');
+            }
+        } catch {
+            showToast('Network error. Please try again.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -65,11 +114,13 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 max-h-[70vh]">
                     {/* Habit Name */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Habit Name</label>
+                        <label className="block text-sm font-medium text-gray-500">Habit Name *</label>
                         <input
                             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             placeholder="e.g., Meditate for 10 mins"
                             type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
                         />
                     </div>
 
@@ -82,6 +133,8 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                         <textarea
                             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
                             placeholder="Explain why this habit matters to you"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
                         ></textarea>
                     </div>
 
@@ -89,30 +142,32 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                     <div className="space-y-4">
                         <label className="block text-sm font-medium text-gray-500">Frequency</label>
                         <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-lg border border-transparent">
-                            {['Daily', 'Weekly', 'Specific Days'].map((option) => (
-                                <label key={option} className="cursor-pointer">
+                            {[{ label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }, { label: 'Specific Days', value: 'specific' }].map((option) => (
+                                <label key={option.value} className="cursor-pointer">
                                     <input
                                         type="radio"
                                         name="frequency"
                                         className="peer sr-only"
-                                        checked={frequency === option}
-                                        onChange={() => setFrequency(option)}
+                                        checked={frequency === option.value}
+                                        onChange={() => setFrequency(option.value)}
                                     />
                                     <div className="flex items-center justify-center py-2 text-sm font-medium text-gray-500 rounded-md transition-all peer-checked:bg-white peer-checked:text-black peer-checked:shadow-sm hover:text-black">
-                                        {option}
+                                        {option.label}
                                     </div>
                                 </label>
                             ))}
                         </div>
 
                         {/* Days Selection */}
-                        {frequency === 'Specific Days' && (
+                        {frequency === 'specific' && (
                             <div className="flex items-center justify-between pt-1 gap-2">
                                 {days.map((day, index) => {
-                                    const isSelected = index === 1 || index === 3; // Mock default selection for demo
+                                    const isSelected = selectedDays.includes(index);
                                     return (
                                         <button
                                             key={index}
+                                            type="button"
+                                            onClick={() => toggleDay(index)}
                                             className={`w-10 h-10 rounded-full text-xs font-mono font-bold flex items-center justify-center transition-all focus:outline-none ${isSelected
                                                 ? 'bg-black text-white border border-black shadow-md'
                                                 : 'border border-gray-200 bg-white text-gray-400 hover:border-gray-400 hover:text-black'
@@ -134,6 +189,8 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                                 <input
                                     className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -143,7 +200,8 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                                 <input
                                     className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="time"
-                                    defaultValue="09:00"
+                                    value={reminderTime}
+                                    onChange={(e) => setReminderTime(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -154,15 +212,17 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                 <div className="flex items-center justify-end gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50">
                     <button
                         onClick={onClose}
-                        className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                        disabled={isSubmitting}
+                        className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5"
+                        disabled={isSubmitting}
+                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Save Habit
+                        {isSubmitting ? 'Saving...' : 'Save Habit'}
                     </button>
                 </div>
             </div>

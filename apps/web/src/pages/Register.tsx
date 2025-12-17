@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import FloatingInput from '../components/FloatingInput';
+import { signUp } from '../lib/auth';
 
 export default function Register() {
     const navigate = useNavigate();
@@ -86,17 +87,28 @@ export default function Register() {
             return;
         }
 
-        // Mock Register
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+            const result = await signUp.email({
+                email: formData.email,
+                password: formData.password,
+                name: formData.username,
+            });
+
+            if (result.error) {
+                showToast(result.error.message || 'Registration failed', 'error');
+                setIsLoading(false);
+                return;
+            }
+
             showToast('Account created successfully! Please login.', 'success');
             navigate('/login');
-        } catch (_) {
+        } catch (error) {
             showToast('An error occurred during registration', 'error');
         } finally {
             setIsLoading(false);
         }
     };
+
 
     return (
         <div className="bg-background-light text-gray-900 font-sans antialiased min-h-screen flex flex-col transition-colors duration-300">

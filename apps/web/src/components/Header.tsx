@@ -1,6 +1,7 @@
 
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
     subtitle?: string;
@@ -9,12 +10,13 @@ interface HeaderProps {
 export default function Header({ subtitle = 'Productivity, Simplified' }: HeaderProps) {
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const { user, signOut } = useAuth();
 
-    const handleLogout = (e: React.MouseEvent) => {
+    const handleLogout = async (e: React.MouseEvent) => {
         e.preventDefault();
-        // Here you would clear auth tokens/state
+        await signOut();
         showToast('Logout successful', 'success');
-        navigate('/landing');
+        navigate('/');
     };
 
     return (
@@ -81,16 +83,16 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                     <div className="flex items-center gap-3 pl-4 border-l border-gray-200 cursor-pointer group relative">
                         <div className="text-right hidden md:block">
                             <p className="text-sm font-semibold text-gray-900 leading-none">
-                                Deni Romadhon
+                                {user?.name || 'User'}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                                Pro Member
+                            <p className="text-xs text-gray-500 mt-1 capitalize">
+                                {user?.role || 'user'} Member
                             </p>
                         </div>
                         <img
                             alt="Profile"
-                            className="h-9 w-9 rounded-full border border-gray-200 object-cover"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKrvtkImsgcFS5l83m9Qx_Re3EyUYrh8vzBQojuvGNhiXmnWzOJEEQ_DuyTqeKCJPjmqs0Hk-oqUiMZWWXkVvCcaHhFNRysEUuP_-JZs63HBKDuxTNMic_HsCLS0SOJ9ZuTkuZ5C8i_ItMlbC0SWWPWMJGjxLqujqb6q9_nXKgPPKsCkogpK0fGMQ3q1FevQfOnVsiWersWtEGajIqlLIzlWDyRQvLxtcietFbGuafpeFFf3CnRMvuly57D3vSJcQ8yNYyyJnhkCrl"
+                            className="h-9 w-9 rounded-full border border-gray-200 object-cover bg-gray-100"
+                            src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=000&color=fff`}
                         />
                         <span className="material-icons-outlined text-gray-500 group-hover:text-primary transition-colors">
                             expand_more

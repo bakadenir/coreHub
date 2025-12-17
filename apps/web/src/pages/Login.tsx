@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import FloatingInput from '../components/FloatingInput';
+import { signIn } from '../lib/auth';
 
 export default function Login() {
     const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function Login() {
 
         // Validation
         if (!formData.email) {
-            newErrors.email = 'Enter an email / username';
+            newErrors.email = 'Enter an email';
             hasError = true;
         }
         if (!formData.password) {
@@ -43,32 +44,28 @@ export default function Login() {
             return;
         }
 
-        // Mock Auth
         try {
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+            const result = await signIn.email({
+                email: formData.email,
+                password: formData.password,
+            });
 
-            // Mock Validation
-            if (formData.password.length < 6) {
-                setErrors({ ...newErrors, password: 'Password must be at least 6 characters' });
+            if (result.error) {
+                showToast(result.error.message || 'Invalid credentials', 'error');
                 setIsLoading(false);
                 return;
             }
 
-            if (formData.email === 'error@example.com') {
-                showToast('Invalid credentials provided.', 'error');
-                setIsLoading(false);
-                return;
-            }
-
-            if (formData.email === 'admin@corehub.dev') {
+            // Check user role for admin redirect
+            const userRole = (result.data?.user as any)?.role;
+            if (userRole === 'admin') {
                 showToast('Welcome back! Redirecting to admin...', 'success');
                 navigate('/admin');
-                return;
+            } else {
+                showToast('Welcome back! Login successful.', 'success');
+                navigate('/dashboard');
             }
-
-            showToast('Welcome back! Login successful.', 'success');
-            navigate('/');
-        } catch (_) {
+        } catch (error) {
             showToast('An error occurred during login', 'error');
         } finally {
             setIsLoading(false);

@@ -1,35 +1,63 @@
-
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import AddLinkModal from '../components/AddLinkModal';
 import NavigationSidebar from '../components/NavigationSidebar';
-
-interface LinkItem {
-    id: number;
-    title: string;
-    url: string;
-    description: string;
-    image: string;
-    tags: string[];
-}
-const links: LinkItem[] = [
-    { id: 0, title: 'Tailwind CSS Documentation', url: 'https://tailwindcss.com/docs', description: 'Rapidly build modern websites without ever leaving your HTML.', image: 'https://tailwindcss.com/_next/static/media/social-card-large.a6e71726.jpg', tags: ['Dev', 'CSS'] },
-    { id: 1, title: 'React Documentation', url: 'https://react.dev', description: 'The library for web and native user interfaces.', image: 'https://react.dev/images/og-home.png', tags: ['Dev', 'JS'] },
-    { id: 2, title: 'Stripe Docs: Payments API', url: 'https://stripe.com/docs/api/payments', description: 'Complete reference for the Stripe API.', image: 'https://images.ctfassets.net/fzn2n1esqa4b/24G3y4a6j6e6i440400040/8c0663c965604117036666576628c666/stripe-docs-og.png', tags: ['Payments', 'API'] },
-    { id: 3, title: 'Vercel Dashboard', url: 'https://vercel.com/dashboard', description: 'Develop. Preview. Ship. For the best frontend teams.', image: 'https://assets.vercel.com/image/upload/front/vercel/og.png', tags: ['Hosting'] },
-    { id: 4, title: 'Figma - Interface Design', url: 'https://www.figma.com', description: 'Collaborative interface design tool.', image: 'https://static.figma.com/uploads/8c0663c965604117036666576628c666/figma-og.png', tags: ['Design'] },
-];
+import { linksApi } from '../lib';
+import type { LinkItem } from '../types';
+import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { useToast } from '../context/ToastContext';
 
 export default function Links() {
     const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
-    const [selectedLink, setSelectedLink] = useState<number>(2);
+    const [links, setLinks] = useState<LinkItem[]>([]);
+    const [selectedIndex, setSelectedIndex] = useState<number>(0);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const { showToast } = useToast();
+
+    const fetchLinks = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const result = await linksApi.getAll(searchTerm ? { search: searchTerm } : {});
+            if (result.success && result.data) {
+                setLinks(result.data);
+                if (result.data.length > 0 && selectedIndex >= result.data.length) {
+                    setSelectedIndex(0);
+                }
+            } else {
+                setError(result.error || 'Failed to fetch links');
+            }
+        } catch {
+            setError('Network error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [searchTerm, selectedIndex]);
+
+    useEffect(() => {
+        fetchLinks();
+    }, [fetchLinks]);
+
+    const handleDelete = async (id: string) => {
+        try {
+            await linksApi.delete(id);
+            showToast('Link deleted', 'success');
+            fetchLinks();
+        } catch {
+            showToast('Failed to delete link', 'error');
+        }
+    };
+
+    const selectedLink = links[selectedIndex] || null;
 
     return (
         <div className="flex flex-col h-screen w-full bg-background-light text-text-primary font-sans overflow-hidden">
-            <AddLinkModal isOpen={isAddLinkOpen} onClose={() => setIsAddLinkOpen(false)} />
+            <AddLinkModal isOpen={isAddLinkOpen} onClose={() => { setIsAddLinkOpen(false); fetchLinks(); }} />
             <Header subtitle="Workspace" />
             <div className="flex flex-1 overflow-hidden w-full">
-                <NavigationSidebar />    {/* User Profile Removed */}
+                <NavigationSidebar />
 
                 {/* Main Content */}
                 <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-background-light">
@@ -53,7 +81,7 @@ export default function Links() {
                         <aside className="w-[320px] shrink-0 flex flex-col border-r border-border-light bg-background-light overflow-y-auto">
                             <div className="p-5 border-b border-border-light sticky top-0 bg-background-light z-10 flex flex-col gap-3">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="text-base font-bold text-text-primary">Link Vault</h3>
+                                    <h3 className="text-base font-bold text-text-primary">Link Vault ({links.length})</h3>
                                     <button className="text-text-secondary hover:text-text-primary transition-colors">
                                         <span className="material-icons-outlined text-[20px]">sort</span>
                                     </button>
@@ -63,102 +91,101 @@ export default function Links() {
                                         className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-100 border border-border-light focus:border-text-primary focus:ring-0 text-text-primary text-sm placeholder-gray-400"
                                         placeholder="Filter links..."
                                         type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
                                     />
                                     <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
                                 </div>
                             </div>
                             <div className="flex flex-col p-4 gap-2">
-                                <a className="group flex items-center p-3 rounded-lg bg-white border border-border-light shadow-sm hover:shadow-md transition-all cursor-pointer" href="#">
-                                    <img
-                                        alt="Favicon for Stripe.com"
-                                        className="size-5 shrink-0 mr-3 rounded grayscale"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQwXKTVhFbCGrAwsFPWeBW6xdUGXtBOOQ7nk4vPdP9QVR6TPfh6agFRa9UTtzeRf1tgXtyji5uyTByQfv1ZGrVBG7E_1eGKniivGgujnKOuPzMmM3wVfqMLfRXD9M2c-g2p_6hO_ktj-uvZMGrGR0qkEk27f36wwMSIqoTVkf2-xtBkAPjeWZ7pGoJNWkCmbrdlPy-SQZfdeNwCE_2oe2TxaVcEyBlt7YRexy0fPeWwutoUqziee9PxeRvJjeZyF8XmQFHdXbDrMos"
-                                    />
-                                    <div className="flex flex-col flex-1 overflow-hidden">
-                                        <h4 className="text-sm font-bold text-text-primary line-clamp-1">Stripe Docs: Payments API</h4>
-                                        <p className="text-xs text-text-secondary line-clamp-1">api-reference.stripe.com/payments</p>
-                                    </div>
-                                    <button className="opacity-0 group-hover:opacity-100 text-text-secondary hover:text-text-primary transition-opacity ml-2">
-                                        <span className="material-icons-outlined text-[16px]">more_horiz</span>
-                                    </button>
-                                </a>
-                                <a className="group flex items-center p-3 rounded-lg bg-background-light border border-transparent hover:bg-gray-100 transition-colors cursor-pointer" href="#">
-                                    <img
-                                        alt="Favicon for Figma.com"
-                                        className="size-5 shrink-0 mr-3 rounded grayscale"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWtWVbRN3uIWU_uySqQbm1h8WwgUfeXD86UIiGEpHjATHAh8oTNd5DR21pBykmgPrJlVBQ4LA4TN0Pj-P7ePQ8FGedKFCEt4cY9eB-iFhA3dAzXwI_RiJhMFdxOsOXxSXCUefAEhrpnnv2PCgKwSvbMmjX93cxaO2jBl_4NKrzSNMFAtabYIZF-ha3uMo93FvJqJeHbBiRuCf6QS1Nq4xWHEaJwggRd-5qwp9qXtNW32JbdI66JBZuOZv609U3FEeejYk7EA7-vtMG"
-                                    />
-                                    <div className="flex flex-col flex-1 overflow-hidden">
-                                        <h4 className="text-sm font-medium text-text-primary line-clamp-1">Figma - Design System Guidelines</h4>
-                                        <p className="text-xs text-text-secondary line-clamp-1">figma.com/design-system</p>
-                                    </div>
-                                    <button className="opacity-0 group-hover:opacity-100 text-text-secondary hover:text-text-primary transition-opacity ml-2">
-                                        <span className="material-icons-outlined text-[16px]">more_horiz</span>
-                                    </button>
-                                </a>
-                                <a className="group flex items-center p-3 rounded-lg bg-background-light border border-transparent hover:bg-gray-100 transition-colors cursor-pointer" href="#">
-                                    <img
-                                        alt="Favicon for Vercel.com"
-                                        className="size-5 shrink-0 mr-3 rounded grayscale"
-                                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyt_10oGOpn-ukYI725azYoYvWRVU_0E0l_xybCAsydDEnCBahJAij_gk0st0383OidazOBtxJ5uflOInNQe8ePLUmC1sQeekuZ3WlvMWo1zm8MowNvR0Z1EgbJtNls2DbwVesXxnhByeJpaZ9bOfqJuODr5P1SOiD_-wllwyvswLd2ak_DwmmSMjQwhsF9VrVN-3qdaklts6i8KoSB6AlzRcprADaSWT0VdgdoEJHpA_nq6u9k6N0C57m31Wjt4_rZt9XD68BrTG8"
-                                    />
-                                    <div className="flex flex-col flex-1 overflow-hidden">
-                                        <h4 className="text-sm font-medium text-text-primary line-clamp-1">Vercel Blog: Next.js 14 Release</h4>
-                                        <p className="text-xs text-text-secondary line-clamp-1">vercel.com/blog/nextjs-14</p>
-                                    </div>
-                                    <button className="opacity-0 group-hover:opacity-100 text-text-secondary hover:text-text-primary transition-opacity ml-2">
-                                        <span className="material-icons-outlined text-[16px]">more_horiz</span>
-                                    </button>
-                                </a>
-                                {/* ... other links represented similarly ... */}
+                                {isLoading ? (
+                                    <LoadingSpinner message="Loading links..." />
+                                ) : error ? (
+                                    <ErrorState message={error} onRetry={fetchLinks} />
+                                ) : links.length === 0 ? (
+                                    <EmptyState message="No links yet" icon="link" />
+                                ) : (
+                                    links.map((link, index) => (
+                                        <div
+                                            key={link.id}
+                                            onClick={() => setSelectedIndex(index)}
+                                            className={`group flex items-center p-3 rounded-lg border transition-all cursor-pointer ${selectedIndex === index
+                                                ? 'bg-white border-border-light shadow-sm'
+                                                : 'bg-background-light border-transparent hover:bg-gray-100'
+                                                }`}
+                                        >
+                                            <img
+                                                alt={`Favicon for ${link.title}`}
+                                                className="size-5 shrink-0 mr-3 rounded grayscale"
+                                                src={link.image || `https://www.google.com/s2/favicons?domain=${link.url}&sz=32`}
+                                            />
+                                            <div className="flex flex-col flex-1 overflow-hidden">
+                                                <h4 className={`text-sm font-bold line-clamp-1 ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{link.title || 'Untitled'}</h4>
+                                                <p className="text-xs text-text-secondary line-clamp-1">{link.url.replace('https://', '').replace('http://', '')}</p>
+                                            </div>
+                                            <button className="opacity-0 group-hover:opacity-100 text-text-secondary hover:text-text-primary transition-opacity ml-2">
+                                                <span className="material-icons-outlined text-[16px]">more_horiz</span>
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </aside>
 
                         {/* Link Preview Panel */}
                         <div className="flex-1 flex flex-col overflow-y-auto bg-background-light p-8 md:p-12 lg:p-16">
-                            <div className="mx-auto w-full max-w-4xl flex flex-col gap-6">
-                                <h3 className="text-3xl font-bold text-text-primary tracking-tight mb-4">Link Preview Panel</h3>
-                                <div className="bg-white rounded-xl p-6 shadow-sm border border-border-light flex flex-col gap-6">
+                            {selectedLink ? (
+                                <div className="mx-auto w-full max-w-4xl flex flex-col gap-6">
+                                    <h3 className="text-3xl font-bold text-text-primary tracking-tight mb-4">Link Preview Panel</h3>
+                                    <div className="bg-white rounded-xl p-6 shadow-sm border border-border-light flex flex-col gap-6">
 
-                                    <div className="flex items-center gap-3">
-                                        <img
-                                            alt="Favicon for Stripe.com"
-                                            className="size-6 shrink-0 rounded grayscale"
-                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGb6XYQ2_qvwRSQN8CzTFQTrhL1lRxpXb2NKfZx5YezQh8EPVojCdiCBmZlyGHSUw2iVz8OpNGEdyCmtDnhvfq1em6drQLS-29FeL2BRUPzCPIDmMqVxQMiiofK7BQeVKca_kU80gG2MrZHR_s4Vo273ecqWsO5BBbAu15nLwsBfCgTPFmdK9XOEgLS3GAIVWvqkWeUGOtVExU_iLwdoqRhNuMqv-gLAbHsFz1CWMzum_rV5evYFot22_LqB7dW7Igx2yn3GTC6TcU"
-                                        />
-                                        <a className="text-xl font-bold text-text-primary hover:underline truncate" href="https://stripe.com/docs/api/payments" target="_blank" rel="noreferrer">
-                                            Stripe Docs: Payments API
-                                        </a>
-                                    </div>
-                                    <p className="text-sm text-text-secondary flex items-center gap-2">
-                                        <span className="material-icons-outlined text-base">link</span>
-                                        <span className="truncate">https://stripe.com/docs/api/payments</span>
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        <span className="bg-gray-100 text-text-primary text-xs font-medium px-3 py-1 rounded-full border border-border-light">#Payments</span>
-                                        <span className="bg-gray-100 text-text-primary text-xs font-medium px-3 py-1 rounded-full border border-border-light">#API</span>
-                                        <span className="bg-gray-100 text-text-primary text-xs font-medium px-3 py-1 rounded-full border border-border-light">#Documentation</span>
-                                        <span className="bg-gray-100 text-text-primary text-xs font-medium px-3 py-1 rounded-full border border-border-light">#Stripe</span>
-                                    </div>
-                                    <p className="text-text-primary text-base leading-relaxed">
-                                        Comprehensive documentation for integrating Stripe's Payments API. Covers various payment methods, charges, refunds, and handling webhooks. Essential for developers building payment functionalities.
-                                    </p>
-                                    <div className="flex gap-3 mt-4">
-                                        <button className="flex items-center justify-center rounded-lg h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-semibold shadow-sm transition-all shadow-gray-200/50">
-                                            <span className="material-icons-outlined text-[20px]">open_in_new</span>
-                                            <span className="whitespace-nowrap">Open Link</span>
-                                        </button>
-                                        <button className="flex items-center justify-center rounded-lg h-10 px-5 bg-gray-100 hover:bg-gray-200 text-text-primary gap-2 text-sm font-semibold shadow-sm transition-all shadow-gray-200/50">
-                                            <span className="material-icons-outlined text-[20px]">edit</span>
-                                            <span className="whitespace-nowrap">Edit Details</span>
-                                        </button>
-                                        <button className="flex items-center justify-center rounded-lg h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-semibold shadow-sm transition-all shadow-gray-200/50">
-                                            <span className="material-icons-outlined text-[20px]">delete</span>
-                                            <span className="whitespace-nowrap">Delete</span>
-                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <img
+                                                alt={`Favicon for ${selectedLink.title}`}
+                                                className="size-6 shrink-0 rounded grayscale"
+                                                src={selectedLink.image || `https://www.google.com/s2/favicons?domain=${selectedLink.url}&sz=32`}
+                                            />
+                                            <a className="text-xl font-bold text-text-primary hover:underline truncate" href={selectedLink.url} target="_blank" rel="noreferrer">
+                                                {selectedLink.title || 'Untitled'}
+                                            </a>
+                                        </div>
+                                        <p className="text-sm text-text-secondary flex items-center gap-2">
+                                            <span className="material-icons-outlined text-base">link</span>
+                                            <span className="truncate">{selectedLink.url}</span>
+                                        </p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {(selectedLink.tags || []).map((tag, i) => (
+                                                <span key={i} className="bg-gray-100 text-text-primary text-xs font-medium px-3 py-1 rounded-full border border-border-light">
+                                                    #{tag}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <p className="text-text-primary text-base leading-relaxed">
+                                            {selectedLink.description || 'No description available.'}
+                                        </p>
+                                        <div className="flex gap-3 mt-4">
+                                            <a
+                                                href={selectedLink.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="flex items-center justify-center rounded-lg h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-semibold shadow-sm transition-all shadow-gray-200/50"
+                                            >
+                                                <span className="material-icons-outlined text-[20px]">open_in_new</span>
+                                                <span className="whitespace-nowrap">Open Link</span>
+                                            </a>
+                                            <button
+                                                onClick={() => handleDelete(selectedLink.id)}
+                                                className="flex items-center justify-center rounded-lg h-10 px-5 bg-red-100 hover:bg-red-200 text-red-600 gap-2 text-sm font-semibold shadow-sm transition-all"
+                                            >
+                                                <span className="material-icons-outlined text-[20px]">delete</span>
+                                                <span className="whitespace-nowrap">Delete</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <EmptyState message="Select a link to preview" icon="link" />
+                            )}
                         </div>
                     </div>
                 </main>

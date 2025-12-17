@@ -14,27 +14,36 @@ import Donate from './pages/Donate';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import { PageTitleUpdater } from './components/PageTitleUpdater';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
   return (
     <BrowserRouter>
+      <PageTitleUpdater />
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/landing" element={<Landing />} />
+        {/* Public routes */}
+        <Route path="/" element={<Landing />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/schedule" element={<Schedule />} />
-        <Route path="/notes" element={<Notes />} />
-        <Route path="/links" element={<Links />} />
-        <Route path="/habits" element={<Habits />} />
-        <Route path="/donate" element={<Donate />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/profile" element={<Profile />} />
+
+        {/* Protected routes */}
+        <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
+        <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+        <Route path="/links" element={<ProtectedRoute><Links /></ProtectedRoute>} />
+        <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
+        <Route path="/donate" element={<ProtectedRoute><Donate /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+        {/* Admin only route */}
+        <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
+

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 
 import UserManagement from '../components/admin/UserManagement';
+import { mockAdminStats, mockRecentUsers, mockActivityLogs } from '../data';
 import Analytics from '../components/admin/Analytics';
 import ContentModeration from '../components/admin/ContentModeration';
 import AdminSettings from '../components/admin/AdminSettings';
@@ -12,32 +13,17 @@ export default function AdminDashboard() {
     const { showToast } = useToast();
     const [activeTab, setActiveTab] = useState('Overview');
 
-    // Mock Data for Overview only
-    const stats = [
-        { label: 'Total Users', value: '12,450', change: '+12%', icon: 'people', color: 'bg-blue-500' },
-        { label: 'Active Habits', value: '45,200', change: '+5%', icon: 'check_circle', color: 'bg-green-500' },
-        { label: 'Total Notes', value: '8,930', change: '+18%', icon: 'description', color: 'bg-purple-500' },
-        { label: 'Server Load', value: '24%', change: '-2%', icon: 'dns', color: 'bg-orange-500' },
-    ];
-
-    const recentUsers = [
-        { name: 'Alex Johnson', email: 'alex@example.com', role: 'User', status: 'Active', date: '2 mins ago' },
-        { name: 'Sarah Connor', email: 'sarah@example.com', role: 'Pro', status: 'Active', date: '15 mins ago' },
-        { name: 'Mike Ross', email: 'mike@example.com', role: 'User', status: 'Offline', date: '1 hour ago' },
-        { name: 'Jessica Pearson', email: 'jessica@example.com', role: 'Admin', status: 'Active', date: '3 hours ago' },
-        { name: 'Harvey Specter', email: 'harvey@example.com', role: 'Pro', status: 'Active', date: '5 hours ago' },
-    ];
-
-    const activityLogs = [
-        { action: 'New User Registered', user: 'Alex Johnson', time: '10:42 AM' },
-        { action: 'System Backup Completed', user: 'System', time: '04:00 AM' },
-        { action: 'Database Optimized', user: 'System', time: '03:30 AM' },
-        { action: 'Failed Login Attempt', user: 'Unknown IP', time: 'Yesterday' },
+    const menuItems = [
+        { name: 'Overview', icon: 'dashboard' },
+        { name: 'User Management', icon: 'people' },
+        { name: 'Content Moderation', icon: 'gavel' },
+        { name: 'Analytics', icon: 'analytics' },
+        { name: 'Settings', icon: 'settings' },
     ];
 
     const handleLogout = () => {
         showToast('Logged out successfully', 'success');
-        navigate('/landing');
+        navigate('/');
     };
 
     return (
@@ -54,23 +40,19 @@ export default function AdminDashboard() {
                 </div>
 
                 <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                    {['Overview', 'User Management', 'Content Moderation', 'Analytics', 'Settings'].map((item) => (
+                    {menuItems.map((item) => (
                         <button
-                            key={item}
-                            onClick={() => setActiveTab(item)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === item
+                            key={item.name}
+                            onClick={() => setActiveTab(item.name)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all ${activeTab === item.name
                                 ? 'bg-primary/5 text-primary'
                                 : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
                         >
                             <span className="material-icons-outlined text-[20px]">
-                                {item === 'Overview' && 'dashboard'}
-                                {item === 'User Management' && 'people'}
-                                {item === 'Content Moderation' && 'gavel'}
-                                {item === 'Analytics' && 'analytics'}
-                                {item === 'Settings' && 'settings'}
+                                {item.icon}
                             </span>
-                            {item}
+                            {item.name}
                         </button>
                     ))}
                 </nav>
@@ -103,7 +85,7 @@ export default function AdminDashboard() {
                             <span className="material-icons-outlined">notifications</span>
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                         </button>
-                        <Link to="/" className="text-sm font-medium text-primary hover:underline">
+                        <Link to="/dashboard" className="text-sm font-medium text-primary hover:underline">
                             Go to App
                         </Link>
                     </div>
@@ -113,138 +95,138 @@ export default function AdminDashboard() {
                     {activeTab === 'Overview' && (
                         <>
                             {/* Stats Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {stats.map((stat) => (
-                                    <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                {mockAdminStats.map((stat, index) => (
+                                    <div key={index} className="bg-white p-6 rounded-xl border border-border-light shadow-sm hover:shadow-md transition-all">
                                         <div className="flex items-center justify-between mb-4">
-                                            <div className={`p-3 rounded-lg ${stat.color} bg-opacity-10 text-${stat.color.replace('bg-', '')}`}>
-                                                <span className={`material-icons-outlined text-${stat.color.replace('bg-', '')}700`}>{stat.icon}</span>
+                                            <div className={`p-3 rounded-lg ${stat.color} bg-opacity-10 text-white`}>
+                                                <span className={`material-icons-outlined text-2xl ${stat.color.replace('bg-', 'text-')}`}>{stat.icon}</span>
                                             </div>
-                                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${stat.change.startsWith('+') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${stat.change.startsWith('+') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                 {stat.change}
                                             </span>
                                         </div>
-                                        <h3 className="text-2xl font-bold text-gray-900">{stat.value}</h3>
-                                        <p className="text-sm text-gray-500 font-medium mt-1">{stat.label}</p>
+                                        <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+                                        <p className="text-sm text-text-secondary">{stat.label}</p>
                                     </div>
                                 ))}
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                                {/* Main Chart Section (Mock) */}
-                                <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-lg font-bold text-gray-900">User Growth</h3>
-                                        <select className="text-sm border-gray-200 rounded-lg text-gray-500 focus:ring-black focus:border-black">
-                                            <option>Last 7 Days</option>
-                                            <option>Last Month</option>
-                                            <option>Last Year</option>
-                                        </select>
+                                {/* User Management */}
+                                <div className="lg:col-span-2 bg-white rounded-xl border border-border-light shadow-sm overflow-hidden">
+                                    <div className="p-6 border-b border-border-light flex justify-between items-center bg-gray-50/50">
+                                        <h3 className="text-lg font-bold text-gray-900">User Management</h3>
+                                        <button className="text-primary text-sm font-semibold hover:underline">View All Users</button>
                                     </div>
-                                    <div className="h-64 flex items-end gap-2 sm:gap-4">
-                                        {[35, 45, 30, 60, 75, 50, 65, 80, 70, 85, 90, 60].map((height, i) => (
-                                            <div key={i} className="flex-1 flex flex-col justify-end group">
-                                                <div
-                                                    className="w-full bg-gray-100 rounded-t-md group-hover:bg-primary transition-all duration-500 relative"
-                                                    style={{ height: `${height}%` }}
-                                                >
-                                                    <div className="opacity-0 group-hover:opacity-100 absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded transition-opacity whitespace-nowrap z-10">
-                                                        {height * 12} Users
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="flex justify-between mt-4 text-xs text-gray-400 font-mono">
-                                        <span>JAN</span><span>FEB</span><span>MAR</span><span>APR</span><span>MAY</span><span>JUN</span>
-                                        <span>JUL</span><span>AUG</span><span>SEP</span><span>OCT</span><span>NOV</span><span>DEC</span>
-                                    </div>
-                                </div>
-
-                                {/* Activity Logs */}
-                                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-6">Recent Activity</h3>
-                                    <div className="space-y-6">
-                                        {activityLogs.map((log, index) => (
-                                            <div key={index} className="flex gap-4">
-                                                <div className="relative">
-                                                    <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                                                    {index !== activityLogs.length - 1 && (
-                                                        <div className="absolute top-4 left-1 w-px h-full bg-gray-200"></div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">{log.action}</p>
-                                                    <p className="text-xs text-gray-500 mt-0.5">by {log.user}</p>
-                                                    <p className="text-xs text-gray-400 mt-1">{log.time}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Recent Users Table */}
-                            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-lg font-bold text-gray-900">Recent Registrations</h3>
-                                    <button className="text-sm font-medium text-primary hover:text-primary/80">View All</button>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left">
-                                        <thead>
-                                            <tr className="border-b border-gray-100 text-xs text-gray-500 uppercase tracking-wider">
-                                                <th className="pb-3 pl-2 font-medium">User</th>
-                                                <th className="pb-3 font-medium">Role</th>
-                                                <th className="pb-3 font-medium">Status</th>
-                                                <th className="pb-3 font-medium">Joined</th>
-                                                <th className="pb-3 pr-2 text-right">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="text-sm">
-                                            {recentUsers.map((user, index) => (
-                                                <tr key={index} className="group hover:bg-gray-50 transition-colors">
-                                                    <td className="py-4 pl-2 border-b border-gray-50">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">
-                                                                {user.name.charAt(0)}
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-semibold text-gray-900">{user.name}</p>
-                                                                <p className="text-xs text-gray-500">{user.email}</p>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 border-b border-gray-50 text-gray-600">{user.role}</td>
-                                                    <td className="py-4 border-b border-gray-50">
-                                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user.status === 'Active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
-                                                            }`}>
-                                                            {user.status === 'Active' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>}
-                                                            {user.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-4 border-b border-gray-50 text-gray-500 font-mono text-xs">{user.date}</td>
-                                                    <td className="py-4 pr-2 border-b border-gray-50 text-right">
-                                                        <button className="text-gray-400 hover:text-black p-1 transition-colors">
-                                                            <span className="material-icons-outlined text-[18px]">more_vert</span>
-                                                        </button>
-                                                    </td>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                <tr>
+                                                    <th className="px-6 py-3">User</th>
+                                                    <th className="px-6 py-3">Role</th>
+                                                    <th className="px-6 py-3">Status</th>
+                                                    <th className="px-6 py-3 text-right">Action</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {mockRecentUsers.map((user, idx) => (
+                                                    <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex items-center">
+                                                                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 border border-indigo-50 flex items-center justify-center text-indigo-700 font-bold text-xs mr-3">
+                                                                    {user.name.charAt(0)}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                                                    <div className="text-xs text-gray-500">{user.email}</div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <span className={`px-2 py-1 inline-flex text-[10px] leading-4 font-semibold rounded-full ${user.role === 'Admin' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                                                                user.role === 'Pro' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
+                                                                    'bg-gray-100 text-gray-600 border border-gray-200'
+                                                                }`}>
+                                                                {user.role}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex items-center">
+                                                                <span className={`h-2 w-2 rounded-full mr-2 ${user.status === 'Active' ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                                                                <span className="text-xs text-gray-600 font-medium">{user.status}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                            <button className="text-gray-400 hover:text-indigo-600 transition-colors">
+                                                                <span className="material-icons-outlined">more_vert</span>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Analytics / Activity Log */}
+                                <div className="lg:col-span-1 flex flex-col gap-8">
+                                    <div className="bg-white rounded-xl border border-border-light shadow-sm overflow-hidden flex flex-col h-full">
+                                        <div className="p-6 border-b border-border-light bg-gray-50/50">
+                                            <h3 className="text-lg font-bold text-gray-900">Recent Activity</h3>
+                                        </div>
+                                        <div className="p-6 flex-1 overflow-y-auto">
+                                            <div className="flow-root">
+                                                <ul className="-mb-8">
+                                                    {mockActivityLogs.map((log, idx) => (
+                                                        <li key={idx}>
+                                                            <div className="relative pb-8">
+                                                                {idx !== mockActivityLogs.length - 1 ? (
+                                                                    <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                                                ) : null}
+                                                                <div className="relative flex space-x-3">
+                                                                    <div>
+                                                                        <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-4 ring-white ${log.action.includes('Backup') ? 'bg-green-100 text-green-600' :
+                                                                            log.action.includes('Failed') ? 'bg-red-100 text-red-600' :
+                                                                                'bg-blue-100 text-blue-600'
+                                                                            }`}>
+                                                                            <span className="material-icons-outlined text-sm">
+                                                                                {log.action.includes('Backup') ? 'cloud_upload' : log.action.includes('Failed') ? 'warning' : 'person'}
+                                                                            </span>
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                                                        <div>
+                                                                            <p className="text-sm text-gray-500">
+                                                                                <span className="font-medium text-gray-900">{log.action}</span>
+                                                                                {' '}by <span className="font-medium text-gray-900">{log.user}</span>
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="text-right text-xs whitespace-nowrap text-gray-500">
+                                                                            <time>{log.time}</time>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </>
-                    )}
+                    )
+                    }
 
                     {activeTab === 'User Management' && <UserManagement />}
                     {activeTab === 'Analytics' && <Analytics />}
                     {activeTab === 'Content Moderation' && <ContentModeration />}
                     {activeTab === 'Settings' && <AdminSettings />}
 
-                </div>
-            </main>
-        </div>
+                </div >
+            </main >
+        </div >
     );
 }

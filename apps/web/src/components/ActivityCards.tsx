@@ -1,9 +1,114 @@
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { habitsApi, notesApi, linksApi, schedulesApi } from '../lib';
+import type { Habit, Note, LinkItem, ScheduleEvent } from '../types';
+import { useToast } from '../context/ToastContext';
 
+interface ActivityCardsProps {
+    refreshTrigger?: number; // increment this to trigger a refresh
+}
 
-export default function ActivityCards() {
+export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps) {
     const navigate = useNavigate();
+    const { showToast } = useToast();
+    const [habits, setHabits] = useState<Habit[]>([]);
+    const [schedule, setSchedule] = useState<ScheduleEvent[]>([]);
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [links, setLinks] = useState<LinkItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Fetch all data in parallel
+            const [habitsRes, schedulesRes, notesRes, linksRes] = await Promise.all([
+                habitsApi.getAll(),
+                schedulesApi.getAll(),
+                notesApi.getAll(),
+                linksApi.getAll()
+            ]);
+
+            if (habitsRes.success && habitsRes.data) {
+                setHabits(habitsRes.data.slice(0, 3));
+            }
+
+            if (schedulesRes.success && schedulesRes.data) {
+                setSchedule(schedulesRes.data.slice(0, 3));
+            }
+
+            if (notesRes.success && notesRes.data) {
+                setNotes(notesRes.data.slice(0, 2));
+            }
+
+            if (linksRes.success && linksRes.data) {
+                setLinks(linksRes.data.slice(0, 3));
+            }
+        } catch (error) {
+            console.error('Failed to fetch activity data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData, refreshTrigger]);
+
+    // Handle habit toggle
+    const handleHabitToggle = async (habitId: string, currentlyCompleted: boolean) => {
+        try {
+            if (currentlyCompleted) {
+                await habitsApi.uncomplete(habitId);
+            } else {
+                await habitsApi.complete(habitId);
+                showToast('Habit completed! 🎉', 'success');
+            }
+            // Refresh habits after toggle
+            const habitsRes = await habitsApi.getAll();
+            if (habitsRes.success && habitsRes.data) {
+                setHabits(habitsRes.data.slice(0, 3));
+            }
+        } catch {
+            showToast('Failed to update habit', 'error');
+        }
+    };
+
+    // Format time from ISO string or time field
+    const formatTime = (event: ScheduleEvent) => {
+        // Try parsing startTime if available (from API)
+        const startTime = (event as unknown as { startTime?: string }).startTime;
+        if (startTime) {
+            try {
+                return new Date(startTime).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+            } catch {
+                return startTime;
+            }
+        }
+        // Fallback to time field
+        return event.time || '--:--';
+    };
+
+    const linkColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500'];
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 min-h-[160px] animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                        <div className="space-y-3">
+                            <div className="h-3 bg-gray-100 rounded w-full"></div>
+                            <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -19,30 +124,25 @@ export default function ActivityCards() {
                     <span className="material-icons-outlined text-gray-500">check_circle</span>
                     <h4 className="font-bold text-gray-900">Habit Tracker</h4>
                 </div>
-                <ul className="space-y-3 pl-1">
-                    <li className="flex items-center gap-3 text-sm text-gray-600">
-                        <input
-                            defaultChecked
-                            className="form-checkbox h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
-                            type="checkbox"
-                        />
-                        <span className="line-through text-gray-400 font-light">Morning Meditation</span>
-                    </li>
-                    <li className="flex items-center gap-3 text-sm text-gray-600">
-                        <input
-                            className="form-checkbox h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
-                            type="checkbox"
-                        />
-                        <span className="font-light">Read 20 pages</span>
-                    </li>
-                    <li className="flex items-center gap-3 text-sm text-gray-600 opacity-50">
-                        <input
-                            className="form-checkbox h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
-                            type="checkbox"
-                        />
-                        <span className="font-light">Drink 2L Water</span>
-                    </li>
-                </ul>
+                {habits.length === 0 ? (
+                    <p className="text-sm text-gray-400 font-light">No habits yet. Add your first habit!</p>
+                ) : (
+                    <ul className="space-y-3 pl-1">
+                        {habits.map((habit) => (
+                            <li key={habit.id} className="flex items-center gap-3 text-sm text-gray-600">
+                                <input
+                                    checked={habit.completed}
+                                    onChange={() => handleHabitToggle(habit.id, habit.completed)}
+                                    className="form-checkbox h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
+                                    type="checkbox"
+                                />
+                                <span className={`${habit.completed ? 'line-through text-gray-400' : ''} font-light`}>
+                                    {habit.name}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
 
             {/* Schedule */}
@@ -57,27 +157,22 @@ export default function ActivityCards() {
                     <span className="material-icons-outlined text-gray-500">schedule</span>
                     <h4 className="font-bold text-gray-900">Schedule</h4>
                 </div>
-                <ul className="space-y-3">
-                    <li className="flex gap-3 text-sm">
-                        <span className="font-mono text-xs font-bold text-gray-400 pt-0.5">09:00</span>
-                        <span className="text-gray-700 font-light">Team Standup</span>
-                    </li>
-                    <li className="flex gap-3 text-sm">
-                        <span className="font-mono text-xs font-bold text-primary pt-0.5">
-                            14:00
-                        </span>
-                        <span className="text-gray-900 font-medium">
-                            Project Review
-                            <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded ml-1 text-gray-500 font-light">
-                                Zoom
-                            </span>
-                        </span>
-                    </li>
-                    <li className="flex gap-3 text-sm opacity-50">
-                        <span className="font-mono text-xs font-bold text-gray-400 pt-0.5">16:30</span>
-                        <span className="text-gray-600 font-light">Deep Work</span>
-                    </li>
-                </ul>
+                {schedule.length === 0 ? (
+                    <p className="text-sm text-gray-400 font-light">No upcoming events. Add a schedule!</p>
+                ) : (
+                    <ul className="space-y-3">
+                        {schedule.map((item) => (
+                            <li key={item.id} className="flex gap-3 text-sm">
+                                <span className="font-mono text-xs font-bold pt-0.5 text-gray-400">
+                                    {formatTime(item)}
+                                </span>
+                                <span className="text-gray-700 font-light">
+                                    {item.title}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
 
             {/* Notes */}
@@ -92,24 +187,22 @@ export default function ActivityCards() {
                     <span className="material-icons-outlined text-gray-500">description</span>
                     <h4 className="font-bold text-gray-900">Notes</h4>
                 </div>
-                <div className="space-y-2">
-                    <div className="p-2.5 bg-gray-50 rounded border border-gray-100">
-                        <p className="text-xs font-bold text-gray-800 mb-1">
-                            Design System Ideas
-                        </p>
-                        <p className="text-[11px] text-gray-500 line-clamp-1 font-light">
-                            Monochrome palette with high contrast...
-                        </p>
+                {notes.length === 0 ? (
+                    <p className="text-sm text-gray-400 font-light">No notes yet. Create your first note!</p>
+                ) : (
+                    <div className="space-y-2">
+                        {notes.map((note) => (
+                            <div key={note.id} className="p-2.5 bg-gray-50 rounded border border-gray-100">
+                                <p className="text-xs font-bold text-gray-800 mb-1">
+                                    {note.title}
+                                </p>
+                                <p className="text-[11px] text-gray-500 line-clamp-1 font-light">
+                                    {note.content}
+                                </p>
+                            </div>
+                        ))}
                     </div>
-                    <div className="p-2.5 bg-gray-50 rounded border border-gray-100">
-                        <p className="text-xs font-bold text-gray-800 mb-1">
-                            Meeting Minutes
-                        </p>
-                        <p className="text-[11px] text-gray-500 line-clamp-1 font-light">
-                            Action items for Q1 roadmap...
-                        </p>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* List Link */}
@@ -124,40 +217,32 @@ export default function ActivityCards() {
                     <span className="material-icons-outlined text-gray-500">link</span>
                     <h4 className="font-bold text-gray-900">List Link</h4>
                 </div>
-                <ul className="space-y-2">
-                    <li>
-                        <a
-                            className="flex items-center justify-between p-2 rounded hover:bg-gray-50 group/link transition-colors"
-                            href="#"
-                        >
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
-                                <span className="text-sm font-medium text-gray-700 truncate font-light">
-                                    Figma Design File
-                                </span>
-                            </div>
-                            <span className="material-icons-outlined text-[14px] text-gray-300 group-hover/link:text-primary">
-                                arrow_outward
-                            </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a
-                            className="flex items-center justify-between p-2 rounded hover:bg-gray-50 group/link transition-colors"
-                            href="#"
-                        >
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500"></div>
-                                <span className="text-sm font-medium text-gray-700 truncate font-light">
-                                    AWS Console
-                                </span>
-                            </div>
-                            <span className="material-icons-outlined text-[14px] text-gray-300 group-hover/link:text-primary">
-                                arrow_outward
-                            </span>
-                        </a>
-                    </li>
-                </ul>
+                {links.length === 0 ? (
+                    <p className="text-sm text-gray-400 font-light">No links saved. Add your first link!</p>
+                ) : (
+                    <ul className="space-y-2">
+                        {links.map((link, idx) => (
+                            <li key={link.id}>
+                                <a
+                                    className="flex items-center justify-between p-2 rounded hover:bg-gray-50 group/link transition-colors"
+                                    href={link.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <div className={`w-1.5 h-1.5 rounded-full ${linkColors[idx % linkColors.length]}`}></div>
+                                        <span className="text-sm font-medium text-gray-700 truncate font-light">
+                                            {link.title}
+                                        </span>
+                                    </div>
+                                    <span className="material-icons-outlined text-[14px] text-gray-300 group-hover/link:text-primary">
+                                        arrow_outward
+                                    </span>
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
         </div>
     );

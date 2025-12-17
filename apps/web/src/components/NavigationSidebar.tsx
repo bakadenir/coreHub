@@ -3,13 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 
 export default function NavigationSidebar() {
     const location = useLocation();
-    const isDashboard = location.pathname === '/';
+    const isDashboard = location.pathname === '/dashboard';
 
     return (
         <aside className={`${isDashboard ? '-ml-20 lg:-ml-64' : 'ml-0'} w-20 lg:w-64 flex flex-col border-r border-border-light bg-white shrink-0 transition-all duration-500 ease-in-out overflow-hidden`}>
             <nav className="flex flex-col gap-2 px-3 py-4 flex-1 min-w-[5rem] lg:min-w-[16rem]">
-                <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/">
-                    <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
+                <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/dashboard' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/dashboard">
+                    <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/dashboard' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
                         <span className="material-icons-outlined text-sm">dashboard</span>
                     </span>
                     <span className="hidden lg:block">Dashboard</span>

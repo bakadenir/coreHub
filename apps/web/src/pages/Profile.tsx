@@ -1,8 +1,17 @@
 
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import { useAuth } from '../context/AuthContext';
 
 export default function Profile() {
+    const { user } = useAuth();
+    const name = user?.name || 'User';
+    const role = user?.role || 'user';
+    const email = user?.email || '';
+    const bio = user?.bio || 'No bio yet.';
+    const avatar = user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=000&color=fff`;
+
+
     return (
         <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary">
             <Header subtitle="Profile" />
@@ -12,7 +21,7 @@ export default function Profile() {
                 {/* Back to Dashboard Control */}
                 <div className="mb-8">
                     <Link
-                        to="/"
+                        to="/dashboard"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
                         <span className="material-icons-outlined text-base">arrow_back</span>
@@ -30,11 +39,11 @@ export default function Profile() {
                             <img
                                 alt="Profile"
                                 className="h-20 w-20 rounded-full border border-gray-200 object-cover"
-                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKrvtkImsgcFS5l83m9Qx_Re3EyUYrh8vzBQojuvGNhiXmnWzOJEEQ_DuyTqeKCJPjmqs0Hk-oqUiMZWWXkVvCcaHhFNRysEUuP_-JZs63HBKDuxTNMic_HsCLS0SOJ9ZuTkuZ5C8i_ItMlbC0SWWPWMJGjxLqujqb6q9_nXKgPPKsCkogpK0fGMQ3q1FevQfOnVsiWersWtEGajIqlLIzlWDyRQvLxtcietFbGuafpeFFf3CnRMvuly57D3vSJcQ8yNYyyJnhkCrl"
+                                src={avatar}
                             />
                             <div>
-                                <h3 className="text-lg font-bold text-text-primary">Deni Romadhon</h3>
-                                <p className="text-sm text-text-secondary mb-2">Pro Member</p>
+                                <h3 className="text-lg font-bold text-text-primary">{name}</h3>
+                                <p className="text-sm text-text-secondary mb-2">{role}</p>
                             </div>
                         </div>
 
@@ -43,21 +52,21 @@ export default function Profile() {
                             <div className="space-y-2.5">
                                 <label className="block text-sm font-medium text-gray-500">Full Name</label>
                                 <div className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 text-[15px] shadow-sm">
-                                    Deni Romadhon
+                                    {name}
                                 </div>
                             </div>
 
                             <div className="space-y-2.5">
                                 <label className="block text-sm font-medium text-gray-500">Email Address</label>
                                 <div className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 text-[15px] shadow-sm">
-                                    deni.romadhon@corehub.com
+                                    {email}
                                 </div>
                             </div>
 
                             <div className="space-y-2.5">
                                 <label className="block text-sm font-medium text-gray-500">Bio</label>
                                 <div className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 text-[15px] shadow-sm min-h-[100px]">
-                                    Passionate about productivity and clean design.
+                                    {bio}
                                 </div>
                             </div>
                         </div>

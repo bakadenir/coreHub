@@ -12,7 +12,7 @@ export default function Donate() {
                 {/* Back to Dashboard Control */}
                 <div className="mb-8">
                     <Link
-                        to="/"
+                        to="/dashboard"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
                         <span className="material-icons-outlined text-base">arrow_back</span>

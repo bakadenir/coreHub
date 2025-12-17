@@ -1,6 +1,6 @@
-
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
+import { linksApi } from '../lib';
 
 interface AddLinkModalProps {
     isOpen: boolean;
@@ -9,14 +9,21 @@ interface AddLinkModalProps {
 
 export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
     const { showToast } = useToast();
+    const [url, setUrl] = useState('');
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSave = () => {
-        showToast('Link added successfully!', 'success');
-        onClose();
-    };
+    // Reset form when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setUrl('');
+            setTitle('');
+            setDescription('');
+        }
+    }, [isOpen]);
 
-
-    // Prevent scrolling when modal is open and compensate for scrollbar width
+    // Prevent scrolling when modal is open
     useEffect(() => {
         if (isOpen) {
             const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -33,6 +40,41 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
     }, [isOpen]);
 
     if (!isOpen) return null;
+
+    const handleSave = async () => {
+        if (!url.trim()) {
+            showToast('Please enter a URL', 'error');
+            return;
+        }
+
+        // Basic URL validation
+        try {
+            new URL(url.startsWith('http') ? url : `https://${url}`);
+        } catch {
+            showToast('Please enter a valid URL', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const result = await linksApi.create({
+                url: url.startsWith('http') ? url : `https://${url}`,
+                title: title.trim() || undefined,
+                description: description.trim() || undefined,
+            });
+
+            if (result.success) {
+                showToast('Link added successfully!', 'success');
+                onClose();
+            } else {
+                showToast(result.error || 'Failed to add link', 'error');
+            }
+        } catch {
+            showToast('Network error. Please try again.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -61,7 +103,7 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 max-h-[70vh]">
                     {/* Link URL */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500" htmlFor="link-url">Link URL</label>
+                        <label className="block text-sm font-medium text-gray-500" htmlFor="link-url">Link URL *</label>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <span className="material-icons-outlined text-gray-400 text-[20px] group-focus-within:text-black transition-colors">link</span>
@@ -71,6 +113,8 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                                 id="link-url"
                                 placeholder="e.g. https://example.com/awesome-article"
                                 type="url"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
                             />
                         </div>
                     </div>
@@ -86,6 +130,8 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                             id="link-title"
                             placeholder="e.g. My Favorite Article"
                             type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
                         />
                     </div>
 
@@ -99,25 +145,27 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] min-h-[70px] resize-none shadow-sm outline-none"
                             id="link-description"
                             placeholder="A short summary or your thoughts..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
                         ></textarea>
                     </div>
-
-
                 </div>
 
                 {/* Footer */}
                 <div className="flex items-center justify-end gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50">
                     <button
                         onClick={onClose}
-                        className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                        disabled={isSubmitting}
+                        className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5"
+                        disabled={isSubmitting}
+                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Save Link
+                        {isSubmitting ? 'Saving...' : 'Save Link'}
                     </button>
                 </div>
             </div>

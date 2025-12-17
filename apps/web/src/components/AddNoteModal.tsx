@@ -1,6 +1,6 @@
-
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
+import { notesApi } from '../lib';
 
 interface AddNoteModalProps {
     isOpen: boolean;
@@ -9,13 +9,23 @@ interface AddNoteModalProps {
 
 export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
     const { showToast } = useToast();
+    const [title, setTitle] = useState('');
+    const [content, setContent] = useState('');
+    const [reminderDate, setReminderDate] = useState('');
+    const [reminderTime, setReminderTime] = useState('09:00');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSave = () => {
-        showToast('Note added successfully!', 'success');
-        onClose();
-    };
+    // Reset form when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setTitle('');
+            setContent('');
+            setReminderDate('');
+            setReminderTime('09:00');
+        }
+    }, [isOpen]);
 
-    // Prevent scrolling when modal is open and compensate for scrollbar width
+    // Prevent scrolling when modal is open
     useEffect(() => {
         if (isOpen) {
             const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
@@ -32,6 +42,39 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
     }, [isOpen]);
 
     if (!isOpen) return null;
+
+    const handleSave = async () => {
+        if (!title.trim()) {
+            showToast('Please enter a note title', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            // Combine date and time for reminder
+            let reminderAt: string | undefined;
+            if (reminderDate && reminderTime) {
+                reminderAt = `${reminderDate}T${reminderTime}:00`;
+            }
+
+            const result = await notesApi.create({
+                title: title.trim(),
+                content: content.trim() || undefined,
+                reminderAt,
+            });
+
+            if (result.success) {
+                showToast('Note added successfully!', 'success');
+                onClose();
+            } else {
+                showToast(result.error || 'Failed to add note', 'error');
+            }
+        } catch {
+            showToast('Network error. Please try again.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -60,12 +103,14 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 max-h-[70vh]">
                     {/* Note Title */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500" htmlFor="note-title">Note Title</label>
+                        <label className="block text-sm font-medium text-gray-500" htmlFor="note-title">Note Title *</label>
                         <input
                             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             id="note-title"
                             placeholder="e.g. Ideas for Weekend Trip"
                             type="text"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
                         />
                     </div>
 
@@ -79,45 +124,29 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
                             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
                             id="note-content"
                             placeholder="Jot down thoughts, links, or ideas..."
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
                         ></textarea>
                     </div>
 
-
-                    {/* Set Reminder On */}
+                    {/* Set Reminder */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Set Reminder On</label>
+                        <label className="block text-sm font-medium text-gray-500">Set Reminder (Optional)</label>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="relative group">
                                 <input
                                     className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="date"
+                                    value={reminderDate}
+                                    onChange={(e) => setReminderDate(e.target.value)}
                                 />
                             </div>
                             <div className="relative group">
                                 <input
                                     className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="time"
-                                    defaultValue="09:00"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Pin Until */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Pin Until</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="date"
-                                />
-                            </div>
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="time"
-                                    defaultValue="10:00"
+                                    value={reminderTime}
+                                    onChange={(e) => setReminderTime(e.target.value)}
                                 />
                             </div>
                         </div>
@@ -128,15 +157,17 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
                 <div className="flex items-center justify-end gap-3 px-6 py-5 border-t border-gray-100 bg-gray-50">
                     <button
                         onClick={onClose}
-                        className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                        disabled={isSubmitting}
+                        className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5"
+                        disabled={isSubmitting}
+                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Save Note
+                        {isSubmitting ? 'Saving...' : 'Save Note'}
                     </button>
                 </div>
             </div>
