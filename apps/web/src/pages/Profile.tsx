@@ -1,16 +1,62 @@
 
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { useAuth } from '../context/AuthContext';
+import { usersApi } from '../lib';
+
+interface UserProfile {
+    id?: string;
+    name?: string;
+    email?: string;
+    role?: string;
+    image?: string;
+    bio?: string;
+    username?: string;
+}
 
 export default function Profile() {
-    const { user } = useAuth();
-    const name = user?.name || 'User';
-    const role = user?.role || 'user';
-    const email = user?.email || '';
-    const bio = user?.bio || 'No bio yet.';
-    const avatar = user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=000&color=fff`;
+    const { user: sessionUser } = useAuth();
+    const [user, setUser] = useState<UserProfile | null>(null);
 
+    // Fetch user data from API on mount
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const result = await usersApi.getMe();
+                if (result.success && result.data) {
+                    setUser(result.data as unknown as UserProfile);
+                }
+            } catch (error) {
+                console.error('Error fetching user:', error);
+            }
+        };
+        fetchUser();
+    }, []);
+
+    // Helper to construct full URL for uploaded files
+    const getFullAvatarUrl = (imageUrl: string | null | undefined): string => {
+        if (!imageUrl || imageUrl.trim() === '') return '';
+        // If it's already a full URL (http/https), return as-is
+        if (imageUrl.startsWith('http')) return imageUrl;
+        // If it's a relative path to uploads, prefix with API base URL
+        if (imageUrl.startsWith('/uploads/')) {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            return `${apiUrl}${imageUrl}`;
+        }
+        return imageUrl;
+    };
+
+    const name = user?.name || sessionUser?.name || 'User';
+    const roleRaw = user?.role || sessionUser?.role || 'user';
+    // Convert 'user' role to 'Free Member' display
+    const role = roleRaw === 'user' ? 'Free Member' : roleRaw === 'admin' ? 'Admin' : roleRaw;
+    const email = user?.email || sessionUser?.email || '';
+    const bio = user?.bio || 'No bio yet.';
+    // Better fallback: check for null, undefined, or empty string
+    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=000&color=fff`;
+    const userImage = getFullAvatarUrl(user?.image);
+    const avatar = (userImage && userImage.trim() !== '') ? userImage : defaultAvatar;
 
     return (
         <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary">

@@ -120,15 +120,17 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]">
+        <div
+            className={`fixed inset-0 z-[200] flex items-start justify-center pt-[15vh] transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200"
                 onClick={onClose}
             />
 
             {/* Search Modal */}
-            <div className="relative w-full max-w-2xl mx-4 bg-white rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 fade-in duration-200">
+            <div className={`relative w-full max-w-2xl mx-4 bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4'}`}>
                 {/* Search Input */}
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
                     <span className="material-icons-outlined text-gray-400 text-xl">search</span>
@@ -162,19 +164,19 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                         <div className="p-6">
                             <p className="text-sm text-gray-400 text-center">Type at least 2 characters to search</p>
                             <div className="mt-6 flex flex-wrap gap-2 justify-center">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-xs text-gray-500">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
                                     <span className="material-icons-outlined text-[14px]">self_improvement</span>
                                     Habits
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-xs text-gray-500">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
                                     <span className="material-icons-outlined text-[14px]">description</span>
                                     Notes
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-xs text-gray-500">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
                                     <span className="material-icons-outlined text-[14px]">link</span>
                                     Links
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-full text-xs text-gray-500">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
                                     <span className="material-icons-outlined text-[14px]">event</span>
                                     Events
                                 </span>
@@ -189,8 +191,8 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                     <button
                                         onClick={() => handleSelect(result)}
                                         className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-colors ${index === selectedIndex
-                                                ? 'bg-gray-100'
-                                                : 'hover:bg-gray-50'
+                                            ? 'bg-gray-100'
+                                            : 'hover:bg-gray-50'
                                             }`}
                                     >
                                         <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
@@ -223,20 +225,21 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                     )}
                 </div>
 
-                {/* Footer */}
                 <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
                     <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-[10px]">↑</kbd>
-                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-[10px]">↓</kbd>
+                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-[10px]">↑</kbd>
+                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-[10px]">↓</kbd>
                             navigate
                         </span>
                         <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-[10px]">↵</kbd>
+                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-[10px]">↵</kbd>
                             select
                         </span>
                     </div>
-                    <span>⌘K to search anywhere</span>
+                    <span className="flex items-center gap-1">
+                        Press <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-[10px] mx-1">/</kbd> to search anywhere
+                    </span>
                 </div>
             </div>
         </div>

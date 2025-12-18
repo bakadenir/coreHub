@@ -24,7 +24,7 @@ export default function AvatarUpload({
     };
 
     const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'U')}&background=000&color=fff`;
-    const displayAvatar = currentAvatar || defaultAvatar;
+    const displayAvatar = (currentAvatar && currentAvatar.trim() !== '') ? currentAvatar : defaultAvatar;
 
     const processFile = useCallback((file: File) => {
         if (!file.type.startsWith('image/')) {

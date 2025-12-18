@@ -29,7 +29,7 @@ export default function Login() {
 
         // Validation
         if (!formData.email) {
-            newErrors.email = 'Enter an email';
+            newErrors.email = 'Enter an email or username';
             hasError = true;
         }
         if (!formData.password) {
@@ -45,8 +45,29 @@ export default function Login() {
         }
 
         try {
+            let emailToUse = formData.email;
+
+            // If not an email (no @), try to lookup by username
+            if (!formData.email.includes('@')) {
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+                const lookupRes = await fetch(`${apiUrl}/api/auth-custom/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ identifier: formData.email, password: formData.password }),
+                });
+                const lookupData = await lookupRes.json();
+
+                if (!lookupRes.ok || !lookupData.data?.email) {
+                    showToast('Invalid username or password', 'error');
+                    setIsLoading(false);
+                    return;
+                }
+                emailToUse = lookupData.data.email;
+            }
+
             const result = await signIn.email({
-                email: formData.email,
+                email: emailToUse,
                 password: formData.password,
             });
 
@@ -60,10 +81,15 @@ export default function Login() {
             const userRole = (result.data?.user as any)?.role;
             if (userRole === 'admin') {
                 showToast('Welcome back! Redirecting to admin...', 'success');
-                navigate('/admin');
+                // Use setTimeout to ensure session is fully set before redirect
+                setTimeout(() => {
+                    window.location.href = '/admin';
+                }, 100);
             } else {
                 showToast('Welcome back! Login successful.', 'success');
-                navigate('/dashboard');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 100);
             }
         } catch (error) {
             showToast('An error occurred during login', 'error');

@@ -19,11 +19,20 @@ router.get('/me', async (req, res) => {
     }
 });
 
-// PATCH /api/users/me - Update profile
+// PATCH /api/users/me - Update profile (name and bio only)
+// Note: Avatar is uploaded separately via /api/upload/avatar
 router.patch('/me', async (req, res) => {
     try {
-        const { name, bio, avatar } = req.body;
-        const user = await usersService.update(req.user!.id, { name, bio, avatar });
+        const { name, bio } = req.body;
+
+        // Build update object only with defined values
+        const updateData: Record<string, any> = {};
+        if (name !== undefined) updateData.name = name;
+        if (bio !== undefined) updateData.bio = bio;
+
+        console.log('Update profile request:', { userId: req.user!.id, updateData });
+
+        const user = await usersService.update(req.user!.id, updateData);
         return successResponse(res, user);
     } catch (error) {
         console.error('Error updating user:', error);

@@ -33,7 +33,16 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
             }
 
             if (schedulesRes.success && schedulesRes.data) {
-                setSchedule(schedulesRes.data.slice(0, 3));
+                // Filter to only show today and future schedules
+                const now = new Date();
+                now.setHours(0, 0, 0, 0); // Start of today
+                const upcomingSchedules = schedulesRes.data.filter(event => {
+                    const eventDate = new Date(event.startTime);
+                    return eventDate >= now;
+                });
+                // Sort by date ascending and take first 3
+                upcomingSchedules.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+                setSchedule(upcomingSchedules.slice(0, 3));
             }
 
             if (notesRes.success && notesRes.data) {
@@ -161,16 +170,22 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                     <p className="text-sm text-gray-400 font-light">No upcoming events. Add a schedule!</p>
                 ) : (
                     <ul className="space-y-3">
-                        {schedule.map((item) => (
-                            <li key={item.id} className="flex gap-3 text-sm">
-                                <span className="font-mono text-xs font-bold pt-0.5 text-gray-400">
-                                    {formatTime(item)}
-                                </span>
-                                <span className="text-gray-700 font-light">
-                                    {item.title}
-                                </span>
-                            </li>
-                        ))}
+                        {schedule.map((item) => {
+                            // Format date and time
+                            const eventDate = new Date(item.startTime);
+                            const dateStr = eventDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+                            const timeStr = eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                            return (
+                                <li key={item.id} className="flex gap-3 text-sm">
+                                    <span className="font-mono text-xs font-bold pt-0.5 text-gray-400 whitespace-nowrap">
+                                        {dateStr} {timeStr}
+                                    </span>
+                                    <span className="text-gray-700 font-light truncate">
+                                        {item.title}
+                                    </span>
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>

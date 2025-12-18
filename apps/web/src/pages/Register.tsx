@@ -91,13 +91,29 @@ export default function Register() {
             const result = await signUp.email({
                 email: formData.email,
                 password: formData.password,
-                name: formData.username,
+                name: formData.username,  // Use username as display name
             });
 
             if (result.error) {
                 showToast(result.error.message || 'Registration failed', 'error');
                 setIsLoading(false);
                 return;
+            }
+
+            // Save username to database after account creation
+            if (result.data?.user) {
+                try {
+                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+                    await fetch(`${apiUrl}/api/auth-custom/set-username`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ username: formData.username }),
+                    });
+                } catch {
+                    // Username save failed but account created
+                    console.log('Username save failed during registration');
+                }
             }
 
             showToast('Account created successfully! Please login.', 'success');

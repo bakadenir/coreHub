@@ -1,52 +1,82 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import FloatingInput from '../components/FloatingInput';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-export default function ForgotPassword() {
+export default function ResetPassword() {
+    const navigate = useNavigate();
     const { showToast } = useToast();
+    const [searchParams] = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
-    const [email, setEmail] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
-    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [token, setToken] = useState<string | null>(null);
+
+    useEffect(() => {
+        const tokenParam = searchParams.get('token');
+        if (!tokenParam) {
+            setError('Invalid or missing reset token');
+        } else {
+            setToken(tokenParam);
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
 
-        if (!email) {
-            setError('Enter an email address');
+        if (!newPassword) {
+            setError('Enter a new password');
+            setIsLoading(false);
+            return;
+        }
+
+        if (newPassword.length < 8) {
+            setError('Password must be at least 8 characters');
+            setIsLoading(false);
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setError('Passwords do not match');
+            setIsLoading(false);
+            return;
+        }
+
+        if (!token) {
+            setError('Invalid or missing reset token');
             setIsLoading(false);
             return;
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/forget-password`, {
+            const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email,
-                    redirectTo: `${window.location.origin}/reset-password`,
+                    newPassword,
+                    token,
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok || data.error) {
-                setError(data.message || 'Failed to send reset link');
-                showToast('Failed to send reset link', 'error');
+                setError(data.message || 'Failed to reset password');
+                showToast('Failed to reset password', 'error');
             } else {
-                setIsSubmitted(true);
-                showToast('Reset link sent! Check the backend console for the reset URL.', 'success');
+                showToast('Password reset successfully! Please login.', 'success');
+                navigate('/login');
             }
         } catch {
             setError('Network error. Please try again.');
-            showToast('Failed to send reset link', 'error');
+            showToast('Failed to reset password', 'error');
         } finally {
             setIsLoading(false);
         }
@@ -75,41 +105,51 @@ export default function ForgotPassword() {
                 <div className="w-full max-w-md space-y-8">
                     <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-lg shadow-gray-200/50">
                         <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Reset Password</h2>
+                            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Set New Password</h2>
                             <p className="mt-2 text-sm text-gray-500">
-                                Enter your email or username and we'll send you a link to reset your password.
+                                Enter your new password below.
                             </p>
                         </div>
 
-                        {isSubmitted ? (
+                        {!token ? (
                             <div className="text-center space-y-4 animate-fade-in">
-                                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                                    <span className="material-icons-outlined text-green-600 text-3xl">mark_email_read</span>
+                                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                                    <span className="material-icons-outlined text-red-600 text-3xl">error</span>
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900">Check your email</h3>
+                                <h3 className="text-lg font-semibold text-gray-900">Invalid Reset Link</h3>
                                 <p className="text-sm text-gray-500">
-                                    We sent a password reset link to <span className="font-medium text-gray-900">{email}</span>
+                                    The password reset link is invalid or has expired.
                                 </p>
                                 <div className="pt-4">
                                     <Link
-                                        to="/login"
+                                        to="/forgot-password"
                                         className="inline-flex justify-center rounded-lg bg-black px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 transition-all"
                                     >
-                                        Back to Login
+                                        Request New Link
                                     </Link>
                                 </div>
                             </div>
                         ) : (
                             <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3" noValidate>
                                 <FloatingInput
-                                    label="Email / Username"
-                                    id="email"
-                                    name="email"
-                                    type="text"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    // error prop removed to prevent input border coloring, handle error display globally below
-                                    autoComplete="email"
+                                    label="New Password"
+                                    id="newPassword"
+                                    name="newPassword"
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    autoComplete="new-password"
+                                    className="!mb-1"
+                                />
+
+                                <FloatingInput
+                                    label="Confirm Password"
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    autoComplete="new-password"
                                     className="!mb-1"
                                 />
 
@@ -135,10 +175,10 @@ export default function ForgotPassword() {
                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                 </svg>
-                                                Sending Link...
+                                                Resetting Password...
                                             </>
                                         ) : (
-                                            'Send Reset Link'
+                                            'Reset Password'
                                         )}
                                     </button>
                                 </div>

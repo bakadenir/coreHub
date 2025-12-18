@@ -1,48 +1,48 @@
 import { db } from '../config/database';
-import { users } from '../db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
+import { user } from '../db/schema';  // Use 'user' table from better-auth, not 'users'
+import { eq } from 'drizzle-orm';
 
 export interface UpdateUserDto {
     name?: string;
     bio?: string;
-    avatar?: string;
+    image?: string;  // Changed from 'avatar' to 'image' to match schema
 }
 
 export class UsersService {
     async findById(id: string) {
-        return db.query.users.findFirst({
-            where: and(eq(users.id, id), isNull(users.deletedAt)),
+        return db.query.user.findFirst({
+            where: eq(user.id, id),
         });
     }
 
     async update(id: string, data: UpdateUserDto) {
-        const [user] = await db.update(users)
+        const [updatedUser] = await db.update(user)
             .set({ ...data, updatedAt: new Date() })
-            .where(eq(users.id, id))
+            .where(eq(user.id, id))
             .returning();
-        return user;
+        return updatedUser;
     }
 
     async updateUsername(id: string, username: string) {
         // Check if username is already taken
-        const existing = await db.query.users.findFirst({
-            where: eq(users.username, username),
+        const existing = await db.query.user.findFirst({
+            where: eq(user.username, username),
         });
 
         if (existing && existing.id !== id) {
             throw new Error('Username already taken');
         }
 
-        const [user] = await db.update(users)
+        const [updatedUser] = await db.update(user)
             .set({ username, updatedAt: new Date() })
-            .where(eq(users.id, id))
+            .where(eq(user.id, id))
             .returning();
-        return user;
+        return updatedUser;
     }
 
     async softDelete(id: string) {
-        await db.update(users)
-            .set({ deletedAt: new Date() })
-            .where(eq(users.id, id));
+        // For better-auth, we should delete the user entirely
+        // or add a deletedAt field to the schema
+        await db.delete(user).where(eq(user.id, id));
     }
 }

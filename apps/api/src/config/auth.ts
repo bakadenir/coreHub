@@ -10,6 +10,16 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
         requireEmailVerification: false, // Set to true in production
+        // Password reset functionality
+        sendResetPassword: async ({ user, url }) => {
+            // In development, log to console
+            // In production, integrate with email service (Resend, SendGrid, etc.)
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('📧 PASSWORD RESET REQUEST');
+            console.log(`   User: ${user.email}`);
+            console.log(`   Reset URL: ${url}`);
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        },
     },
     user: {
         additionalFields: {
@@ -19,6 +29,8 @@ export const auth = betterAuth({
                 defaultValue: 'user',
                 input: false, // Don't allow users to set their own role
             },
+            // Note: bio, image, and username are stored in DB but NOT included in session
+            // They are fetched separately via /api/users/me to avoid large session cookies
         },
     },
     session: {

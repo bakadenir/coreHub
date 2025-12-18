@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: session.user.email,
         name: session.user.name,
         role: (session.user as any).role || 'user',
-        avatar: (session.user as any).avatar,
+        avatar: (session.user as any).image,  // Map 'image' from DB to 'avatar' for UI
         bio: (session.user as any).bio,
         username: (session.user as any).username,
     } : null;
