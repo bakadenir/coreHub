@@ -1,18 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import AddNoteModal from '../components/AddNoteModal';
+import EditNoteModal from '../components/EditNoteModal';
 import NavigationSidebar from '../components/NavigationSidebar';
+import ActionMenu from '../components/ActionMenu';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { notesApi } from '../lib';
 import type { Note } from '../types';
 import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { useToast } from '../context/ToastContext';
 
 export default function Notes() {
     const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+    const [isEditNoteOpen, setIsEditNoteOpen] = useState(false);
+    const [editingNote, setEditingNote] = useState<Note | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const { showToast } = useToast();
+
+    // Delete confirmation state
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchNotes = useCallback(async () => {
         setIsLoading(true);
@@ -38,6 +50,72 @@ export default function Notes() {
         fetchNotes();
     }, [fetchNotes]);
 
+    const handleEdit = (note: Note) => {
+        setEditingNote(note);
+        setIsEditNoteOpen(true);
+    };
+
+    const handleDeleteClick = (note: Note) => {
+        setNoteToDelete(note);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!noteToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            const result = await notesApi.delete(String(noteToDelete.id));
+            if (result.success) {
+                showToast('Note deleted successfully', 'success');
+                fetchNotes();
+                setSelectedIndex(0);
+            } else {
+                showToast(result.error || 'Failed to delete note', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        } finally {
+            setIsDeleting(false);
+            setDeleteConfirmOpen(false);
+            setNoteToDelete(null);
+        }
+    };
+
+    const handlePin = async (note: Note) => {
+        try {
+            const newPinned = !note.isPinned;
+            const result = await notesApi.pin(String(note.id), newPinned);
+            if (result.success) {
+                showToast(newPinned ? 'Note pinned' : 'Note unpinned', 'success');
+                fetchNotes();
+            } else {
+                showToast('Failed to update note', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        }
+    };
+
+    const getActionMenuItems = (note: Note) => [
+        {
+            label: 'Edit',
+            icon: 'edit',
+            onClick: () => handleEdit(note),
+        },
+        {
+            label: note.isPinned ? 'Unpin' : 'Pin',
+            icon: note.isPinned ? 'push_pin' : 'push_pin',
+            onClick: () => handlePin(note),
+        },
+        {
+            label: 'Delete',
+            icon: 'delete',
+            onClick: () => handleDeleteClick(note),
+            variant: 'danger' as const,
+        },
+    ];
+
     const selectedNote = notes[selectedIndex] || null;
 
     const formatDate = (dateString?: string) => {
@@ -52,6 +130,21 @@ export default function Notes() {
     return (
         <div className="flex flex-col h-screen w-full bg-background-light text-text-primary font-sans overflow-hidden">
             <AddNoteModal isOpen={isAddNoteOpen} onClose={() => { setIsAddNoteOpen(false); fetchNotes(); }} />
+            <EditNoteModal
+                isOpen={isEditNoteOpen}
+                onClose={() => { setIsEditNoteOpen(false); setEditingNote(null); fetchNotes(); }}
+                note={editingNote}
+            />
+            <ConfirmDialog
+                isOpen={deleteConfirmOpen}
+                onClose={() => { setDeleteConfirmOpen(false); setNoteToDelete(null); }}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Note"
+                message={`Are you sure you want to delete "${noteToDelete?.title}"? This action cannot be undone.`}
+                confirmLabel="Delete"
+                variant="danger"
+                isLoading={isDeleting}
+            />
             <Header subtitle="Workspace" />
             <div className="flex flex-1 overflow-hidden w-full">
                 <NavigationSidebar />
@@ -113,14 +206,19 @@ export default function Notes() {
                                         >
                                             <div className="flex justify-between items-start mb-1">
                                                 <h4 className={`text-sm font-bold line-clamp-1 ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{note.title}</h4>
-                                                <button className="opacity-0 group-hover:opacity-100 text-text-secondary hover:text-text-primary transition-opacity">
-                                                    <span className="material-icons-outlined text-[16px]">more_horiz</span>
-                                                </button>
+                                                <ActionMenu
+                                                    items={getActionMenuItems(note)}
+                                                    trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                                    className="opacity-0 group-hover:opacity-100"
+                                                />
                                             </div>
                                             <p className="text-xs text-text-secondary mb-2 line-clamp-2">{note.content}</p>
                                             <div className="flex items-center justify-between text-xs text-gray-500">
                                                 <span>{formatDate(note.date)}</span>
-                                                {note.isPinned && <span className="material-icons-outlined text-[14px]">push_pin</span>}
+                                                <div className="flex items-center gap-2">
+                                                    {note.tag && <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">{note.tag}</span>}
+                                                    {note.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
+                                                </div>
                                             </div>
                                         </div>
                                     ))
@@ -131,13 +229,12 @@ export default function Notes() {
                         <div className="flex-1 flex flex-col overflow-y-auto bg-white p-8 md:p-12 lg:p-16">
                             {selectedNote ? (
                                 <div className="mx-auto w-full max-w-3xl flex flex-col gap-6">
-                                    <input
-                                        className="block w-full border-none px-0 text-4xl font-black text-text-primary bg-transparent focus:ring-0 placeholder:text-gray-300 outline-none"
-                                        placeholder="Note Title"
-                                        type="text"
-                                        value={selectedNote.title}
-                                        readOnly
-                                    />
+                                    <div className="flex items-center justify-between">
+                                        <h1 className="text-4xl font-black text-text-primary">
+                                            {selectedNote.title}
+                                        </h1>
+                                        <ActionMenu items={getActionMenuItems(selectedNote)} />
+                                    </div>
                                     <div className="flex items-center gap-2 text-sm text-text-secondary">
                                         <span className="material-icons-outlined text-base">event</span>
                                         <span>Last edited: {formatDate(selectedNote.date)}</span>
@@ -148,12 +245,9 @@ export default function Notes() {
                                             </>
                                         )}
                                     </div>
-                                    <textarea
-                                        className="block w-full min-h-[500px] border-none px-0 text-lg font-serif-body text-text-primary bg-transparent focus:ring-0 placeholder:text-gray-400 resize-none outline-none"
-                                        placeholder="Start writing your note here..."
-                                        value={selectedNote.content}
-                                        readOnly
-                                    ></textarea>
+                                    <div className="prose prose-lg max-w-none">
+                                        <p className="text-lg text-text-primary whitespace-pre-wrap">{selectedNote.content}</p>
+                                    </div>
                                 </div>
                             ) : (
                                 <EmptyState message="Select a note to view" icon="article" />

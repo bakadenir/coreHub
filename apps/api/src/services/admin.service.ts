@@ -1,6 +1,6 @@
 import { db } from '../config/database';
-import { users, habits, notes, links, activityLogs, contentReports } from '../db/schema';
-import { eq, desc, count, isNull, sql, and, like, or } from 'drizzle-orm';
+import { user, habits, notes, links, activityLogs, contentReports } from '../db/schema';
+import { eq, desc, count, isNull, and, ilike, or } from 'drizzle-orm';
 
 export interface UserFilters {
     page: number;
@@ -16,8 +16,21 @@ export interface PaginationParams {
 }
 
 export class AdminService {
+    // Helper to log admin activities
+    async logActivity(adminId: string, action: string, details?: Record<string, unknown>) {
+        try {
+            await db.insert(activityLogs).values({
+                userId: adminId,
+                action,
+                details: details || {},
+            });
+        } catch (error) {
+            console.error('Failed to log activity:', error);
+        }
+    }
     async getStats() {
-        const [userStats] = await db.select({ count: count() }).from(users).where(isNull(users.deletedAt));
+        // Count from 'user' table (better-auth)
+        const [userStats] = await db.select({ count: count() }).from(user);
         const [habitStats] = await db.select({ count: count() }).from(habits).where(isNull(habits.deletedAt));
         const [noteStats] = await db.select({ count: count() }).from(notes).where(isNull(notes.deletedAt));
         const [linkStats] = await db.select({ count: count() }).from(links).where(isNull(links.deletedAt));
@@ -31,36 +44,46 @@ export class AdminService {
     }
 
     async getUsers(filters: UserFilters) {
-        const { page, limit, search, role, status } = filters;
+        const { page, limit, search, role } = filters;
         const offset = (page - 1) * limit;
 
-        const conditions = [isNull(users.deletedAt)];
+        // Build conditions for 'user' table (better-auth)
+        const conditions = [];
 
         if (role) {
-            conditions.push(eq(users.role, role));
+            conditions.push(eq(user.role, role));
         }
 
-        let allUsers = await db.query.users.findMany({
-            where: and(...conditions),
-            orderBy: desc(users.createdAt),
-            limit,
-            offset,
-        });
-
         if (search) {
-            const searchLower = search.toLowerCase();
-            allUsers = allUsers.filter(u =>
-                u.name.toLowerCase().includes(searchLower) ||
-                u.email.toLowerCase().includes(searchLower)
+            conditions.push(
+                or(
+                    ilike(user.name, `%${search}%`),
+                    ilike(user.email, `%${search}%`)
+                )
             );
         }
 
-        const [total] = await db.select({ count: count() }).from(users).where(and(...conditions));
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+        const allUsers = await db
+            .select()
+            .from(user)
+            .where(whereClause)
+            .orderBy(desc(user.createdAt))
+            .limit(limit)
+            .offset(offset);
+
+        const [total] = await db.select({ count: count() }).from(user).where(whereClause);
 
         return {
             users: allUsers.map(u => ({
-                ...u,
-                status: u.deletedAt ? 'Banned' : 'Active',
+                id: u.id,
+                name: u.name,
+                email: u.email,
+                role: u.role || 'user',
+                status: 'Active', // Better-auth doesn't have deletedAt
+                createdAt: u.createdAt?.toISOString() || new Date().toISOString(),
+                avatar: u.image,
             })),
             pagination: {
                 page,
@@ -72,19 +95,46 @@ export class AdminService {
     }
 
     async updateUserRole(id: string, role: string) {
-        const [user] = await db.update(users)
+        const [updatedUser] = await db.update(user)
             .set({ role, updatedAt: new Date() })
-            .where(eq(users.id, id))
+            .where(eq(user.id, id))
             .returning();
-        return user;
+        return updatedUser;
+    }
+
+    async getUserById(id: string) {
+        const [foundUser] = await db.select().from(user).where(eq(user.id, id));
+        if (!foundUser) return null;
+
+        return {
+            id: foundUser.id,
+            name: foundUser.name,
+            email: foundUser.email,
+            emailVerified: foundUser.emailVerified,
+            role: foundUser.role || 'user',
+            image: foundUser.image,
+            createdAt: foundUser.createdAt?.toISOString(),
+            updatedAt: foundUser.updatedAt?.toISOString(),
+        };
     }
 
     async setUserBanned(id: string, banned: boolean) {
-        const [user] = await db.update(users)
-            .set({ deletedAt: banned ? new Date() : null, updatedAt: new Date() })
-            .where(eq(users.id, id))
+        // For ban, we'll update a custom 'banned' field or use role-based approach
+        // Since better-auth schema doesn't have banned field, we change role to 'banned'
+        const newRole = banned ? 'banned' : 'user';
+        const [updatedUser] = await db.update(user)
+            .set({ role: newRole, updatedAt: new Date() })
+            .where(eq(user.id, id))
             .returning();
-        return user;
+        return updatedUser;
+    }
+
+    async deleteUser(id: string) {
+        // Delete user and associated data
+        const [deletedUser] = await db.delete(user)
+            .where(eq(user.id, id))
+            .returning();
+        return deletedUser;
     }
 
     async getActivityLogs(params: PaginationParams) {

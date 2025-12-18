@@ -44,11 +44,17 @@ router.get('/users', async (req, res) => {
 router.patch('/users/:id/role', async (req, res) => {
     try {
         const { role } = req.body;
-        const user = await adminService.updateUserRole(req.params.id, role);
-        if (!user) {
+        const targetUser = await adminService.updateUserRole(req.params.id, role);
+        if (!targetUser) {
             return notFoundResponse(res, 'User');
         }
-        return successResponse(res, user);
+        // Log activity
+        await adminService.logActivity(req.user!.id, `Changed role to ${role}`, {
+            targetUserId: req.params.id,
+            targetUserName: targetUser.name,
+            newRole: role,
+        });
+        return successResponse(res, targetUser);
     } catch (error) {
         console.error('Error updating user role:', error);
         return serverErrorResponse(res);
@@ -59,11 +65,17 @@ router.patch('/users/:id/role', async (req, res) => {
 router.patch('/users/:id/status', async (req, res) => {
     try {
         const { banned } = req.body;
-        const user = await adminService.setUserBanned(req.params.id, banned);
-        if (!user) {
+        const targetUser = await adminService.setUserBanned(req.params.id, banned);
+        if (!targetUser) {
             return notFoundResponse(res, 'User');
         }
-        return successResponse(res, user);
+        // Log activity
+        const action = banned ? 'Banned user' : 'Unbanned user';
+        await adminService.logActivity(req.user!.id, action, {
+            targetUserId: req.params.id,
+            targetUserName: targetUser.name,
+        });
+        return successResponse(res, targetUser);
     } catch (error) {
         console.error('Error updating user status:', error);
         return serverErrorResponse(res);
@@ -112,4 +124,41 @@ router.patch('/reports/:id', async (req, res) => {
     }
 });
 
+// GET /api/admin/users/:id - Get user details
+router.get('/users/:id', async (req, res) => {
+    try {
+        const user = await adminService.getUserById(req.params.id);
+        if (!user) {
+            return notFoundResponse(res, 'User');
+        }
+        return successResponse(res, user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        return serverErrorResponse(res);
+    }
+});
+
+// DELETE /api/admin/users/:id - Delete user permanently
+router.delete('/users/:id', async (req, res) => {
+    try {
+        // Get user info before deleting for logging
+        const userToDelete = await adminService.getUserById(req.params.id);
+        const result = await adminService.deleteUser(req.params.id);
+        if (!result) {
+            return notFoundResponse(res, 'User');
+        }
+        // Log activity
+        await adminService.logActivity(req.user!.id, 'Deleted user', {
+            deletedUserId: req.params.id,
+            deletedUserName: userToDelete?.name || 'Unknown',
+            deletedUserEmail: userToDelete?.email || 'Unknown',
+        });
+        return successResponse(res, { message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        return serverErrorResponse(res);
+    }
+});
+
 export default router;
+

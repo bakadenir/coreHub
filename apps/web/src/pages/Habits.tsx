@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import AddHabitModal from '../components/AddHabitModal';
+import EditHabitModal from '../components/EditHabitModal';
 import NavigationSidebar from '../components/NavigationSidebar';
+import ActionMenu from '../components/ActionMenu';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { habitsApi } from '../lib';
 import type { Habit } from '../types';
 import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
@@ -9,11 +12,18 @@ import { useToast } from '../context/ToastContext';
 
 export default function Habits() {
     const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
+    const [isEditHabitOpen, setIsEditHabitOpen] = useState(false);
+    const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
     const [habits, setHabits] = useState<Habit[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<'all' | 'daily' | 'weekly' | 'archived'>('all');
     const { showToast } = useToast();
+
+    // Delete confirmation state
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchHabits = useCallback(async () => {
         setIsLoading(true);
@@ -56,6 +66,71 @@ export default function Habits() {
         }
     };
 
+    const handleEdit = (habit: Habit) => {
+        setEditingHabit(habit);
+        setIsEditHabitOpen(true);
+    };
+
+    const handleDeleteClick = (habit: Habit) => {
+        setHabitToDelete(habit);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!habitToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            const result = await habitsApi.delete(habitToDelete.id);
+            if (result.success) {
+                showToast('Habit deleted successfully', 'success');
+                fetchHabits();
+            } else {
+                showToast(result.error || 'Failed to delete habit', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        } finally {
+            setIsDeleting(false);
+            setDeleteConfirmOpen(false);
+            setHabitToDelete(null);
+        }
+    };
+
+    const handleArchive = async (habit: Habit) => {
+        try {
+            const newArchived = !habit.isArchived;
+            const result = await habitsApi.archive(habit.id, newArchived);
+            if (result.success) {
+                showToast(newArchived ? 'Habit archived' : 'Habit unarchived', 'success');
+                fetchHabits();
+            } else {
+                showToast('Failed to update habit', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        }
+    };
+
+    const getActionMenuItems = (habit: Habit) => [
+        {
+            label: 'Edit',
+            icon: 'edit',
+            onClick: () => handleEdit(habit),
+        },
+        {
+            label: habit.isArchived ? 'Unarchive' : 'Archive',
+            icon: habit.isArchived ? 'unarchive' : 'archive',
+            onClick: () => handleArchive(habit),
+        },
+        {
+            label: 'Delete',
+            icon: 'delete',
+            onClick: () => handleDeleteClick(habit),
+            variant: 'danger' as const,
+        },
+    ];
+
     // Calculate stats
     const todayCompleted = habits.filter(h => h.completed).length;
     const completionRate = habits.length > 0 ? Math.round((todayCompleted / habits.length) * 100) : 0;
@@ -64,6 +139,21 @@ export default function Habits() {
     return (
         <div className="bg-background-light text-text-primary font-sans overflow-hidden h-screen flex flex-col w-full">
             <AddHabitModal isOpen={isAddHabitOpen} onClose={() => { setIsAddHabitOpen(false); fetchHabits(); }} />
+            <EditHabitModal
+                isOpen={isEditHabitOpen}
+                onClose={() => { setIsEditHabitOpen(false); setEditingHabit(null); fetchHabits(); }}
+                habit={editingHabit}
+            />
+            <ConfirmDialog
+                isOpen={deleteConfirmOpen}
+                onClose={() => { setDeleteConfirmOpen(false); setHabitToDelete(null); }}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Habit"
+                message={`Are you sure you want to delete "${habitToDelete?.name}"? This action cannot be undone.`}
+                confirmLabel="Delete"
+                variant="danger"
+                isLoading={isDeleting}
+            />
             <Header subtitle="Workspace" />
             <div className="flex flex-1 overflow-hidden w-full">
                 <NavigationSidebar />
@@ -193,9 +283,7 @@ export default function Habits() {
                                                     )}
                                                 </div>
                                                 <div className="col-span-12 md:col-span-1 flex justify-end items-center pr-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                                    <button className="text-text-secondary hover:text-primary p-1">
-                                                        <span className="material-icons-outlined">more_vert</span>
-                                                    </button>
+                                                    <ActionMenu items={getActionMenuItems(habit)} />
                                                 </div>
                                             </div>
                                         ))}

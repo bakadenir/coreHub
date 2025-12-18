@@ -8,6 +8,7 @@ interface User {
     role: string;
     avatar?: string;
     bio?: string;
+    username?: string;
 }
 
 interface AuthContextType {
@@ -16,6 +17,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     signOut: () => Promise<void>;
     refetch: () => void;
+    refreshUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: (session.user as any).role || 'user',
         avatar: (session.user as any).avatar,
         bio: (session.user as any).bio,
+        username: (session.user as any).username,
     } : null;
 
     const handleSignOut = async () => {
@@ -50,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 isAuthenticated: !!user,
                 signOut: handleSignOut,
                 refetch,
+                refreshUser: refetch,
             }}
         >
             {children}

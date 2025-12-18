@@ -3,6 +3,7 @@ export type Frequency = 'Daily' | 'Weekly' | 'Monthly' | 'Weekdays' | 'Weekends'
 export interface Habit {
     id: string;
     name: string;
+    description?: string;
     time: string; // e.g., "07:00 AM" or "Anytime"
     category: string; // e.g., "Wellness", "Learning", "Health", "Career"
     frequency: Frequency;
@@ -10,6 +11,9 @@ export interface Habit {
     completed: boolean;
     icon: string; // material icon name
     completionRate: number; // e.g., 100, 67, 0 (percentage)
+    startDate?: string;
+    specificDays?: number[];
+    isArchived?: boolean;
 }
 
 export interface ActivityCardData {
@@ -44,6 +48,8 @@ export interface Note {
     content: string;
     date: string;
     tag: string;
+    isPinned?: boolean;
+    reminderAt?: string;
 }
 
 export interface LinkItem {
@@ -59,8 +65,11 @@ export interface ScheduleEvent {
     id: number | string;
     date: number; // day of month
     time: string;
+    startTime: string;
     title: string;
     color: string; // class for border/text styling e.g. "border-gray-600"
+    location?: string;
+    description?: string;
 }
 
 export interface AgendaItem {

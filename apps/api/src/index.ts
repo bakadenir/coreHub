@@ -11,6 +11,7 @@ import notesRouter from './routes/notes.routes';
 import linksRouter from './routes/links.routes';
 import usersRouter from './routes/users.routes';
 import adminRouter from './routes/admin.routes';
+import searchRouter from './routes/search.routes';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/notes', notesRouter);
 app.use('/api/links', linksRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/search', searchRouter);
 
 // Health check
 app.get('/api/health', (req, res) => {

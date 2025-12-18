@@ -1,18 +1,30 @@
 import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import AddScheduleModal from '../components/AddScheduleModal';
+import EditScheduleModal from '../components/EditScheduleModal';
+import ActionMenu from '../components/ActionMenu';
+import ConfirmDialog from '../components/ConfirmDialog';
 import NavigationSidebar from '../components/NavigationSidebar';
 import { schedulesApi } from '../lib';
 import type { ScheduleEvent } from '../types';
 import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { useToast } from '../context/ToastContext';
 
 export default function Schedule() {
     const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
+    const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
+    const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
     const [events, setEvents] = useState<ScheduleEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState<'month' | 'week' | 'day'>('month');
+    const { showToast } = useToast();
+
+    // Delete confirmation state
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [eventToDelete, setEventToDelete] = useState<ScheduleEvent | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
@@ -42,6 +54,51 @@ export default function Schedule() {
     useEffect(() => {
         fetchEvents();
     }, [fetchEvents]);
+
+    const handleEdit = (event: ScheduleEvent) => {
+        setEditingEvent(event);
+        setIsEditScheduleOpen(true);
+    };
+
+    const handleDeleteClick = (event: ScheduleEvent) => {
+        setEventToDelete(event);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!eventToDelete) return;
+
+        setIsDeleting(true);
+        try {
+            const result = await schedulesApi.delete(String(eventToDelete.id));
+            if (result.success) {
+                showToast('Event deleted successfully', 'success');
+                fetchEvents();
+            } else {
+                showToast(result.error || 'Failed to delete event', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        } finally {
+            setIsDeleting(false);
+            setDeleteConfirmOpen(false);
+            setEventToDelete(null);
+        }
+    };
+
+    const getActionMenuItems = (event: ScheduleEvent) => [
+        {
+            label: 'Edit',
+            icon: 'edit',
+            onClick: () => handleEdit(event),
+        },
+        {
+            label: 'Delete',
+            icon: 'delete',
+            onClick: () => handleDeleteClick(event),
+            variant: 'danger' as const,
+        },
+    ];
 
     // Calendar helpers
     const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -115,6 +172,21 @@ export default function Schedule() {
     return (
         <div className="bg-background-light text-text-primary font-sans overflow-hidden h-screen flex flex-col w-full">
             <AddScheduleModal isOpen={isAddScheduleOpen} onClose={() => { setIsAddScheduleOpen(false); fetchEvents(); }} />
+            <EditScheduleModal
+                isOpen={isEditScheduleOpen}
+                onClose={() => { setIsEditScheduleOpen(false); setEditingEvent(null); fetchEvents(); }}
+                event={editingEvent}
+            />
+            <ConfirmDialog
+                isOpen={deleteConfirmOpen}
+                onClose={() => { setDeleteConfirmOpen(false); setEventToDelete(null); }}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Event"
+                message={`Are you sure you want to delete "${eventToDelete?.title}"? This action cannot be undone.`}
+                confirmLabel="Delete"
+                variant="danger"
+                isLoading={isDeleting}
+            />
             <Header subtitle="Workspace" />
             <div className="flex flex-1 overflow-hidden w-full">
                 <NavigationSidebar />
@@ -217,10 +289,17 @@ export default function Schedule() {
                                                     {dayEvents.slice(0, 3).map((event, idx) => (
                                                         <div
                                                             key={event.id}
-                                                            className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-[10px] font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5`}
+                                                            onClick={() => handleEdit(event)}
+                                                            className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-[10px] font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5 flex items-center justify-between group/event`}
                                                             title={event.title}
                                                         >
-                                                            {formatTime(event.startTime)} {event.title}
+                                                            <span className="truncate">{formatTime(event.startTime)} {event.title}</span>
+                                                            <div className="opacity-0 group-hover/event:opacity-100" onClick={(e) => e.stopPropagation()}>
+                                                                <ActionMenu
+                                                                    items={getActionMenuItems(event)}
+                                                                    trigger={<span className="material-icons-outlined text-[12px]">more_vert</span>}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     ))}
                                                     {dayEvents.length > 3 && (
@@ -261,9 +340,11 @@ export default function Schedule() {
                                             <div key={event.id} className="group flex flex-col p-3 rounded-xl bg-white border border-border-light shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-pointer">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <span className="font-mono text-xs font-medium text-gray-700 bg-gray-50 px-1.5 py-0.5 rounded">{formatTime(event.startTime)}</span>
-                                                    <button className="opacity-0 group-hover:opacity-100 text-text-secondary hover:text-text-primary transition-opacity">
-                                                        <span className="material-icons-outlined text-[16px]">more_horiz</span>
-                                                    </button>
+                                                    <ActionMenu
+                                                        items={getActionMenuItems(event)}
+                                                        trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                                        className="opacity-0 group-hover:opacity-100"
+                                                    />
                                                 </div>
                                                 <h4 className="text-sm font-bold text-text-primary mb-1">{event.title}</h4>
                                                 {event.location && (
@@ -290,6 +371,11 @@ export default function Schedule() {
                                                     <span className="font-mono text-xs font-medium text-gray-700 bg-gray-50 px-1.5 py-0.5 rounded">
                                                         {formatAgendaDate(new Date(event.startTime))} {formatTime(event.startTime)}
                                                     </span>
+                                                    <ActionMenu
+                                                        items={getActionMenuItems(event)}
+                                                        trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                                        className="opacity-0 group-hover:opacity-100"
+                                                    />
                                                 </div>
                                                 <h4 className="text-sm font-bold text-text-primary mb-1">{event.title}</h4>
                                                 {event.description && <p className="text-xs text-text-secondary mb-2 line-clamp-1">{event.description}</p>}

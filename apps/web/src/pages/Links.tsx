@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import Header from '../components/Header';
 import AddLinkModal from '../components/AddLinkModal';
+import EditLinkModal from '../components/EditLinkModal';
 import NavigationSidebar from '../components/NavigationSidebar';
+import ActionMenu from '../components/ActionMenu';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { linksApi } from '../lib';
 import type { LinkItem } from '../types';
 import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
@@ -9,12 +12,19 @@ import { useToast } from '../context/ToastContext';
 
 export default function Links() {
     const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
+    const [isEditLinkOpen, setIsEditLinkOpen] = useState(false);
+    const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
     const [links, setLinks] = useState<LinkItem[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const { showToast } = useToast();
+
+    // Delete confirmation state
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [linkToDelete, setLinkToDelete] = useState<LinkItem | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchLinks = useCallback(async () => {
         setIsLoading(true);
@@ -40,21 +50,82 @@ export default function Links() {
         fetchLinks();
     }, [fetchLinks]);
 
-    const handleDelete = async (id: string) => {
+    const handleEdit = (link: LinkItem) => {
+        setEditingLink(link);
+        setIsEditLinkOpen(true);
+    };
+
+    const handleDeleteClick = (link: LinkItem) => {
+        setLinkToDelete(link);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!linkToDelete) return;
+
+        setIsDeleting(true);
         try {
-            await linksApi.delete(id);
-            showToast('Link deleted', 'success');
-            fetchLinks();
+            const result = await linksApi.delete(String(linkToDelete.id));
+            if (result.success) {
+                showToast('Link deleted successfully', 'success');
+                fetchLinks();
+                setSelectedIndex(0);
+            } else {
+                showToast(result.error || 'Failed to delete link', 'error');
+            }
         } catch {
-            showToast('Failed to delete link', 'error');
+            showToast('Network error', 'error');
+        } finally {
+            setIsDeleting(false);
+            setDeleteConfirmOpen(false);
+            setLinkToDelete(null);
         }
     };
+
+    const handleCopyLink = (link: LinkItem) => {
+        navigator.clipboard.writeText(link.url);
+        showToast('Link copied to clipboard', 'success');
+    };
+
+    const getActionMenuItems = (link: LinkItem) => [
+        {
+            label: 'Edit',
+            icon: 'edit',
+            onClick: () => handleEdit(link),
+        },
+        {
+            label: 'Copy URL',
+            icon: 'content_copy',
+            onClick: () => handleCopyLink(link),
+        },
+        {
+            label: 'Delete',
+            icon: 'delete',
+            onClick: () => handleDeleteClick(link),
+            variant: 'danger' as const,
+        },
+    ];
 
     const selectedLink = links[selectedIndex] || null;
 
     return (
         <div className="flex flex-col h-screen w-full bg-background-light text-text-primary font-sans overflow-hidden">
             <AddLinkModal isOpen={isAddLinkOpen} onClose={() => { setIsAddLinkOpen(false); fetchLinks(); }} />
+            <EditLinkModal
+                isOpen={isEditLinkOpen}
+                onClose={() => { setIsEditLinkOpen(false); setEditingLink(null); fetchLinks(); }}
+                link={editingLink}
+            />
+            <ConfirmDialog
+                isOpen={deleteConfirmOpen}
+                onClose={() => { setDeleteConfirmOpen(false); setLinkToDelete(null); }}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Link"
+                message={`Are you sure you want to delete "${linkToDelete?.title || linkToDelete?.url}"? This action cannot be undone.`}
+                confirmLabel="Delete"
+                variant="danger"
+                isLoading={isDeleting}
+            />
             <Header subtitle="Workspace" />
             <div className="flex flex-1 overflow-hidden w-full">
                 <NavigationSidebar />
@@ -123,9 +194,11 @@ export default function Links() {
                                                 <h4 className={`text-sm font-bold line-clamp-1 ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{link.title || 'Untitled'}</h4>
                                                 <p className="text-xs text-text-secondary line-clamp-1">{link.url.replace('https://', '').replace('http://', '')}</p>
                                             </div>
-                                            <button className="opacity-0 group-hover:opacity-100 text-text-secondary hover:text-text-primary transition-opacity ml-2">
-                                                <span className="material-icons-outlined text-[16px]">more_horiz</span>
-                                            </button>
+                                            <ActionMenu
+                                                items={getActionMenuItems(link)}
+                                                trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                                className="opacity-0 group-hover:opacity-100 ml-2"
+                                            />
                                         </div>
                                     ))
                                 )}
@@ -136,7 +209,10 @@ export default function Links() {
                         <div className="flex-1 flex flex-col overflow-y-auto bg-background-light p-8 md:p-12 lg:p-16">
                             {selectedLink ? (
                                 <div className="mx-auto w-full max-w-4xl flex flex-col gap-6">
-                                    <h3 className="text-3xl font-bold text-text-primary tracking-tight mb-4">Link Preview Panel</h3>
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-3xl font-bold text-text-primary tracking-tight">Link Preview</h3>
+                                        <ActionMenu items={getActionMenuItems(selectedLink)} />
+                                    </div>
                                     <div className="bg-white rounded-xl p-6 shadow-sm border border-border-light flex flex-col gap-6">
 
                                         <div className="flex items-center gap-3">
@@ -174,7 +250,14 @@ export default function Links() {
                                                 <span className="whitespace-nowrap">Open Link</span>
                                             </a>
                                             <button
-                                                onClick={() => handleDelete(selectedLink.id)}
+                                                onClick={() => handleEdit(selectedLink)}
+                                                className="flex items-center justify-center rounded-lg h-10 px-5 bg-gray-100 hover:bg-gray-200 text-text-primary gap-2 text-sm font-semibold shadow-sm transition-all"
+                                            >
+                                                <span className="material-icons-outlined text-[20px]">edit</span>
+                                                <span className="whitespace-nowrap">Edit</span>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteClick(selectedLink)}
                                                 className="flex items-center justify-center rounded-lg h-10 px-5 bg-red-100 hover:bg-red-200 text-red-600 gap-2 text-sm font-semibold shadow-sm transition-all"
                                             >
                                                 <span className="material-icons-outlined text-[20px]">delete</span>

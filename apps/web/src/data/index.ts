@@ -107,11 +107,11 @@ export const mockLinks: LinkItem[] = [
 ];
 
 export const mockScheduleEvents: ScheduleEvent[] = [
-    { id: 1, date: 1, time: '09:00', title: 'Design Sync', color: 'border-gray-600' },
-    { id: 2, date: 3, time: '', title: 'Gym', color: 'border-gray-500' },
-    { id: 3, date: 5, time: '14:00', title: 'Product Review', color: 'border-gray-700' },
-    { id: 4, date: 5, time: '', title: '+2 more', color: 'bg-gray-100 text-gray-700' },
-    { id: 5, date: 9, time: '10:00', title: 'Weekly Sync', color: 'border-gray-600' },
+    { id: 1, date: 1, time: '09:00', startTime: '2024-01-01T09:00:00', title: 'Design Sync', color: 'border-gray-600' },
+    { id: 2, date: 3, time: '', startTime: '2024-01-03T18:00:00', title: 'Gym', color: 'border-gray-500' },
+    { id: 3, date: 5, time: '14:00', startTime: '2024-01-05T14:00:00', title: 'Product Review', color: 'border-gray-700' },
+    { id: 4, date: 5, time: '', startTime: '2024-01-05T15:00:00', title: '+2 more', color: 'bg-gray-100 text-gray-700' },
+    { id: 5, date: 9, time: '10:00', startTime: '2024-01-09T10:00:00', title: 'Weekly Sync', color: 'border-gray-600' },
 ];
 
 export const mockAgenda: AgendaItem[] = [

@@ -68,7 +68,6 @@ describe('Register Page', () => {
     });
 
     it('shows error when submitting empty form', async () => {
-        const user = userEvent.setup();
         render(
             <MockToastProvider>
                 <MemoryRouter>

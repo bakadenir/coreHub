@@ -1,8 +1,110 @@
-
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import AvatarUpload from '../components/AvatarUpload';
+import { usersApi } from '../lib';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function Settings() {
+    const { user, refreshUser } = useAuth();
+    const { showToast } = useToast();
+
+    // Profile form state
+    const [name, setName] = useState('');
+    const [bio, setBio] = useState('');
+    const [avatar, setAvatar] = useState('');
+    const [username, setUsername] = useState('');
+
+    // Loading states
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [isSavingUsername, setIsSavingUsername] = useState(false);
+
+    // Password form state
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    // Load user data on mount
+    useEffect(() => {
+        if (user) {
+            setName(user.name || '');
+            setBio(user.bio || '');
+            setAvatar(user.avatar || '');
+            setUsername(user.username || '');
+        }
+    }, [user]);
+
+    const handleSaveProfile = async () => {
+        if (!name.trim()) {
+            showToast('Name is required', 'error');
+            return;
+        }
+
+        setIsSavingProfile(true);
+        try {
+            const result = await usersApi.updateProfile({
+                name: name.trim(),
+                bio: bio.trim(),
+                avatar: avatar,
+            });
+
+            if (result.success) {
+                showToast('Profile updated successfully', 'success');
+                refreshUser?.();
+            } else {
+                showToast(result.error || 'Failed to update profile', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        } finally {
+            setIsSavingProfile(false);
+        }
+    };
+
+    const handleSaveUsername = async () => {
+        if (!username.trim()) {
+            showToast('Username is required', 'error');
+            return;
+        }
+
+        if (username.length < 3) {
+            showToast('Username must be at least 3 characters', 'error');
+            return;
+        }
+
+        setIsSavingUsername(true);
+        try {
+            const result = await usersApi.updateUsername(username.trim());
+
+            if (result.success) {
+                showToast('Username updated successfully', 'success');
+                refreshUser?.();
+            } else {
+                showToast(result.message || result.error || 'Failed to update username', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        } finally {
+            setIsSavingUsername(false);
+        }
+    };
+
+    const handleCancelProfile = () => {
+        if (user) {
+            setName(user.name || '');
+            setBio(user.bio || '');
+            setAvatar(user.avatar || '');
+        }
+    };
+
+    const handleAvatarChange = (base64: string) => {
+        setAvatar(base64);
+    };
+
+    const email = user?.email || '';
+    const role = user?.role || 'user';
+
     return (
         <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary">
             <Header subtitle="Settings" />
@@ -28,17 +130,14 @@ export default function Settings() {
                         <div className="bg-white border border-border-light rounded-xl p-8 shadow-sm">
                             {/* Profile Header */}
                             <div className="flex items-center gap-6 mb-8">
-                                <img
-                                    alt="Profile"
-                                    className="h-20 w-20 rounded-full border border-gray-200 object-cover"
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKrvtkImsgcFS5l83m9Qx_Re3EyUYrh8vzBQojuvGNhiXmnWzOJEEQ_DuyTqeKCJPjmqs0Hk-oqUiMZWWXkVvCcaHhFNRysEUuP_-JZs63HBKDuxTNMic_HsCLS0SOJ9ZuTkuZ5C8i_ItMlbC0SWWPWMJGjxLqujqb6q9_nXKgPPKsCkogpK0fGMQ3q1FevQfOnVsiWersWtEGajIqlLIzlWDyRQvLxtcietFbGuafpeFFf3CnRMvuly57D3vSJcQ8yNYyyJnhkCrl"
+                                <AvatarUpload
+                                    currentAvatar={avatar}
+                                    name={name}
+                                    onAvatarChange={handleAvatarChange}
                                 />
-                                <div>
-                                    <h3 className="text-lg font-bold text-text-primary">Deni Romadhon</h3>
-                                    <p className="text-sm text-text-secondary mb-2">Pro Member</p>
-                                    <button className="text-sm font-medium text-primary hover:text-blue-700 transition-colors">
-                                        Change Photo
-                                    </button>
+                                <div className="hidden sm:block">
+                                    <h3 className="text-lg font-bold text-text-primary">{name || 'User'}</h3>
+                                    <p className="text-sm text-text-secondary mb-2 capitalize">{role} Member</p>
                                 </div>
                             </div>
 
@@ -48,7 +147,9 @@ export default function Settings() {
                                     <label className="block text-sm font-medium text-gray-500">Full Name</label>
                                     <input
                                         type="text"
-                                        defaultValue="Deni Romadhon"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Enter your name"
                                         className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     />
                                 </div>
@@ -57,15 +158,19 @@ export default function Settings() {
                                     <label className="block text-sm font-medium text-gray-500">Email Address</label>
                                     <input
                                         type="email"
-                                        defaultValue="deni.romadhon@corehub.com"
-                                        className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                        value={email}
+                                        readOnly
+                                        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-500 text-[15px] shadow-sm cursor-not-allowed"
                                     />
+                                    <p className="text-xs text-gray-400">Email cannot be changed</p>
                                 </div>
 
                                 <div className="space-y-2.5">
                                     <label className="block text-sm font-medium text-gray-500">Bio</label>
                                     <textarea
-                                        defaultValue="Passionate about productivity and clean design."
+                                        value={bio}
+                                        onChange={(e) => setBio(e.target.value)}
+                                        placeholder="Tell us about yourself..."
                                         rows={3}
                                         className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none resize-none"
                                     />
@@ -74,17 +179,27 @@ export default function Settings() {
 
                             {/* Action Buttons */}
                             <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-border-light">
-                                <button className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors">
+                                <button
+                                    onClick={handleCancelProfile}
+                                    className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors"
+                                >
                                     Cancel
                                 </button>
-                                <button className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5">
+                                <button
+                                    onClick={handleSaveProfile}
+                                    disabled={isSavingProfile}
+                                    className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isSavingProfile && (
+                                        <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
+                                    )}
                                     Save Changes
                                 </button>
                             </div>
                         </div>
                     </section>
 
-                    {/* Security Settings Section (Password & Username) */}
+                    {/* Security Settings Section (Username) */}
                     <section>
                         <h2 className="text-2xl font-bold tracking-tight mb-8 text-text-primary">Security & Login</h2>
 
@@ -94,14 +209,17 @@ export default function Settings() {
                                     <label className="block text-sm font-medium text-gray-500">Username</label>
                                     <div className="flex">
                                         <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-[15px]">
-                                            corehub.com/
+                                            @
                                         </span>
                                         <input
                                             type="text"
-                                            defaultValue="deniromadhon"
+                                            value={username}
+                                            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                            placeholder="username"
                                             className="w-full bg-white border border-gray-300 rounded-r-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                         />
                                     </div>
+                                    <p className="text-xs text-gray-400">Only lowercase letters, numbers, and underscores</p>
                                 </div>
 
                                 <div className="border-t border-gray-100 pt-6"></div>
@@ -113,6 +231,8 @@ export default function Settings() {
                                             <label className="block text-sm font-medium text-gray-500">Current Password</label>
                                             <input
                                                 type="password"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
                                                 className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                             />
                                         </div>
@@ -121,6 +241,8 @@ export default function Settings() {
                                                 <label className="block text-sm font-medium text-gray-500">New Password</label>
                                                 <input
                                                     type="password"
+                                                    value={newPassword}
+                                                    onChange={(e) => setNewPassword(e.target.value)}
                                                     className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                                 />
                                             </div>
@@ -128,18 +250,28 @@ export default function Settings() {
                                                 <label className="block text-sm font-medium text-gray-500">Confirm New Password</label>
                                                 <input
                                                     type="password"
+                                                    value={confirmPassword}
+                                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                                     className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                                 />
                                             </div>
                                         </div>
                                     </div>
+                                    <p className="text-xs text-gray-400 mt-2">Password change coming soon</p>
                                 </div>
                             </div>
 
                             {/* Action Buttons */}
                             <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-border-light">
-                                <button className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5">
-                                    Update Security
+                                <button
+                                    onClick={handleSaveUsername}
+                                    disabled={isSavingUsername || username === user?.username}
+                                    className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {isSavingUsername && (
+                                        <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
+                                    )}
+                                    Update Username
                                 </button>
                             </div>
                         </div>
