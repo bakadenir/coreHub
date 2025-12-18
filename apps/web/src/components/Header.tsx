@@ -104,7 +104,7 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                             className="hidden md:flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 rounded-lg transition-colors text-sm text-gray-500 border border-gray-200 min-w-[200px]"
                         >
                             <span className="material-icons-outlined text-base opacity-70">search</span>
-                            <span className="font-normal tracking-normal">Type <kbd className="px-1.5 py-0.5 bg-gray-100 rounded-md text-[11px] font-medium border border-gray-200 mx-1">/</kbd> to search</span>
+                            <span className="font-normal tracking-normal">Type <kbd className="px-1.5 py-0.5 bg-gray-100 rounded-md text-xs font-medium border border-gray-200 mx-1">/</kbd> to search</span>
                         </button>
 
                         {/* Mobile Search Button */}

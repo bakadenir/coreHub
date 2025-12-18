@@ -32,8 +32,6 @@ export default {
             fontFamily: {
                 sans: ["Geist Sans", "sans-serif"],
                 mono: ["Geist Mono", "monospace"],
-                "serif-body": ["Playfair Display", "serif"],
-                "display": ["Inter", "sans-serif"],
             },
             borderRadius: {
                 DEFAULT: "0.5rem",

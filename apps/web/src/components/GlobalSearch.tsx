@@ -210,7 +210,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                                 </p>
                                             )}
                                         </div>
-                                        <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${getTypeColor(result.type)}`}>
+                                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getTypeColor(result.type)}`}>
                                             {getTypeLabel(result.type)}
                                         </span>
                                         {index === selectedIndex && (
@@ -228,17 +228,17 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
                     <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-[10px]">↑</kbd>
-                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-[10px]">↓</kbd>
+                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-xs">↑</kbd>
+                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-xs">↓</kbd>
                             navigate
                         </span>
                         <span className="flex items-center gap-1">
-                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-[10px]">↵</kbd>
+                            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-xs">↵</kbd>
                             select
                         </span>
                     </div>
                     <span className="flex items-center gap-1">
-                        Press <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-[10px] mx-1">/</kbd> to search anywhere
+                        Press <kbd className="px-1.5 py-0.5 bg-gray-200 rounded-md text-xs mx-1">/</kbd> to search anywhere
                     </span>
                 </div>
             </div>

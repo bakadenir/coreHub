@@ -290,7 +290,7 @@ export default function Schedule() {
                                                         <div
                                                             key={event.id}
                                                             onClick={() => handleEdit(event)}
-                                                            className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-[10px] font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5 flex items-center justify-between group/event`}
+                                                            className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-xs font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5 flex items-center justify-between group/event`}
                                                             title={event.title}
                                                         >
                                                             <span className="truncate">{formatTime(event.startTime)} {event.title}</span>
@@ -303,7 +303,7 @@ export default function Schedule() {
                                                         </div>
                                                     ))}
                                                     {dayEvents.length > 3 && (
-                                                        <div className="text-[10px] text-text-secondary pl-2">+{dayEvents.length - 3} more</div>
+                                                        <div className="text-xs text-text-secondary pl-2">+{dayEvents.length - 3} more</div>
                                                     )}
                                                 </div>
                                             );

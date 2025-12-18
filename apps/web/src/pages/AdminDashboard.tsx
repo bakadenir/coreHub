@@ -229,7 +229,7 @@ export default function AdminDashboard() {
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                                <span className={`px-2 py-1 inline-flex text-[10px] leading-4 font-semibold rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
+                                                                <span className={`px-2 py-1 inline-flex text-xs leading-4 font-semibold rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-200' :
                                                                     u.role === 'pro' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200' :
                                                                         'bg-gray-100 text-gray-600 border border-gray-200'
                                                                     }`}>

@@ -216,7 +216,7 @@ export default function Notes() {
                                             <div className="flex items-center justify-between text-xs text-gray-500">
                                                 <span>{formatDate(note.date)}</span>
                                                 <div className="flex items-center gap-2">
-                                                    {note.tag && <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">{note.tag}</span>}
+                                                    {note.tag && <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">{note.tag}</span>}
                                                     {note.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
                                                 </div>
                                             </div>

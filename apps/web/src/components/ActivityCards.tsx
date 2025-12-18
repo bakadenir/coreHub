@@ -211,7 +211,7 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                                 <p className="text-xs font-bold text-gray-800 mb-1">
                                     {note.title}
                                 </p>
-                                <p className="text-[11px] text-gray-500 line-clamp-1 font-light">
+                                <p className="text-xs text-gray-500 line-clamp-1 font-light">
                                     {note.content}
                                 </p>
                             </div>
