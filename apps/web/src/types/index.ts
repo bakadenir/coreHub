@@ -46,7 +46,9 @@ export interface Note {
     id: number | string;
     title: string;
     content: string;
-    date: string;
+    date?: string; // legacy
+    createdAt?: string;
+    updatedAt?: string;
     tag: string;
     isPinned?: boolean;
     reminderAt?: string;

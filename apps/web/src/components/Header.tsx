@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import GlobalSearch from './GlobalSearch';
+import NotificationBell from './NotificationBell';
 import { usersApi } from '../lib';
 
 interface HeaderProps {
@@ -115,48 +116,8 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                             <span className="material-icons-outlined text-gray-500 text-2xl">search</span>
                         </button>
 
-                        {/* Notification Dropdown */}
-                        <div className="relative group">
-                            <button className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors relative">
-                                <span className="material-icons-outlined text-gray-500 text-xl">notifications</span>
-                                <span className="absolute top-1.5 right-1.5 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                            </button>
-                            <div className="absolute top-full right-[-80px] md:right-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
-                                <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                                    <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
-                                    <span className="text-xs text-primary font-medium cursor-pointer hover:underline">Mark all as read</span>
-                                </div>
-                                <div className="max-h-[300px] overflow-y-auto">
-                                    <div className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer items-start flex gap-3">
-                                        <div className="p-2 rounded-full bg-blue-50 text-blue-600 shrink-0">
-                                            <span className="material-icons-outlined text-sm">event</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">Weekly Design Sync</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">Today at 10:00 AM</p>
-                                        </div>
-                                    </div>
-                                    <div className="p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer items-start flex gap-3">
-                                        <div className="p-2 rounded-full bg-green-50 text-green-600 shrink-0">
-                                            <span className="material-icons-outlined text-sm">check_circle</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">Drink Water Reminder</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">Habit pending for this hour</p>
-                                        </div>
-                                    </div>
-                                    <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer items-start flex gap-3">
-                                        <div className="p-2 rounded-full bg-purple-50 text-purple-600 shrink-0">
-                                            <span className="material-icons-outlined text-sm">description</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">New AI Insights Available</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">For "Project Everest" note</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        {/* Notification Bell */}
+                        <NotificationBell />
 
                         <div className="flex items-center gap-3 pl-4 border-l border-gray-200 cursor-pointer group relative">
                             <div className="text-right hidden md:block">

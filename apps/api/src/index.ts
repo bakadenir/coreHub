@@ -15,6 +15,13 @@ import adminRouter from './routes/admin.routes';
 import searchRouter from './routes/search.routes';
 import uploadRouter from './routes/upload.routes';
 import authCustomRouter from './routes/auth-custom.routes';
+import notificationsRouter from './routes/notifications.routes';
+import pushRouter from './routes/push.routes';
+import notificationSettingsRouter from './routes/notification-settings.routes';
+import sseRouter from './routes/sse.routes';
+
+// Import scheduler
+import { startScheduler } from './services/scheduler.service';
 
 const app = express();
 
@@ -41,14 +48,18 @@ app.use('/api/admin', adminRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/auth-custom', authCustomRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/push', pushRouter);
+app.use('/api/notification-settings', notificationSettingsRouter);
+app.use('/api/sse', sseRouter);
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Error handler
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     console.error('Error:', err);
     res.status(500).json({
         error: 'Internal Server Error',
@@ -60,6 +71,9 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 app.listen(env.PORT, () => {
     console.log(`🚀 Server running on http://localhost:${env.PORT}`);
     console.log(`📚 API Docs: http://localhost:${env.PORT}/api/health`);
+
+    // Start the notification scheduler
+    startScheduler();
 });
 
 export default app;

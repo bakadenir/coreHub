@@ -1,31 +1,143 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import AddHabitModal from './AddHabitModal';
 import AddScheduleModal from './AddScheduleModal';
 import AddNoteModal from './AddNoteModal';
 import AddLinkModal from './AddLinkModal';
 import PomodoroTimer from './PomodoroTimer';
+import ClockWidget from './ClockWidget';
+import LocationWidget from './LocationWidget';
 
 interface SidebarProps {
     onDataChange?: () => void;
     onDateHover?: (date: Date | null) => void;
+    featuredWidget: string;
+    onFeaturedWidgetChange: (widgetId: string) => void;
 }
 
-export default function Sidebar({ onDataChange, onDateHover }: SidebarProps) {
+type WidgetId = 'quickAction' | 'calendar' | 'pomodoro' | 'time';
+
+const WIDGET_ORDER_KEY = 'corehub_sidebar_widget_order_v3';
+
+// Sortable wrapper component
+function SortableWidget({ id, children, onPromote }: { id: string; children: React.ReactNode; onPromote?: () => void }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="relative group/widget">
+            {/* Drag handle & promote button */}
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/widget:opacity-100 transition-opacity z-10">
+                <div
+                    {...attributes}
+                    {...listeners}
+                    className="px-2 py-1 bg-gray-100 rounded-full cursor-grab active:cursor-grabbing shadow-sm"
+                >
+                    <span className="material-icons-outlined text-xs text-gray-400">drag_indicator</span>
+                </div>
+                {onPromote && (
+                    <button
+                        onClick={onPromote}
+                        className="px-2 py-1 bg-primary text-white rounded-full shadow-sm hover:bg-gray-800 transition-colors"
+                        title="Move to main area"
+                    >
+                        <span className="material-icons-outlined text-xs">open_in_full</span>
+                    </button>
+                )}
+            </div>
+            {children}
+        </div>
+    );
+}
+
+export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onFeaturedWidgetChange }: SidebarProps) {
     const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
     const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
     const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
     const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+    // Widget order state (only sidebar widgets)
+    const [sidebarOrder, setSidebarOrder] = useState<WidgetId[]>(() => {
+        try {
+            const saved = localStorage.getItem(WIDGET_ORDER_KEY);
+            if (saved) {
+                return JSON.parse(saved);
+            }
+        } catch {
+            // Ignore
+        }
+        return ['quickAction', 'calendar', 'pomodoro'];
+    });
+
+    // Get sidebar widgets (excluding featured)
+    const visibleSidebarWidgets = sidebarOrder.filter(w => w !== featuredWidget);
+
+    // Save order to localStorage
+    useEffect(() => {
+        try {
+            localStorage.setItem(WIDGET_ORDER_KEY, JSON.stringify(sidebarOrder));
+        } catch {
+            // Ignore
+        }
+    }, [sidebarOrder]);
+
+    // DnD sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = useCallback((event: DragEndEvent) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            setSidebarOrder((items) => {
+                const oldIndex = items.indexOf(active.id as WidgetId);
+                const newIndex = items.indexOf(over.id as WidgetId);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    }, []);
 
     // Update current date at midnight
     useEffect(() => {
         const now = new Date();
         const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
         const msUntilMidnight = tomorrow.getTime() - now.getTime();
-
-        // Set selected day to today initially
-        setSelectedDay(now.getDate());
 
         const timeout = setTimeout(() => {
             setCurrentDate(new Date());
@@ -69,7 +181,6 @@ export default function Sidebar({ onDataChange, onDateHover }: SidebarProps) {
 
     const navigateMonth = (direction: number) => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
-        setSelectedDay(null);
     };
 
     const today = new Date();
@@ -80,14 +191,22 @@ export default function Sidebar({ onDataChange, onDateHover }: SidebarProps) {
     const firstDay = getFirstDayOfMonth(currentDate);
     const prevMonthDays = getDaysInMonth(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
 
-    return (
-        <aside className="lg:col-span-3 space-y-6 flex flex-col">
-            <AddHabitModal isOpen={isAddHabitOpen} onClose={() => handleModalClose(setIsAddHabitOpen)} />
-            <AddScheduleModal isOpen={isAddScheduleOpen} onClose={() => handleModalClose(setIsAddScheduleOpen)} />
-            <AddNoteModal isOpen={isAddNoteOpen} onClose={() => handleModalClose(setIsAddNoteOpen)} />
-            <AddLinkModal isOpen={isAddLinkOpen} onClose={() => handleModalClose(setIsAddLinkOpen)} />
-
-            {/* Quick Action */}
+    // Widget components (compact versions for sidebar)
+    const widgets: Record<WidgetId, React.ReactNode> = {
+        time: (
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">
+                    Time
+                </h2>
+                <div className="text-center py-2">
+                    <ClockWidget compact />
+                    <div className="mt-2">
+                        <LocationWidget />
+                    </div>
+                </div>
+            </div>
+        ),
+        quickAction: (
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                 <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">
                     Quick Action
@@ -117,10 +236,10 @@ export default function Sidebar({ onDataChange, onDateHover }: SidebarProps) {
                     ))}
                 </nav>
             </div>
-
-            {/* Calendar */}
+        ),
+        calendar: (
             <div
-                className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col"
+                className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col"
                 onMouseLeave={() => handleDayHover(null)}
             >
                 <div className="flex items-center justify-between mb-4">
@@ -151,38 +270,60 @@ export default function Sidebar({ onDataChange, onDateHover }: SidebarProps) {
                     ))}
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center text-sm">
-                    {/* Previous month days */}
                     {[...Array(firstDay)].map((_, i) => (
                         <div key={`prev-${i}`} className="p-2 text-gray-300">
                             {prevMonthDays - firstDay + i + 1}
                         </div>
                     ))}
-                    {/* Current month days */}
                     {[...Array(daysInMonth)].map((_, i) => {
                         const day = i + 1;
                         const isToday = isCurrentMonth && day === todayDay;
-                        const isSelected = selectedDay === day;
                         return (
-                            <button
+                            <div
                                 key={day}
-                                onClick={() => setSelectedDay(day)}
                                 onMouseEnter={() => handleDayHover(day)}
-                                className={`p-2 rounded transition-all ${isSelected
-                                    ? 'bg-primary text-white font-bold shadow-md transform scale-105'
-                                    : isToday
-                                        ? 'bg-gray-100 text-primary font-semibold ring-1 ring-primary'
-                                        : 'hover:bg-gray-100 text-gray-600'
+                                className={`p-2 rounded transition-all cursor-default ${isToday
+                                    ? 'bg-primary text-white font-semibold'
+                                    : 'hover:bg-gray-100 text-gray-600'
                                     }`}
                             >
                                 {day}
-                            </button>
+                            </div>
                         );
                     })}
                 </div>
+                <p className="text-xs text-gray-400 text-center mt-3">
+                    Hover on a date to preview schedule
+                </p>
             </div>
+        ),
+        pomodoro: <PomodoroTimer />,
+    };
 
-            {/* Pomodoro Timer */}
-            <PomodoroTimer />
+    return (
+        <aside className="lg:col-span-3 space-y-6 flex flex-col">
+            <AddHabitModal isOpen={isAddHabitOpen} onClose={() => handleModalClose(setIsAddHabitOpen)} />
+            <AddScheduleModal isOpen={isAddScheduleOpen} onClose={() => handleModalClose(setIsAddScheduleOpen)} />
+            <AddNoteModal isOpen={isAddNoteOpen} onClose={() => handleModalClose(setIsAddNoteOpen)} />
+            <AddLinkModal isOpen={isAddLinkOpen} onClose={() => handleModalClose(setIsAddLinkOpen)} />
+
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+            >
+                <SortableContext items={visibleSidebarWidgets} strategy={verticalListSortingStrategy}>
+                    {visibleSidebarWidgets.map((widgetId) => (
+                        <SortableWidget
+                            key={widgetId}
+                            id={widgetId}
+                            onPromote={() => onFeaturedWidgetChange(widgetId)}
+                        >
+                            {widgets[widgetId]}
+                        </SortableWidget>
+                    ))}
+                </SortableContext>
+            </DndContext>
         </aside>
     );
 }

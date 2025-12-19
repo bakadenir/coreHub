@@ -155,7 +155,7 @@ export default function ForgotPassword() {
 
             {/* Footer */}
             <footer className="w-full text-center py-6 text-xs text-gray-400 border-t border-transparent">
-                © 2025 coreHub. All rights reserved.
+                © 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a>
             </footer>
         </div>
     );

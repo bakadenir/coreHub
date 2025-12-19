@@ -3,9 +3,107 @@ import { useNavigate } from 'react-router-dom';
 import { habitsApi, notesApi, linksApi, schedulesApi } from '../lib';
 import type { Habit, Note, LinkItem, ScheduleEvent } from '../types';
 import { useToast } from '../context/ToastContext';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ActivityCardsProps {
-    refreshTrigger?: number; // increment this to trigger a refresh
+    refreshTrigger?: number;
+}
+
+// Panel configuration
+type PanelId = 'habits' | 'schedule' | 'notes' | 'links';
+
+interface PanelConfig {
+    id: PanelId;
+    title: string;
+    icon: string;
+    route: string;
+}
+
+const panelConfigs: Record<PanelId, PanelConfig> = {
+    habits: { id: 'habits', title: 'Habit Tracker', icon: 'check_circle', route: '/habits' },
+    schedule: { id: 'schedule', title: 'Schedule', icon: 'schedule', route: '/schedule' },
+    notes: { id: 'notes', title: 'Notes', icon: 'description', route: '/notes' },
+    links: { id: 'links', title: 'List Link', icon: 'link', route: '/links' },
+};
+
+const defaultOrder: PanelId[] = ['habits', 'schedule', 'notes', 'links'];
+const STORAGE_KEY = 'activityPanelOrder';
+
+// Sortable Panel Component
+function SortablePanel({
+    id,
+    config,
+    onNavigate,
+    children
+}: {
+    id: PanelId;
+    config: PanelConfig;
+    onNavigate: (route: string) => void;
+    children: React.ReactNode;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : 'auto',
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors relative group min-h-[160px] ${isDragging ? 'shadow-lg' : ''}`}
+        >
+            <button
+                onClick={() => onNavigate(config.route)}
+                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-primary transition-colors z-10"
+            >
+                <span className="material-icons-outlined text-lg">open_in_full</span>
+            </button>
+
+            {/* Draggable Header */}
+            <div
+                {...attributes}
+                {...listeners}
+                className="flex items-center gap-2 mb-4 cursor-grab active:cursor-grabbing select-none group/header"
+            >
+                <span className="relative w-6 h-6 flex items-center justify-center">
+                    {/* Panel icon - visible by default, hidden on hover */}
+                    <span className="material-icons-outlined text-gray-500 absolute inset-0 flex items-center justify-center group-hover/header:opacity-0 transition-opacity">{config.icon}</span>
+                    {/* Drag indicator - hidden by default, visible on hover */}
+                    <span className="material-icons-outlined text-gray-400 absolute inset-0 flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-opacity">drag_indicator</span>
+                </span>
+                <h4 className="font-bold text-gray-900">{config.title}</h4>
+            </div>
+
+            {children}
+        </div>
+    );
 }
 
 export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps) {
@@ -17,10 +115,39 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
     const [links, setLinks] = useState<LinkItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Panel order state with localStorage persistence
+    const [panelOrder, setPanelOrder] = useState<PanelId[]>(() => {
+        if (typeof window === 'undefined') return defaultOrder;
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed) && parsed.length === 4 &&
+                    parsed.every((id: string) => defaultOrder.includes(id as PanelId))) {
+                    return parsed as PanelId[];
+                }
+            }
+        } catch (e) {
+            console.error('Error loading panel order:', e);
+        }
+        return defaultOrder;
+    });
+
+    // Sensors for drag and drop
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Fetch all data in parallel
             const [habitsRes, schedulesRes, notesRes, linksRes] = await Promise.all([
                 habitsApi.getAll(),
                 schedulesApi.getAll(),
@@ -33,14 +160,12 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
             }
 
             if (schedulesRes.success && schedulesRes.data) {
-                // Filter to only show today and future schedules
                 const now = new Date();
-                now.setHours(0, 0, 0, 0); // Start of today
+                now.setHours(0, 0, 0, 0);
                 const upcomingSchedules = schedulesRes.data.filter(event => {
                     const eventDate = new Date(event.startTime);
                     return eventDate >= now;
                 });
-                // Sort by date ascending and take first 3
                 upcomingSchedules.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
                 setSchedule(upcomingSchedules.slice(0, 3));
             }
@@ -63,6 +188,31 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         fetchData();
     }, [fetchData, refreshTrigger]);
 
+    // Save order to localStorage when it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(panelOrder));
+        }
+    }, [panelOrder]);
+
+    // Handle drag start (kept for potential future use, no-op now)
+    const handleDragStart = (_event: DragStartEvent) => {
+        // Previously set activeId for DragOverlay
+    };
+
+    // Handle drag end
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setPanelOrder((items) => {
+                const oldIndex = items.indexOf(active.id as PanelId);
+                const newIndex = items.indexOf(over.id as PanelId);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
+
     // Handle habit toggle
     const handleHabitToggle = async (habitId: string, currentlyCompleted: boolean) => {
         try {
@@ -72,7 +222,6 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                 await habitsApi.complete(habitId);
                 showToast('Habit completed! 🎉', 'success');
             }
-            // Refresh habits after toggle
             const habitsRes = await habitsApi.getAll();
             if (habitsRes.success && habitsRes.data) {
                 setHabits(habitsRes.data.slice(0, 3));
@@ -82,58 +231,13 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         }
     };
 
-    // Format time from ISO string or time field
-    const formatTime = (event: ScheduleEvent) => {
-        // Try parsing startTime if available (from API)
-        const startTime = (event as unknown as { startTime?: string }).startTime;
-        if (startTime) {
-            try {
-                return new Date(startTime).toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                });
-            } catch {
-                return startTime;
-            }
-        }
-        // Fallback to time field
-        return event.time || '--:--';
-    };
-
     const linkColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500'];
 
-    if (isLoading) {
-        return (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 min-h-[160px] animate-pulse">
-                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-                        <div className="space-y-3">
-                            <div className="h-3 bg-gray-100 rounded w-full"></div>
-                            <div className="h-3 bg-gray-100 rounded w-2/3"></div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
-    }
-
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {/* Habit Tracker */}
-            <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors relative group min-h-[160px]">
-                <button
-                    onClick={() => navigate('/habits')}
-                    className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-primary transition-colors"
-                >
-                    <span className="material-icons-outlined text-lg">open_in_full</span>
-                </button>
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="material-icons-outlined text-gray-500">check_circle</span>
-                    <h4 className="font-bold text-gray-900">Habit Tracker</h4>
-                </div>
-                {habits.length === 0 ? (
+    // Render panel content based on ID
+    const renderPanelContent = (panelId: PanelId) => {
+        switch (panelId) {
+            case 'habits':
+                return habits.length === 0 ? (
                     <p className="text-sm text-gray-400 font-light">No habits yet. Add your first habit!</p>
                 ) : (
                     <ul className="space-y-3 pl-1">
@@ -151,27 +255,14 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                             </li>
                         ))}
                     </ul>
-                )}
-            </div>
+                );
 
-            {/* Schedule */}
-            <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors relative group min-h-[160px]">
-                <button
-                    onClick={() => navigate('/schedule')}
-                    className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-primary transition-colors"
-                >
-                    <span className="material-icons-outlined text-lg">open_in_full</span>
-                </button>
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="material-icons-outlined text-gray-500">schedule</span>
-                    <h4 className="font-bold text-gray-900">Schedule</h4>
-                </div>
-                {schedule.length === 0 ? (
+            case 'schedule':
+                return schedule.length === 0 ? (
                     <p className="text-sm text-gray-400 font-light">No upcoming events. Add a schedule!</p>
                 ) : (
                     <ul className="space-y-3">
                         {schedule.map((item) => {
-                            // Format date and time
                             const eventDate = new Date(item.startTime);
                             const dateStr = eventDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
                             const timeStr = eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -187,22 +278,10 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                             );
                         })}
                     </ul>
-                )}
-            </div>
+                );
 
-            {/* Notes */}
-            <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors relative group min-h-[160px]">
-                <button
-                    onClick={() => navigate('/notes')}
-                    className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-primary transition-colors"
-                >
-                    <span className="material-icons-outlined text-lg">open_in_full</span>
-                </button>
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="material-icons-outlined text-gray-500">description</span>
-                    <h4 className="font-bold text-gray-900">Notes</h4>
-                </div>
-                {notes.length === 0 ? (
+            case 'notes':
+                return notes.length === 0 ? (
                     <p className="text-sm text-gray-400 font-light">No notes yet. Create your first note!</p>
                 ) : (
                     <div className="space-y-2">
@@ -217,22 +296,10 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                             </div>
                         ))}
                     </div>
-                )}
-            </div>
+                );
 
-            {/* List Link */}
-            <div className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors relative group min-h-[160px]">
-                <button
-                    onClick={() => navigate('/links')}
-                    className="absolute top-4 right-4 p-1.5 rounded-md hover:bg-gray-100 text-gray-400 hover:text-primary transition-colors"
-                >
-                    <span className="material-icons-outlined text-lg">open_in_full</span>
-                </button>
-                <div className="flex items-center gap-2 mb-4">
-                    <span className="material-icons-outlined text-gray-500">link</span>
-                    <h4 className="font-bold text-gray-900">List Link</h4>
-                </div>
-                {links.length === 0 ? (
+            case 'links':
+                return links.length === 0 ? (
                     <p className="text-sm text-gray-400 font-light">No links saved. Add your first link!</p>
                 ) : (
                     <ul className="space-y-2">
@@ -257,8 +324,47 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                             </li>
                         ))}
                     </ul>
-                )}
+                );
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 min-h-[160px] animate-pulse">
+                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                        <div className="space-y-3">
+                            <div className="h-3 bg-gray-100 rounded w-full"></div>
+                            <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                        </div>
+                    </div>
+                ))}
             </div>
-        </div>
+        );
+    }
+
+    return (
+        <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+        >
+            <SortableContext items={panelOrder} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    {panelOrder.map((panelId) => (
+                        <SortablePanel
+                            key={panelId}
+                            id={panelId}
+                            config={panelConfigs[panelId]}
+                            onNavigate={navigate}
+                        >
+                            {renderPanelContent(panelId)}
+                        </SortablePanel>
+                    ))}
+                </div>
+            </SortableContext>
+        </DndContext>
     );
 }

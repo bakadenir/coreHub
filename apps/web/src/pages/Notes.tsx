@@ -9,6 +9,7 @@ import { notesApi } from '../lib';
 import type { Note } from '../types';
 import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 
 export default function Notes() {
     const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
@@ -97,11 +98,42 @@ export default function Notes() {
         }
     };
 
+    const handleCopyFormatted = async () => {
+        const contentElement = document.querySelector('.markdown-body');
+        if (contentElement) {
+            try {
+                // Get HTML content
+                const htmlContent = contentElement.innerHTML;
+                // Get plain text as fallback
+                const textContent = contentElement.textContent || '';
+
+                // Create clipboard data with both HTML and plain text
+                const clipboardItem = new ClipboardItem({
+                    'text/html': new Blob([htmlContent], { type: 'text/html' }),
+                    'text/plain': new Blob([textContent], { type: 'text/plain' }),
+                });
+
+                await navigator.clipboard.write([clipboardItem]);
+                showToast('Content copied with formatting!', 'success');
+            } catch {
+                // Fallback to plain text copy
+                const textContent = contentElement.textContent || '';
+                await navigator.clipboard.writeText(textContent);
+                showToast('Content copied as plain text', 'success');
+            }
+        }
+    };
+
     const getActionMenuItems = (note: Note) => [
         {
             label: 'Edit',
             icon: 'edit',
             onClick: () => handleEdit(note),
+        },
+        {
+            label: 'Copy formatted',
+            icon: 'content_copy',
+            onClick: () => handleCopyFormatted(),
         },
         {
             label: note.isPinned ? 'Unpin' : 'Pin',
@@ -119,8 +151,20 @@ export default function Notes() {
     const selectedNote = notes[selectedIndex] || null;
 
     const formatDate = (dateString?: string) => {
-        if (!dateString) return 'Just now';
-        return new Date(dateString).toLocaleDateString('en-US', {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} min ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+
+        return date.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
             year: 'numeric'
@@ -214,7 +258,7 @@ export default function Notes() {
                                             </div>
                                             <p className="text-xs text-text-secondary mb-2 line-clamp-2">{note.content}</p>
                                             <div className="flex items-center justify-between text-xs text-gray-500">
-                                                <span>{formatDate(note.date)}</span>
+                                                <span>{formatDate(note.updatedAt || note.createdAt)}</span>
                                                 <div className="flex items-center gap-2">
                                                     {note.tag && <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">{note.tag}</span>}
                                                     {note.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
@@ -237,7 +281,7 @@ export default function Notes() {
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-text-secondary">
                                         <span className="material-icons-outlined text-base">event</span>
-                                        <span>Last edited: {formatDate(selectedNote.date)}</span>
+                                        <span>Last edited: {formatDate(selectedNote.updatedAt || selectedNote.createdAt)}</span>
                                         {selectedNote.tag && (
                                             <>
                                                 <span className="mx-2 text-gray-300">|</span>
@@ -245,9 +289,7 @@ export default function Notes() {
                                             </>
                                         )}
                                     </div>
-                                    <div className="prose prose-lg max-w-none">
-                                        <p className="text-lg text-text-primary whitespace-pre-wrap">{selectedNote.content}</p>
-                                    </div>
+                                    <MarkdownRenderer content={selectedNote.content || ''} />
                                 </div>
                             ) : (
                                 <EmptyState message="Select a note to view" icon="article" />

@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import FloatingInput from '../components/FloatingInput';
 import { signIn } from '../lib/auth';
 
 export default function Login() {
-    const navigate = useNavigate();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -218,7 +217,7 @@ export default function Login() {
 
             {/* Footer */}
             <footer className="w-full text-center py-6 text-xs text-gray-400 border-t border-transparent">
-                © 2025 coreHub. All rights reserved.
+                © 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a>
             </footer>
         </div>
     );

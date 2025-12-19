@@ -22,7 +22,6 @@ export default function Settings() {
 
     // Loading states
     const [isSavingProfile, setIsSavingProfile] = useState(false);
-    const [isSavingUsername, setIsSavingUsername] = useState(false);
     const [isSavingPassword, setIsSavingPassword] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -107,34 +106,6 @@ export default function Settings() {
             showToast('Network error', 'error');
         } finally {
             setIsSavingProfile(false);
-        }
-    };
-
-    const handleSaveUsername = async () => {
-        if (!username.trim()) {
-            showToast('Username is required', 'error');
-            return;
-        }
-
-        if (username.length < 3) {
-            showToast('Username must be at least 3 characters', 'error');
-            return;
-        }
-
-        setIsSavingUsername(true);
-        try {
-            const result = await usersApi.updateUsername(username.trim());
-
-            if (result.success) {
-                showToast('Username updated successfully', 'success');
-                refreshUser?.();
-            } else {
-                showToast(result.message || result.error || 'Failed to update username', 'error');
-            }
-        } catch {
-            showToast('Network error', 'error');
-        } finally {
-            setIsSavingUsername(false);
         }
     };
 
@@ -405,19 +376,75 @@ export default function Settings() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </section>
 
-                            {/* Change Password button only */}
-                            <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-border-light">
-                                <button
-                                    onClick={handleChangePassword}
-                                    disabled={isSavingPassword || !currentPassword || !newPassword || !confirmPassword}
-                                    className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 flex items-center gap-2"
-                                >
-                                    {isSavingPassword && (
-                                        <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
-                                    )}
-                                    Change Password
-                                </button>
+                    {/* Notification Settings Section */}
+                    <section>
+                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-text-primary">Notifications</h2>
+
+                        <div className="bg-white border border-border-light rounded-xl p-8 shadow-sm">
+                            <div className="space-y-6">
+                                {/* Push Notifications */}
+                                <div className="flex items-center justify-between py-2">
+                                    <div>
+                                        <h4 className="font-medium text-gray-900">Push Notifications</h4>
+                                        <p className="text-sm text-gray-500">Receive browser push notifications for reminders</p>
+                                    </div>
+                                    <button
+                                        onClick={async () => {
+                                            if ('Notification' in window) {
+                                                const permission = await Notification.requestPermission();
+                                                if (permission === 'granted') {
+                                                    showToast('Push notifications enabled', 'success');
+                                                } else {
+                                                    showToast('Permission denied', 'error');
+                                                }
+                                            }
+                                        }}
+                                        className="px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                    >
+                                        {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'Enabled ✓' : 'Enable'}
+                                    </button>
+                                </div>
+
+                                <div className="border-t border-gray-100"></div>
+
+                                {/* Habit Reminders */}
+                                <div className="flex items-center justify-between py-2">
+                                    <div>
+                                        <h4 className="font-medium text-gray-900">Habit Reminders</h4>
+                                        <p className="text-sm text-gray-500">Get notified about your daily habits at scheduled times</p>
+                                    </div>
+                                    <div className="w-12 h-7 bg-black rounded-full flex items-center p-0.5 cursor-pointer">
+                                        <div className="w-6 h-6 bg-white rounded-full ml-auto shadow-sm"></div>
+                                    </div>
+                                </div>
+
+                                {/* Schedule Reminders */}
+                                <div className="flex items-center justify-between py-2">
+                                    <div>
+                                        <h4 className="font-medium text-gray-900">Schedule Reminders</h4>
+                                        <p className="text-sm text-gray-500">Receive notifications before scheduled events</p>
+                                    </div>
+                                    <div className="w-12 h-7 bg-black rounded-full flex items-center p-0.5 cursor-pointer">
+                                        <div className="w-6 h-6 bg-white rounded-full ml-auto shadow-sm"></div>
+                                    </div>
+                                </div>
+
+                                {/* Reminder Time */}
+                                <div className="flex items-center justify-between py-2">
+                                    <div>
+                                        <h4 className="font-medium text-gray-900">Reminder Time</h4>
+                                        <p className="text-sm text-gray-500">How early to send event reminders</p>
+                                    </div>
+                                    <select className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:border-gray-400">
+                                        <option value="5">5 minutes before</option>
+                                        <option value="10">10 minutes before</option>
+                                        <option value="15" selected>15 minutes before</option>
+                                        <option value="30">30 minutes before</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -451,7 +478,7 @@ export default function Settings() {
             </main>
 
             <footer className="w-full border-t border-border-light py-8 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50">
-                <p>© 2025 coreHub. All rights reserved.</p>
+                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
                 <div className="mt-2 flex justify-center gap-4">
                     <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Privacy</a>
                     <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Terms</a>

@@ -19,7 +19,7 @@ interface PomodoroState {
 const DEFAULT_CONFIG: PomodoroConfig = {
     focus: 25,
     shortBreak: 5,
-    longBreak: 15,
+    longBreak: 10,
 };
 
 const STORAGE_KEY = 'corehub_pomodoro_state';
@@ -46,7 +46,17 @@ const saveState = (state: PomodoroState) => {
     }
 };
 
-export default function PomodoroTimer() {
+// DragHandle type matching Home.tsx
+interface DragHandleProps {
+    titleProps: React.HTMLAttributes<HTMLDivElement>;
+    icon: React.ReactNode;
+}
+
+interface PomodoroTimerProps {
+    dragHandle?: DragHandleProps;
+}
+
+export default function PomodoroTimer({ dragHandle }: PomodoroTimerProps) {
     const savedState = useRef(loadState());
 
     // Initialize state from localStorage or defaults
@@ -177,10 +187,11 @@ export default function PomodoroTimer() {
                 <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQgALIHO4sd8bwUfbs/YbkmRKTKbzH8cXQY/h8R7EnMDUI64pPsAAHieAACAmYAA" type="audio/wav" />
             </audio>
 
-            <div className="mb-4">
+            <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
                 <span className="text-sm font-bold uppercase tracking-wide text-gray-900">
                     Pomodoro
                 </span>
+                {dragHandle?.icon}
             </div>
 
             {/* Timer Display */}

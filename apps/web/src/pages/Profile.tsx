@@ -131,7 +131,7 @@ export default function Profile() {
             </main>
 
             <footer className="w-full border-t border-border-light py-8 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50">
-                <p>© 2025 coreHub. All rights reserved.</p>
+                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
                 <div className="mt-2 flex justify-center gap-4">
                     <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Privacy</a>
                     <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Terms</a>
