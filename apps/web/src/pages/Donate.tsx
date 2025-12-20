@@ -1,13 +1,235 @@
 
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
+import { feedbackApi, usersApi } from '../lib';
+import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
+
+interface Review {
+    id: string;
+    name: string;
+    avatar?: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+}
 
 export default function Donate() {
+    const { showToast } = useToast();
+    const { user } = useAuth();
+
+    // Feedback form state
+    const [rating, setRating] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
+    const [comment, setComment] = useState('');
+    const [isAnonymous, setIsAnonymous] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [userAvatar, setUserAvatar] = useState<string | null>(null);
+
+    // Helper to construct full URL for uploaded files
+    const getFullAvatarUrl = (imageUrl: string | null | undefined): string => {
+        if (!imageUrl || imageUrl.trim() === '') return '';
+        if (imageUrl.startsWith('http')) return imageUrl;
+        if (imageUrl.startsWith('/uploads/')) {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            return `${apiUrl}${imageUrl}`;
+        }
+        return imageUrl;
+    };
+
+    // Fetch user avatar from API on mount
+    useEffect(() => {
+        const fetchUserAvatar = async () => {
+            try {
+                const result = await usersApi.getMe();
+                if (result.success && result.data) {
+                    const userData = result.data as any;
+                    const fullUrl = getFullAvatarUrl(userData.image);
+                    setUserAvatar(fullUrl || null);
+                }
+            } catch (error) {
+                console.error('Error fetching user:', error);
+            }
+        };
+        fetchUserAvatar();
+    }, []);
+
+    // Reviews state
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterRating, setFilterRating] = useState<number | 'all'>('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const REVIEWS_PER_PAGE = 5;
+
+    // User's own review state
+    const [userReview, setUserReview] = useState<Review | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+
+    // Calculate rating stats
+    const ratingStats = reviews.reduce((acc, review) => {
+        acc[review.rating] = (acc[review.rating] || 0) + 1;
+        return acc;
+    }, {} as Record<number, number>);
+
+    const totalReviews = reviews.length;
+    const averageRating = totalReviews > 0
+        ? (reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1)
+        : '0.0';
+
+    // Filter reviews
+    const filteredReviews = reviews.filter(review => {
+        const matchesSearch = review.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            review.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesRating = filterRating === 'all' || review.rating === filterRating;
+        return matchesSearch && matchesRating;
+    });
+
+    // Sort to put user's own review first
+    const sortedReviews = [...filteredReviews].sort((a, b) => {
+        if (userReview?.id === a.id) return -1;
+        if (userReview?.id === b.id) return 1;
+        return 0; // Keep original order for others
+    });
+
+    // Pagination
+    const totalPages = Math.ceil(sortedReviews.length / REVIEWS_PER_PAGE);
+    const paginatedReviews = sortedReviews.slice(
+        (currentPage - 1) * REVIEWS_PER_PAGE,
+        currentPage * REVIEWS_PER_PAGE
+    );
+
+    // Reset to page 1 when filter/search changes
+    const handleFilterChange = (value: number | 'all') => {
+        setFilterRating(value);
+        setCurrentPage(1);
+    };
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        setCurrentPage(1);
+    };
+
+    // Fetch reviews function (reusable)
+    const fetchReviews = async () => {
+        try {
+            const result = await feedbackApi.getReviews(100); // Fetch more for pagination
+            if (result.success && result.data) {
+                setReviews(result.data as Review[]);
+            }
+        } catch (error) {
+            console.error('Error fetching reviews:', error);
+        } finally {
+            setIsLoadingReviews(false);
+        }
+    };
+
+    // Fetch public reviews on mount
+    useEffect(() => {
+        fetchReviews();
+    }, []);
+
+    // Fetch user's own review and pre-fill form if logged in
+    useEffect(() => {
+        const fetchUserReview = async () => {
+            if (!user) return;
+            try {
+                const result = await feedbackApi.getMyFeedback();
+                if (result.success && result.data && result.data.length > 0) {
+                    const myReview = result.data[0] as Review;
+                    setUserReview(myReview);
+                    // Pre-fill form for editing
+                    setRating(myReview.rating);
+                    setComment(myReview.comment);
+                    setIsAnonymous(myReview.name === 'Anonymous');
+                    setIsEditing(true);
+                }
+            } catch (error) {
+                console.error('Error fetching user review:', error);
+            }
+        };
+        fetchUserReview();
+    }, [user]);
+
+    // Submit feedback handler
+    const handleSubmit = async () => {
+        if (rating === 0) {
+            showToast('Please select a rating', 'error');
+            return;
+        }
+        if (!comment.trim()) {
+            showToast('Please write your feedback', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const result = await feedbackApi.submit({
+                name: isAnonymous ? 'Anonymous' : (user?.name || 'Anonymous'),
+                avatar: isAnonymous ? undefined : (userAvatar || undefined),
+                rating,
+                comment: comment.trim(),
+            });
+
+            if (result.success) {
+                showToast(isEditing ? 'Review updated! ✏️' : 'Thank you for your feedback! 🎉', 'success');
+                // Update userReview with result and refetch all reviews
+                if (result.data) {
+                    setUserReview(result.data as Review);
+                    setIsEditing(true);
+                }
+                fetchReviews(); // Refresh reviews list
+            } else {
+                showToast(result.error || 'Failed to submit feedback', 'error');
+            }
+        } catch (error) {
+            showToast('Network error', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Format relative time
+    const formatRelativeTime = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+        // Handle just now / very recent
+        if (diffMinutes < 1) return 'Just now';
+        if (diffMinutes < 60) return `${diffMinutes} min ago`;
+        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays > 0 && diffDays < 7) return `${diffDays} days ago`;
+        if (diffDays >= 7) return date.toLocaleDateString();
+        // Fallback for edge cases (negative or weird values)
+        return 'Recently';
+    };
+
     return (
-        <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary">
+        <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary relative overflow-hidden">
+            {/* Dynamic Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                {/* Base bg */}
+                <div className="absolute inset-0 bg-gray-50/50"></div>
+
+                {/* Animated Gradient Blobs */}
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300/30 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
+                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
+                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200/30 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
+
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+
+                {/* Radial fade for grid to be softer at edges */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,transparent,white)]"></div>
+            </div>
             <Header subtitle="Donate" />
 
-            <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow">
+            <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow relative z-10">
 
                 {/* Back to Dashboard Control */}
                 <div className="mb-8">
@@ -24,7 +246,13 @@ export default function Donate() {
                     <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6 text-text-primary">Donate</h1>
                     <div className="space-y-4 text-lg text-text-secondary max-w-2xl leading-relaxed">
                         <p>
-                            Thank you for using <strong className="text-text-primary font-semibold">coreHub</strong>.
+                            Thank you for using{' '}
+                            <span className="inline-flex items-center gap-1.5">
+                                <span className="inline-flex items-center justify-center rounded bg-black text-white size-5">
+                                    <span className="material-icons-outlined text-sm">hub</span>
+                                </span>
+                                <strong className="text-text-primary font-semibold">coreHub</strong>
+                            </span>.
                         </p>
                         <p>
                             Your donation is appreciated and will ensure the future development of coreHub.
@@ -113,16 +341,279 @@ export default function Donate() {
                         </button>
                     </div>
                 </section>
+
+                <hr className="border-border-light my-12" />
+
+                {/* Feedback & Review Section */}
+                <section>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+                            <span className="material-icons-outlined text-gray-400">rate_review</span>
+                            Share Your Feedback
+                        </h2>
+                        <div className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                            REVIEWS
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-border-light rounded-lg p-6 shadow-sm">
+                        <p className="text-sm text-gray-600 mb-6">
+                            Your feedback helps us improve coreHub. Share your experience and it may be featured as a review!
+                        </p>
+
+                        {/* Rating */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((starNum) => (
+                                    <button
+                                        key={starNum}
+                                        type="button"
+                                        onClick={() => setRating(starNum)}
+                                        onMouseEnter={() => setHoverRating(starNum)}
+                                        onMouseLeave={() => setHoverRating(0)}
+                                        className="p-1 hover:scale-110 transition-transform"
+                                    >
+                                        <svg
+                                            className={`w-7 h-7 transition-colors ${starNum <= (hoverRating || rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+                                            fill="currentColor"
+                                            viewBox="0 0 20 20"
+                                        >
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                        </svg>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Feedback Text */}
+                        <div className="mb-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Your Feedback</label>
+                            <textarea
+                                placeholder="Tell us about your experience with coreHub... What do you love? What could be improved?"
+                                value={comment}
+                                onChange={(e) => setComment(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400 resize-none bg-gray-50 focus:bg-white transition-colors"
+                                rows={4}
+                            />
+                        </div>
+
+                        {/* Anonymous Checkbox */}
+                        <div className="flex items-center gap-3 mb-6">
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isAnonymous}
+                                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                            </label>
+                            <span className="text-sm text-gray-600">
+                                Post as <span className="font-medium text-gray-900">{isAnonymous ? 'Anonymous' : (user?.name || 'Anonymous')}</span>
+                            </span>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className={`px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            {isSubmitting ? (
+                                <span className="material-icons-outlined text-base animate-spin">refresh</span>
+                            ) : (
+                                <span className="material-icons-outlined text-base">{isEditing ? 'edit' : 'send'}</span>
+                            )}
+                            {isSubmitting ? 'Saving...' : (isEditing ? 'Update Review' : 'Submit')}
+                        </button>
+                    </div>
+
+                    {/* Reviews Section */}
+                    <div className="mt-10">
+                        {/* Rating Summary Header */}
+                        {!isLoadingReviews && reviews.length > 0 && (
+                            <div className="flex flex-col md:flex-row gap-8 mb-8 p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+                                {/* Average Rating */}
+                                <div className="flex flex-col items-center justify-center md:border-r border-gray-200 md:pr-8">
+                                    <span className="text-5xl font-bold text-amber-500">{averageRating}</span>
+                                    <div className="flex gap-0.5 my-2">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <svg key={star} className={`w-5 h-5 ${star <= Math.round(Number(averageRating)) ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                            </svg>
+                                        ))}
+                                    </div>
+                                    <span className="text-sm text-amber-600 font-medium">App Rating</span>
+                                </div>
+
+                                {/* Rating Distribution */}
+                                <div className="flex-1 space-y-2">
+                                    {[5, 4, 3, 2, 1].map((star) => {
+                                        const count = ratingStats[star] || 0;
+                                        const percent = totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
+                                        return (
+                                            <div key={star} className="flex items-center gap-3">
+                                                <div className="flex gap-0.5 min-w-[80px]">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <svg key={i} className={`w-3.5 h-3.5 ${i < star ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                        </svg>
+                                                    ))}
+                                                </div>
+                                                <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-amber-400 rounded-full transition-all duration-300"
+                                                        style={{ width: `${percent}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-xs text-gray-500 min-w-[40px] text-right">{percent}%</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Reviews Header with Search & Filter */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <h3 className="text-xl font-bold text-gray-900">Reviews</h3>
+                            <div className="flex gap-3">
+                                <div className="relative flex-1 sm:flex-initial">
+                                    <input
+                                        type="text"
+                                        placeholder="Search reviews"
+                                        value={searchQuery}
+                                        onChange={(e) => handleSearchChange(e.target.value)}
+                                        className="w-full sm:w-64 pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400 bg-white"
+                                    />
+                                    <button className="absolute right-0 top-0 h-full px-3 bg-primary text-white rounded-r-lg hover:bg-gray-800 transition-colors">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        value={filterRating === 'all' ? 'all' : filterRating}
+                                        onChange={(e) => handleFilterChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                                        className="appearance-none px-4 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400 bg-white cursor-pointer"
+                                    >
+                                        <option value="all">All ratings</option>
+                                        <option value="5">5 Stars</option>
+                                        <option value="4">4 Stars</option>
+                                        <option value="3">3 Stars</option>
+                                        <option value="2">2 Stars</option>
+                                        <option value="1">1 Star</option>
+                                    </select>
+                                    <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Reviews List */}
+                        {isLoadingReviews ? (
+                            <div className="flex items-center justify-center py-12">
+                                <span className="material-icons-outlined text-3xl animate-spin text-gray-400">refresh</span>
+                            </div>
+                        ) : filteredReviews.length === 0 ? (
+                            <p className="text-sm text-gray-400 text-center py-12 bg-white border border-gray-200 rounded-xl">
+                                {reviews.length === 0 ? 'No reviews yet. Be the first to share your feedback!' : 'No reviews match your search.'}
+                            </p>
+                        ) : (
+                            <div className="space-y-4">
+                                {paginatedReviews.map((review) => {
+                                    const isOwnReview = userReview?.id === review.id;
+                                    return (
+                                        <div
+                                            key={review.id}
+                                            className={`rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow border ${isOwnReview ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200' : 'bg-white border-gray-200'}`}
+                                        >
+                                            {isOwnReview && (
+                                                <div className="flex items-center gap-2 mb-3 text-amber-600">
+                                                    <span className="material-icons-outlined text-sm">verified</span>
+                                                    <span className="text-xs font-semibold uppercase tracking-wide">Your Review</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-start gap-4">
+                                                {/* Avatar */}
+                                                {review.avatar ? (
+                                                    <img
+                                                        src={getFullAvatarUrl(review.avatar)}
+                                                        alt={review.name}
+                                                        className="w-12 h-12 rounded-full object-cover shrink-0 shadow"
+                                                    />
+                                                ) : (
+                                                    <div
+                                                        className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white uppercase shrink-0"
+                                                        style={{
+                                                            background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
+                                                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)'
+                                                        }}
+                                                    >
+                                                        {review.name?.[0] || '?'}
+                                                    </div>
+                                                )}
+
+                                                {/* Content */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-3 flex-wrap">
+                                                        <span className="font-semibold text-gray-900">{review.name}</span>
+                                                        <div className="flex gap-0.5">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <svg key={i} className={`w-4 h-4 ${i < review.rating ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                                                </svg>
+                                                            ))}
+                                                        </div>
+                                                        <span className="text-xs text-gray-400">{formatRelativeTime(review.createdAt)}</span>
+                                                    </div>
+                                                    <p className="text-gray-600 mt-2 leading-relaxed">{review.comment}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {!isLoadingReviews && totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 mt-6">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${currentPage === 1 ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                    ← Prev
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => setCurrentPage(page)}
+                                        className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${currentPage === page ? 'bg-primary text-white' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${currentPage === totalPages ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                                >
+                                    Next →
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </section>
             </main>
 
-            <footer className="w-full border-t border-border-light py-8 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50">
-                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
-                <div className="mt-2 flex justify-center gap-4">
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Privacy</a>
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Terms</a>
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Contact</a>
-                </div>
+            <footer className="w-full border-t border-border-light py-5 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50/50 relative z-10">
+                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://linkedin.com/in/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
             </footer>
-        </div>
+        </div >
     );
 }

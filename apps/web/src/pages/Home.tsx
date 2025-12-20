@@ -27,8 +27,10 @@ import PomodoroTimer from '../components/PomodoroTimer';
 import ClockWidget from '../components/ClockWidget';
 import LocationWidget from '../components/LocationWidget';
 import { schedulesApi } from '../lib';
+import { useToast } from '../context/ToastContext';
 
 const WIDGET_ORDER_KEY = 'corehub_widget_order_v4';
+const GREETING_SHOWN_KEY = 'corehub_greeting_shown';
 
 type WidgetId = 'time' | 'quickAction' | 'calendar' | 'pomodoro';
 
@@ -109,6 +111,22 @@ export default function Home() {
     const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
     const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
 
+    // Toast for greeting
+    const { showToast } = useToast();
+
+    // Show greeting for new users (first time visiting dashboard)
+    useEffect(() => {
+        const hasSeenGreeting = localStorage.getItem(GREETING_SHOWN_KEY);
+        if (!hasSeenGreeting) {
+            // Small delay to let page render first
+            const timer = setTimeout(() => {
+                showToast('Welcome to coreHub! Your productivity journey starts now 🚀', 'success');
+                localStorage.setItem(GREETING_SHOWN_KEY, 'true');
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
+
     // Widget order: first item is main (big), rest are sidebar
     const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(() => {
         try {
@@ -170,10 +188,10 @@ export default function Home() {
                     setSchedules(result.data.map(s => ({
                         id: s.id?.toString() || '',
                         title: s.title,
-                        startTime: (s as any).startTime || s.time || '',
-                        endTime: (s as any).endTime,
-                        location: (s as any).location,
-                        description: (s as any).description
+                        startTime: s.startTime || s.time || '',
+                        endTime: s.endTime,
+                        location: s.location,
+                        description: s.description
                     })));
                 } else {
                     setSchedules([]);
@@ -246,9 +264,7 @@ export default function Home() {
 
             case 'pomodoro':
                 return isMain ? (
-                    <div className="z-10 flex-1 flex items-center justify-center">
-                        <div className="w-full max-w-md"><PomodoroTimer /></div>
-                    </div>
+                    <PomodoroTimer isMain />
                 ) : <PomodoroTimer dragHandle={dragHandle} />;
 
             case 'quickAction':
@@ -299,7 +315,7 @@ export default function Home() {
                                 <div className="flex items-center justify-between mb-4">
                                     <div
                                         className={`flex items-center ${dragHandle ? 'cursor-grab active:cursor-grabbing select-none group/title' : ''}`}
-                                        {...(dragHandle ? (({ className: _unused, ...rest }) => rest)(dragHandle.titleProps) : {})}
+                                        {...(dragHandle ? (({ className: _, ...rest }) => rest)(dragHandle.titleProps) : {})}
                                     >
                                         <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Calendar</h2>
                                         {dragHandle?.icon}
@@ -472,11 +488,26 @@ export default function Home() {
                                             </section>
                                         ) : (
                                             <SortableWidget id={mainWidget} isMain>
-                                                {(dragHandle) => mainWidget === 'pomodoro' || mainWidget === 'calendar' ? (
-                                                    // Pomodoro and Calendar have their own container
+                                                {(dragHandle) => mainWidget === 'calendar' ? (
+                                                    // Calendar has its own container
                                                     <div className="relative group flex-1 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                                                         {renderWidget(mainWidget, true, dragHandle)}
                                                     </div>
+                                                ) : mainWidget === 'pomodoro' ? (
+                                                    // Pomodoro - use section container like other widgets
+                                                    <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
+                                                        <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
+                                                            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
+                                                                {widgetLabels[mainWidget]}
+                                                            </h2>
+                                                            {dragHandle?.icon}
+                                                        </div>
+                                                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                                                            backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                                                            backgroundSize: '24px 24px',
+                                                        }}></div>
+                                                        {renderWidget(mainWidget, true)}
+                                                    </section>
                                                 ) : (
                                                     <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
                                                         <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>

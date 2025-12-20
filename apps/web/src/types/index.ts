@@ -68,6 +68,7 @@ export interface ScheduleEvent {
     date: number; // day of month
     time: string;
     startTime: string;
+    endTime?: string;
     title: string;
     color: string; // class for border/text styling e.g. "border-gray-600"
     location?: string;
@@ -90,7 +91,8 @@ export interface UserProfile {
     role: string;
     email: string;
     bio: string;
-    avatar: string; // url
+    avatar: string; // url (legacy)
+    image?: string; // url (from API)
 }
 
 export interface AdminStat {

@@ -20,8 +20,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
     const showToast = (message: string, type: ToastType = 'success') => {
-        const id = Math.random().toString(36).substring(2, 9);
-        setToasts((prev) => [...prev, { id, message, type }]);
+        // Prevent duplicate toasts with the same message
+        setToasts((prev) => {
+            // If same message already exists, don't add new toast
+            if (prev.some((t) => t.message === message)) {
+                return prev;
+            }
+            const id = Math.random().toString(36).substring(2, 9);
+            return [...prev, { id, message, type }];
+        });
     };
 
     const removeToast = (id: string) => {

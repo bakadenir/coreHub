@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
 
@@ -54,32 +54,93 @@ interface DragHandleProps {
 
 interface PomodoroTimerProps {
     dragHandle?: DragHandleProps;
+    isMain?: boolean;
 }
 
-export default function PomodoroTimer({ dragHandle }: PomodoroTimerProps) {
-    const savedState = useRef(loadState());
+// Play alarm sound using Web Audio API (~3 seconds)
+const playAlarmSound = () => {
+    try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-    // Initialize state from localStorage or defaults
-    const [mode, setMode] = useState<TimerMode>(() => savedState.current?.mode || 'focus');
-    const [timeLeft, setTimeLeft] = useState(() => {
-        if (savedState.current?.timeLeft && savedState.current?.isRunning && savedState.current?.lastUpdate) {
-            // Calculate elapsed time since last update
-            const elapsed = Math.floor((Date.now() - savedState.current.lastUpdate) / 1000);
-            const remaining = savedState.current.timeLeft - elapsed;
-            return remaining > 0 ? remaining : 0;
+        // Chime pattern: multiple tones with increasing pitch
+        const playTone = (frequency: number, startTime: number, duration: number) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+
+            // Envelope: quick attack, sustain, fade out
+            const now = audioContext.currentTime + startTime;
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.3, now + 0.05);
+            gainNode.gain.setValueAtTime(0.3, now + duration - 0.1);
+            gainNode.gain.linearRampToValueAtTime(0, now + duration);
+
+            oscillator.start(now);
+            oscillator.stop(now + duration);
+        };
+
+        // Play a pleasant chime pattern (3 repeats, ~3 seconds total)
+        const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 (C major chord)
+
+        for (let repeat = 0; repeat < 3; repeat++) {
+            const baseTime = repeat * 1.0;
+            notes.forEach((freq, i) => {
+                playTone(freq, baseTime + i * 0.15, 0.4);
+            });
         }
-        return savedState.current?.timeLeft || DEFAULT_CONFIG.focus * 60;
-    });
-    const [isRunning, setIsRunning] = useState(() => {
-        if (savedState.current?.isRunning && savedState.current?.lastUpdate) {
-            const elapsed = Math.floor((Date.now() - savedState.current.lastUpdate) / 1000);
-            const remaining = (savedState.current.timeLeft || 0) - elapsed;
-            return remaining > 0;
-        }
-        return false;
-    });
-    const [sessions, setSessions] = useState(() => savedState.current?.sessions || 0);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+        // Close audio context after sound finishes
+        setTimeout(() => audioContext.close(), 4000);
+    } catch (e) {
+        console.warn('Could not play alarm sound:', e);
+    }
+};
+
+// Get initial saved state once (outside component to avoid re-running on each render)
+const getInitialState = () => {
+    const saved = loadState();
+    if (!saved) {
+        return {
+            mode: 'focus' as TimerMode,
+            timeLeft: DEFAULT_CONFIG.focus * 60,
+            isRunning: false,
+            sessions: 0,
+        };
+    }
+
+    let timeLeft = saved.timeLeft || DEFAULT_CONFIG.focus * 60;
+    let isRunning = false;
+
+    // Calculate elapsed time if timer was running
+    if (saved.isRunning && saved.lastUpdate && saved.timeLeft) {
+        const elapsed = Math.floor((Date.now() - saved.lastUpdate) / 1000);
+        const remaining = saved.timeLeft - elapsed;
+        timeLeft = remaining > 0 ? remaining : 0;
+        isRunning = remaining > 0;
+    }
+
+    return {
+        mode: saved.mode || 'focus' as TimerMode,
+        timeLeft,
+        isRunning,
+        sessions: saved.sessions || 0,
+    };
+};
+
+export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTimerProps) {
+    // Use lazy initialization to get initial state only once
+    const [initialState] = useState(getInitialState);
+
+    // Initialize state from cached initial state
+    const [mode, setMode] = useState<TimerMode>(initialState.mode);
+    const [timeLeft, setTimeLeft] = useState(initialState.timeLeft);
+    const [isRunning, setIsRunning] = useState(initialState.isRunning);
+    const [sessions, setSessions] = useState(initialState.sessions);
 
     // Get duration based on mode
     const getModeDuration = useCallback((m: TimerMode) => {
@@ -128,15 +189,14 @@ export default function PomodoroTimer({ dragHandle }: PomodoroTimerProps) {
             setIsRunning(false);
 
             // Play notification sound
-            if (audioRef.current) {
-                audioRef.current.play().catch(() => { });
-            }
+            playAlarmSound();
 
             // Show notification if permitted
             if ('Notification' in window && Notification.permission === 'granted') {
                 new Notification('Pomodoro Timer', {
                     body: mode === 'focus' ? 'Time for a break!' : 'Back to focus!',
-                    icon: '/favicon.ico',
+                    icon: '/pomodoro-icon.png',
+                    badge: '/pomodoro-icon.png',
                 });
             }
 
@@ -180,34 +240,43 @@ export default function PomodoroTimer({ dragHandle }: PomodoroTimerProps) {
         { mode: 'longBreak', label: 'Long Break' },
     ];
 
-    return (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-            {/* Hidden audio element for notification sound */}
-            <audio ref={audioRef} preload="auto">
-                <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleQgALIHO4sd8bwUfbs/YbkmRKTKbzH8cXQY/h8R7EnMDUI64pPsAAHieAACAmYAA" type="audio/wav" />
-            </audio>
+    // Size classes based on isMain
+    const timerClasses = isMain
+        ? 'text-[8rem] sm:text-[10rem] md:text-[12rem]'
+        : 'text-5xl';
+    const buttonClasses = isMain
+        ? 'py-3 px-8 text-base'
+        : 'py-2 px-4 text-sm';
+    const modeButtonClasses = isMain
+        ? 'py-2 text-sm'
+        : 'py-1 text-xs';
 
-            <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
-                <span className="text-sm font-bold uppercase tracking-wide text-gray-900">
-                    Pomodoro
-                </span>
-                {dragHandle?.icon}
-            </div>
+    const content = (
+        <>
+            {/* Title - only show if not main or if dragHandle exists */}
+            {(!isMain || dragHandle) && (
+                <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
+                    <span className="text-sm font-bold uppercase tracking-wide text-gray-900">
+                        Pomodoro
+                    </span>
+                    {dragHandle?.icon}
+                </div>
+            )}
 
             {/* Timer Display */}
-            <div className="flex justify-center mb-6">
-                <div className="text-5xl font-mono font-bold text-primary tracking-tighter py-2">
+            <div className={`flex justify-center ${isMain ? 'mb-8' : 'mb-6'}`}>
+                <div className={`${timerClasses} leading-none font-mono font-bold text-primary tracking-tighter`}>
                     {formatTime(timeLeft)}
                 </div>
             </div>
 
             {/* Mode Selector */}
-            <div className="flex gap-2 mb-6">
+            <div className={`flex ${isMain ? 'gap-4 max-w-lg mx-auto mb-8' : 'gap-2 mb-6'}`}>
                 {modeButtons.map(({ mode: m, label }) => (
                     <button
                         key={m}
                         onClick={() => switchMode(m)}
-                        className={`flex-1 py-1 text-xs font-medium rounded transition-colors ${mode === m
+                        className={`flex-1 ${modeButtonClasses} font-medium rounded transition-colors ${mode === m
                             ? 'bg-gray-100 text-gray-900 border border-gray-200'
                             : 'hover:bg-gray-50 text-gray-500'
                             }`}
@@ -218,10 +287,10 @@ export default function PomodoroTimer({ dragHandle }: PomodoroTimerProps) {
             </div>
 
             {/* Control Buttons */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid grid-cols-2 ${isMain ? 'gap-4 max-w-md mx-auto' : 'gap-3'}`}>
                 <button
                     onClick={toggleTimer}
-                    className={`py-2 px-4 rounded-lg text-sm font-semibold transition-all ${isRunning
+                    className={`${buttonClasses} rounded-lg font-semibold transition-all ${isRunning
                         ? 'bg-yellow-500 text-white hover:bg-yellow-600'
                         : 'bg-primary text-white hover:opacity-90'
                         }`}
@@ -230,14 +299,14 @@ export default function PomodoroTimer({ dragHandle }: PomodoroTimerProps) {
                 </button>
                 <button
                     onClick={resetTimer}
-                    className="py-2 px-4 rounded-lg bg-transparent border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                    className={`${buttonClasses} rounded-lg bg-transparent border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors`}
                 >
                     Reset
                 </button>
             </div>
 
             {/* Status */}
-            <div className="mt-5 flex items-center gap-2 justify-center text-xs text-gray-400">
+            <div className={`${isMain ? 'mt-8 text-sm' : 'mt-5 text-xs'} flex items-center gap-2 justify-center text-gray-400`}>
                 <span className="material-icons-outlined text-[14px]">
                     {isRunning ? 'timer' : 'notifications'}
                 </span>
@@ -246,6 +315,18 @@ export default function PomodoroTimer({ dragHandle }: PomodoroTimerProps) {
                     : 'Alarm when finished'
                 }
             </div>
+        </>
+    );
+
+    // If isMain, don't wrap with container (parent already has it)
+    if (isMain) {
+        return <div className="flex flex-col items-center justify-center flex-1 p-4">{content}</div>;
+    }
+
+    // Sidebar version with container
+    return (
+        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            {content}
         </div>
     );
 }

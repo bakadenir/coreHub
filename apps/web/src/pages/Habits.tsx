@@ -7,7 +7,7 @@ import ActionMenu from '../components/ActionMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { habitsApi } from '../lib';
 import type { Habit } from '../types';
-import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { TableSkeleton, EmptyState, ErrorState } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 
 export default function Habits() {
@@ -231,7 +231,7 @@ export default function Habits() {
 
                                 {/* Content */}
                                 {isLoading ? (
-                                    <LoadingSpinner message="Loading habits..." />
+                                    <TableSkeleton rows={5} />
                                 ) : error ? (
                                     <ErrorState message={error} onRetry={fetchHabits} />
                                 ) : habits.length === 0 ? (

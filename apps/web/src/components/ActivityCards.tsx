@@ -11,7 +11,7 @@ import {
     useSensor,
     useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
 import {
     arrayMove,
     SortableContext,
@@ -195,11 +195,6 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         }
     }, [panelOrder]);
 
-    // Handle drag start (kept for potential future use, no-op now)
-    const handleDragStart = (_event: DragStartEvent) => {
-        // Previously set activeId for DragOverlay
-    };
-
     // Handle drag end
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -332,11 +327,29 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 min-h-[160px] animate-pulse">
-                        <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 min-h-[160px]">
+                        {/* Header skeleton */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="w-24 h-4 bg-gray-200 rounded animate-pulse"></div>
+                            </div>
+                            <div className="w-6 h-6 bg-gray-100 rounded-full animate-pulse"></div>
+                        </div>
+                        {/* Content skeleton */}
                         <div className="space-y-3">
-                            <div className="h-3 bg-gray-100 rounded w-full"></div>
-                            <div className="h-3 bg-gray-100 rounded w-2/3"></div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="w-32 h-3 bg-gray-100 rounded animate-pulse"></div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="w-28 h-3 bg-gray-100 rounded animate-pulse"></div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 bg-gray-200 rounded animate-pulse"></div>
+                                <div className="w-36 h-3 bg-gray-100 rounded animate-pulse"></div>
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -348,7 +361,6 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
             <SortableContext items={panelOrder} strategy={rectSortingStrategy}>

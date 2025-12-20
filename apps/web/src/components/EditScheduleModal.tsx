@@ -35,8 +35,8 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
             }
 
             // Parse endTime if exists
-            if ((event as any).endTime) {
-                const date = new Date((event as any).endTime);
+            if (event.endTime) {
+                const date = new Date(event.endTime);
                 setEndDate(date.toISOString().split('T')[0]);
                 setEndTime(date.toTimeString().slice(0, 5));
             } else {

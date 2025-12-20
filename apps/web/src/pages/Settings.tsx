@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import AvatarUpload from '../components/AvatarUpload';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { usersApi } from '../lib';
+import { usersApi, notificationsApi } from '../lib';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -30,6 +30,13 @@ export default function Settings() {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+
+    // Notification settings state
+    const [habitReminders, setHabitReminders] = useState(true);
+    const [scheduleReminders, setScheduleReminders] = useState(true);
+    const [scheduleReminderMinutes, setScheduleReminderMinutes] = useState(15);
+    const [isLoadingNotifSettings, setIsLoadingNotifSettings] = useState(false);
+    const [isSavingNotifSetting, setIsSavingNotifSetting] = useState(false);
 
     // Helper to construct full URL for uploaded files
     const getFullAvatarUrl = (imageUrl: string | null | undefined): string => {
@@ -66,6 +73,26 @@ export default function Settings() {
             }
         };
         fetchUser();
+    }, []);
+
+    // Load notification settings on mount
+    useEffect(() => {
+        const fetchNotificationSettings = async () => {
+            setIsLoadingNotifSettings(true);
+            try {
+                const result = await notificationsApi.getSettings();
+                if (result.success && result.data) {
+                    setHabitReminders(result.data.habitReminders);
+                    setScheduleReminders(result.data.scheduleReminders);
+                    setScheduleReminderMinutes(result.data.scheduleReminderMinutes);
+                }
+            } catch (error) {
+                console.error('Error fetching notification settings:', error);
+            } finally {
+                setIsLoadingNotifSettings(false);
+            }
+        };
+        fetchNotificationSettings();
     }, []);
 
     const handleSaveProfile = async () => {
@@ -194,14 +221,51 @@ export default function Settings() {
         }
     };
 
+    // Handler for updating notification settings
+    const updateNotificationSetting = async (key: 'habitReminders' | 'scheduleReminders' | 'scheduleReminderMinutes', value: boolean | number) => {
+        if (isSavingNotifSetting) return; // Prevent spam clicks
+        setIsSavingNotifSetting(true);
+        try {
+            const result = await notificationsApi.updateSettings({ [key]: value });
+            if (result.success) {
+                if (key === 'habitReminders') setHabitReminders(value as boolean);
+                if (key === 'scheduleReminders') setScheduleReminders(value as boolean);
+                if (key === 'scheduleReminderMinutes') setScheduleReminderMinutes(value as number);
+                showToast('Settings updated', 'success');
+            } else {
+                showToast(result.error || 'Failed to update settings', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        } finally {
+            setIsSavingNotifSetting(false);
+        }
+    };
+
     const email = user?.email || '';
     const role = user?.role || 'user';
 
     return (
-        <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary">
+        <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary relative overflow-hidden">
+            {/* Dynamic Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                {/* Base bg */}
+                <div className="absolute inset-0 bg-gray-50/50"></div>
+
+                {/* Animated Gradient Blobs */}
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300/30 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
+                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
+                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200/30 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
+
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+
+                {/* Radial fade for grid to be softer at edges */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,transparent,white)]"></div>
+            </div>
             <Header subtitle="Settings" />
 
-            <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow">
+            <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow relative z-10">
 
                 {/* Back to Dashboard Control */}
                 <div className="mb-8">
@@ -384,68 +448,100 @@ export default function Settings() {
                         <h2 className="text-2xl font-bold tracking-tight mb-8 text-text-primary">Notifications</h2>
 
                         <div className="bg-white border border-border-light rounded-xl p-8 shadow-sm">
-                            <div className="space-y-6">
-                                {/* Push Notifications */}
-                                <div className="flex items-center justify-between py-2">
-                                    <div>
-                                        <h4 className="font-medium text-gray-900">Push Notifications</h4>
-                                        <p className="text-sm text-gray-500">Receive browser push notifications for reminders</p>
-                                    </div>
-                                    <button
-                                        onClick={async () => {
-                                            if ('Notification' in window) {
-                                                const permission = await Notification.requestPermission();
-                                                if (permission === 'granted') {
-                                                    showToast('Push notifications enabled', 'success');
-                                                } else {
-                                                    showToast('Permission denied', 'error');
-                                                }
-                                            }
-                                        }}
-                                        className="px-4 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                                    >
-                                        {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'Enabled ✓' : 'Enable'}
-                                    </button>
+                            {isLoadingNotifSettings ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <span className="material-icons-outlined text-2xl animate-spin text-gray-400">refresh</span>
                                 </div>
-
-                                <div className="border-t border-gray-100"></div>
-
-                                {/* Habit Reminders */}
-                                <div className="flex items-center justify-between py-2">
-                                    <div>
-                                        <h4 className="font-medium text-gray-900">Habit Reminders</h4>
-                                        <p className="text-sm text-gray-500">Get notified about your daily habits at scheduled times</p>
+                            ) : (
+                                <div className="space-y-6">
+                                    {/* Push Notifications */}
+                                    <div className="flex items-center justify-between py-2">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900">Push Notifications</h4>
+                                            <p className="text-sm text-gray-500">Receive browser push notifications for reminders</p>
+                                        </div>
+                                        {typeof Notification !== 'undefined' && Notification.permission === 'denied' ? (
+                                            <div className="text-right">
+                                                <span className="px-4 py-2 text-sm font-medium bg-red-100 text-red-700 rounded-lg">
+                                                    Blocked
+                                                </span>
+                                                <p className="text-xs text-gray-400 mt-1">Reset in browser settings</p>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={async () => {
+                                                    if ('Notification' in window && Notification.permission === 'default') {
+                                                        const permission = await Notification.requestPermission();
+                                                        if (permission === 'granted') {
+                                                            showToast('Push notifications enabled', 'success');
+                                                        } else if (permission === 'denied') {
+                                                            showToast('Permission blocked. Reset in browser settings.', 'error');
+                                                        }
+                                                    }
+                                                }}
+                                                disabled={typeof Notification !== 'undefined' && Notification.permission === 'granted'}
+                                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${typeof Notification !== 'undefined' && Notification.permission === 'granted'
+                                                    ? 'bg-green-100 text-green-700 cursor-default'
+                                                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                                    }`}
+                                            >
+                                                {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? 'Enabled ✓' : 'Enable'}
+                                            </button>
+                                        )}
                                     </div>
-                                    <div className="w-12 h-7 bg-black rounded-full flex items-center p-0.5 cursor-pointer">
-                                        <div className="w-6 h-6 bg-white rounded-full ml-auto shadow-sm"></div>
+
+                                    <div className="border-t border-gray-100"></div>
+
+                                    {/* Habit Reminders */}
+                                    <div className="flex items-center justify-between py-2">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900">Habit Reminders</h4>
+                                            <p className="text-sm text-gray-500">Get notified about your daily habits at scheduled times</p>
+                                        </div>
+                                        <button
+                                            onClick={() => updateNotificationSetting('habitReminders', !habitReminders)}
+                                            disabled={isSavingNotifSetting}
+                                            className={`w-12 h-7 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${habitReminders ? 'bg-black' : 'bg-gray-300'} ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-all ${habitReminders ? 'ml-auto' : 'ml-0'}`}></div>
+                                        </button>
+                                    </div>
+
+                                    {/* Schedule Reminders */}
+                                    <div className="flex items-center justify-between py-2">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900">Schedule Reminders</h4>
+                                            <p className="text-sm text-gray-500">Receive notifications before scheduled events</p>
+                                        </div>
+                                        <button
+                                            onClick={() => updateNotificationSetting('scheduleReminders', !scheduleReminders)}
+                                            disabled={isSavingNotifSetting}
+                                            className={`w-12 h-7 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${scheduleReminders ? 'bg-black' : 'bg-gray-300'} ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-all ${scheduleReminders ? 'ml-auto' : 'ml-0'}`}></div>
+                                        </button>
+                                    </div>
+
+                                    {/* Reminder Time */}
+                                    <div className="flex items-center justify-between py-2">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900">Reminder Time</h4>
+                                            <p className="text-sm text-gray-500">How early to send event reminders</p>
+                                        </div>
+                                        <select
+                                            value={scheduleReminderMinutes}
+                                            onChange={(e) => updateNotificationSetting('scheduleReminderMinutes', Number(e.target.value))}
+                                            disabled={isSavingNotifSetting}
+                                            className={`px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:border-gray-400 ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            <option value={5}>5 minutes before</option>
+                                            <option value={10}>10 minutes before</option>
+                                            <option value={15}>15 minutes before</option>
+                                            <option value={30}>30 minutes before</option>
+                                        </select>
                                     </div>
                                 </div>
-
-                                {/* Schedule Reminders */}
-                                <div className="flex items-center justify-between py-2">
-                                    <div>
-                                        <h4 className="font-medium text-gray-900">Schedule Reminders</h4>
-                                        <p className="text-sm text-gray-500">Receive notifications before scheduled events</p>
-                                    </div>
-                                    <div className="w-12 h-7 bg-black rounded-full flex items-center p-0.5 cursor-pointer">
-                                        <div className="w-6 h-6 bg-white rounded-full ml-auto shadow-sm"></div>
-                                    </div>
-                                </div>
-
-                                {/* Reminder Time */}
-                                <div className="flex items-center justify-between py-2">
-                                    <div>
-                                        <h4 className="font-medium text-gray-900">Reminder Time</h4>
-                                        <p className="text-sm text-gray-500">How early to send event reminders</p>
-                                    </div>
-                                    <select className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:border-gray-400">
-                                        <option value="5">5 minutes before</option>
-                                        <option value="10">10 minutes before</option>
-                                        <option value="15" selected>15 minutes before</option>
-                                        <option value="30">30 minutes before</option>
-                                    </select>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </section>
 
@@ -477,13 +573,8 @@ export default function Settings() {
                 </div>
             </main>
 
-            <footer className="w-full border-t border-border-light py-8 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50">
-                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
-                <div className="mt-2 flex justify-center gap-4">
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Privacy</a>
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Terms</a>
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Contact</a>
-                </div>
+            <footer className="w-full border-t border-border-light py-5 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50/50 relative z-10">
+                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://linkedin.com/in/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
             </footer>
 
             {/* Delete Account Confirmation Dialog */}

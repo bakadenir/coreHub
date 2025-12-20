@@ -59,10 +59,26 @@ export default function Profile() {
     const avatar = (userImage && userImage.trim() !== '') ? userImage : defaultAvatar;
 
     return (
-        <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary">
+        <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary relative overflow-hidden">
+            {/* Dynamic Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                {/* Base bg */}
+                <div className="absolute inset-0 bg-gray-50/50"></div>
+
+                {/* Animated Gradient Blobs */}
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300/30 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
+                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
+                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200/30 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
+
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+
+                {/* Radial fade for grid to be softer at edges */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,transparent,white)]"></div>
+            </div>
             <Header subtitle="Profile" />
 
-            <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow">
+            <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow relative z-10">
 
                 {/* Back to Dashboard Control */}
                 <div className="mb-8">
@@ -130,13 +146,8 @@ export default function Profile() {
                 </div>
             </main>
 
-            <footer className="w-full border-t border-border-light py-8 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50">
-                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
-                <div className="mt-2 flex justify-center gap-4">
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Privacy</a>
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Terms</a>
-                    <a className="hover:text-black underline decoration-1 underline-offset-2" href="#">Contact</a>
-                </div>
+            <footer className="w-full border-t border-border-light py-5 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50/50 relative z-10">
+                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://linkedin.com/in/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
             </footer>
         </div>
     );

@@ -19,6 +19,7 @@ import notificationsRouter from './routes/notifications.routes';
 import pushRouter from './routes/push.routes';
 import notificationSettingsRouter from './routes/notification-settings.routes';
 import sseRouter from './routes/sse.routes';
+import feedbackRouter from './routes/feedback.routes';
 
 // Import scheduler
 import { startScheduler } from './services/scheduler.service';
@@ -52,6 +53,7 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/notification-settings', notificationSettingsRouter);
 app.use('/api/sse', sseRouter);
+app.use('/api/feedback', feedbackRouter);
 
 // Health check
 app.get('/api/health', (_, res) => {

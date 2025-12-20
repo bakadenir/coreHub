@@ -53,7 +53,23 @@ export default function ForgotPassword() {
     };
 
     return (
-        <div className="bg-background-light text-gray-900 font-sans antialiased min-h-screen flex flex-col transition-colors duration-300">
+        <div className="bg-background-light text-gray-900 font-sans antialiased min-h-screen flex flex-col transition-colors duration-300 relative overflow-hidden">
+            {/* Dynamic Background */}
+            <div className="absolute inset-0 z-0 pointer-events-none">
+                {/* Base bg */}
+                <div className="absolute inset-0 bg-gray-50/50"></div>
+
+                {/* Animated Gradient Blobs */}
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300/30 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
+                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
+                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200/30 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
+
+                {/* Grid Overlay */}
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+
+                {/* Radial fade for grid to be softer at edges */}
+                <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,transparent,white)]"></div>
+            </div>
             {/* Header */}
             <header className="w-full border-b border-gray-200 bg-background-light/80 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
@@ -71,7 +87,7 @@ export default function ForgotPassword() {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 animate-fade-in-up">
+            <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 animate-fade-in-up relative z-10">
                 <div className="w-full max-w-md space-y-8">
                     <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-lg shadow-gray-200/50">
                         <div className="text-center mb-8">
@@ -154,7 +170,7 @@ export default function ForgotPassword() {
             </main>
 
             {/* Footer */}
-            <footer className="w-full text-center py-6 text-xs text-gray-400 border-t border-transparent">
+            <footer className="w-full text-center py-6 text-xs text-gray-400 border-t border-transparent relative z-10">
                 © 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a>
             </footer>
         </div>

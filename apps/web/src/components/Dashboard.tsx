@@ -48,10 +48,10 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                     setSchedules(result.data.map(s => ({
                         id: s.id?.toString() || '',
                         title: s.title,
-                        startTime: (s as unknown as { startTime?: string }).startTime || s.time || '',
-                        endTime: (s as unknown as { endTime?: string }).endTime,
-                        location: (s as unknown as { location?: string }).location,
-                        description: (s as unknown as { description?: string }).description
+                        startTime: s.startTime || s.time || '',
+                        endTime: s.endTime,
+                        location: s.location,
+                        description: s.description
                     })));
                 } else {
                     setSchedules([]);

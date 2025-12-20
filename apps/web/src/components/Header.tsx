@@ -24,9 +24,8 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
             try {
                 const result = await usersApi.getMe();
                 if (result.success && result.data) {
-                    const userData = result.data as any;
-                    setUserAvatar(userData.image || null);
-                    setUserName(userData.name || null);
+                    setUserAvatar(result.data.image || null);
+                    setUserName(result.data.name || null);
                 }
             } catch (error) {
                 console.error('Error fetching user:', error);

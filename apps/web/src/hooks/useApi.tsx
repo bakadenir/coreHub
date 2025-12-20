@@ -52,6 +52,71 @@ export function LoadingSpinner({ message = 'Loading...' }: { message?: string })
     );
 }
 
+// Table skeleton for list views
+export function TableSkeleton({ rows = 5 }: { rows?: number }) {
+    return (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+            {/* Header skeleton */}
+            <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-gray-200 bg-gray-50">
+                {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} className={`col-span-${i === 1 ? '5' : '2'}`}>
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-16"></div>
+                    </div>
+                ))}
+            </div>
+            {/* Row skeletons */}
+            {Array.from({ length: rows }).map((_, i) => (
+                <div key={i} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center border-b border-gray-100">
+                    <div className="col-span-12 md:col-span-5 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                        <div className="flex flex-col gap-2">
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                            <div className="h-3 bg-gray-100 rounded animate-pulse w-24"></div>
+                        </div>
+                    </div>
+                    <div className="col-span-6 md:col-span-2 flex md:justify-center">
+                        <div className="h-6 bg-gray-100 rounded-full animate-pulse w-16"></div>
+                    </div>
+                    <div className="col-span-6 md:col-span-2 flex md:justify-center">
+                        <div className="h-4 bg-gray-100 rounded animate-pulse w-12"></div>
+                    </div>
+                    <div className="col-span-12 md:col-span-2 flex md:justify-center">
+                        <div className="h-8 bg-gray-100 rounded-md animate-pulse w-24"></div>
+                    </div>
+                    <div className="col-span-12 md:col-span-1 flex justify-end">
+                        <div className="h-6 w-6 bg-gray-100 rounded animate-pulse"></div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// Card grid skeleton for Notes/Links
+export function CardGridSkeleton({ count = 6 }: { count?: number }) {
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: count }).map((_, i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 min-h-[180px]">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>
+                        <div className="h-5 w-5 bg-gray-100 rounded animate-pulse"></div>
+                    </div>
+                    <div className="space-y-2">
+                        <div className="h-3 bg-gray-100 rounded animate-pulse w-full"></div>
+                        <div className="h-3 bg-gray-100 rounded animate-pulse w-4/5"></div>
+                        <div className="h-3 bg-gray-100 rounded animate-pulse w-2/3"></div>
+                    </div>
+                    <div className="mt-4 flex gap-2">
+                        <div className="h-6 bg-gray-100 rounded-full animate-pulse w-16"></div>
+                        <div className="h-6 bg-gray-100 rounded-full animate-pulse w-12"></div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // Empty state component
 export function EmptyState({ message, icon = 'inbox' }: { message: string; icon?: string }) {
     return (

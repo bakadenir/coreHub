@@ -107,7 +107,7 @@ export default function AvatarUpload({
     };
 
     return (
-        <div className="flex items-center gap-4">
+        <div>
             {/* Avatar Preview */}
             <div
                 className={`relative ${sizeClasses[size]} rounded-full overflow-hidden cursor-pointer group`}
@@ -133,19 +133,6 @@ export default function AvatarUpload({
                     )}
                 </div>
             </div>
-
-            {/* Upload Actions */}
-            <div className="flex flex-col gap-1">
-                <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="text-sm font-medium text-primary hover:text-blue-700 transition-colors text-left"
-                >
-                    Change Photo
-                </button>
-                <p className="text-xs text-gray-400">JPG, PNG. Max 5MB</p>
-            </div>
-
             {/* Hidden File Input */}
             <input
                 ref={fileInputRef}

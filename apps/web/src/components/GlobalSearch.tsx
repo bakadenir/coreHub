@@ -50,6 +50,19 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         return () => clearTimeout(timer);
     }, [query]);
 
+    // Handle selecting a result
+    const handleSelect = useCallback((result: SearchResult) => {
+        const routes: Record<string, string> = {
+            habit: '/habits',
+            note: '/notes',
+            link: '/links',
+            schedule: '/schedule',
+        };
+
+        navigate(routes[result.type] || '/dashboard');
+        onClose();
+    }, [navigate, onClose]);
+
     // Keyboard navigation
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'ArrowDown') {
@@ -64,19 +77,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         } else if (e.key === 'Escape') {
             onClose();
         }
-    }, [results, selectedIndex, onClose]);
-
-    const handleSelect = (result: SearchResult) => {
-        const routes: Record<string, string> = {
-            habit: '/habits',
-            note: '/notes',
-            link: '/links',
-            schedule: '/schedule',
-        };
-
-        navigate(routes[result.type] || '/dashboard');
-        onClose();
-    };
+    }, [results, selectedIndex, onClose, handleSelect]);
 
     const getTypeLabel = (type: string) => {
         const labels: Record<string, string> = {

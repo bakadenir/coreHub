@@ -7,4 +7,5 @@ export * from './notes';
 export * from './links';
 export * from './admin';
 export * from './notifications';
+export * from './feedback';
 
