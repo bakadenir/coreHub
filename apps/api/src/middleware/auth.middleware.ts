@@ -50,7 +50,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     }
 }
 
-export function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction) {
+export function optionalAuthMiddleware(req: Request, _res: Response, next: NextFunction) {
     auth.api.getSession({
         headers: fromNodeHeaders(req.headers),
     }).then((session) => {

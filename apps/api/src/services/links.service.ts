@@ -1,6 +1,6 @@
 import { db } from '../config/database';
 import { links, linkTags } from '../db/schema';
-import { eq, and, isNull, desc, inArray } from 'drizzle-orm';
+import { eq, and, isNull, desc } from 'drizzle-orm';
 
 export interface LinkFilters {
     tags?: string[];

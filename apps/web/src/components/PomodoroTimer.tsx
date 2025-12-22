@@ -18,7 +18,7 @@ interface PomodoroState {
 
 const DEFAULT_CONFIG: PomodoroConfig = {
     focus: 25,
-    shortBreak: 5,
+    shortBreak: 0.05, // 3 seconds for testing
     longBreak: 10,
 };
 
@@ -242,13 +242,13 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
 
     // Size classes based on isMain
     const timerClasses = isMain
-        ? 'text-[8rem] sm:text-[10rem] md:text-[12rem]'
+        ? 'text-[6rem] sm:text-[7rem] md:text-[8rem]'
         : 'text-5xl';
     const buttonClasses = isMain
-        ? 'py-3 px-8 text-base'
+        ? 'py-2.5 px-6 text-base'
         : 'py-2 px-4 text-sm';
     const modeButtonClasses = isMain
-        ? 'py-2 text-sm'
+        ? 'py-1.5 text-sm'
         : 'py-1 text-xs';
 
     const content = (
@@ -264,14 +264,14 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
             )}
 
             {/* Timer Display */}
-            <div className={`flex justify-center ${isMain ? 'mb-8' : 'mb-6'}`}>
+            <div className={`flex justify-center ${isMain ? 'mb-6' : 'mb-6'}`}>
                 <div className={`${timerClasses} leading-none font-mono font-bold text-primary tracking-tighter`}>
                     {formatTime(timeLeft)}
                 </div>
             </div>
 
             {/* Mode Selector */}
-            <div className={`flex ${isMain ? 'gap-4 max-w-lg mx-auto mb-8' : 'gap-2 mb-6'}`}>
+            <div className={`flex ${isMain ? 'gap-3 max-w-md mx-auto mb-6' : 'gap-2 mb-6'}`}>
                 {modeButtons.map(({ mode: m, label }) => (
                     <button
                         key={m}

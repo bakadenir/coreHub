@@ -12,7 +12,7 @@ router.use(authMiddleware);
 router.use(adminMiddleware);
 
 // GET /api/admin/stats - Get dashboard statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', async (_req, res) => {
     try {
         const stats = await adminService.getStats();
         return successResponse(res, stats);

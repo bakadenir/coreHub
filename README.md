@@ -1,148 +1,213 @@
-# CoreHub Setup Guide 🚀
-Panduan lengkap untuk setup project CoreHub di komputer baru.
-## Prerequisites
-Pastikan sudah terinstall:
-- **Node.js** v18+ (https://nodejs.org)
-- **PostgreSQL** v14+ (https://www.postgresql.org/download/)
-- **Git** (https://git-scm.com)
----
-## Step 1: Clone Repository
-```bash
-git clone https://github.com/bakadenir/coreHub.git
-cd coreHub
-```
----
-## Step 2: Install Dependencies
-```bash
-# Install all dependencies (root + apps)
-npm install
-```
----
-## Step 3: Setup PostgreSQL Database
-### Windows (pgAdmin atau psql):
-```sql
--- Buka psql atau pgAdmin, run:
-CREATE DATABASE corehub_db;
-```
-### macOS/Linux:
-```bash
-sudo -u postgres createdb corehub_db
-```
----
-## Step 4: Configure Environment Variables
-### Copy example dan edit:
-```bash
-cd apps/api
-cp .env.example .env
-```
-### Edit `apps/api/.env`:
-```env
-# Database
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/corehub_db
-# JWT Secret (generate random string)
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-# Server
-PORT=3001
-NODE_ENV=development
-# Frontend URL (for CORS)
-FRONTEND_URL=http://localhost:5173
-```
-> ⚠️ Ganti `YOUR_PASSWORD` dengan password PostgreSQL kamu!
----
-## Step 5: Run Database Migrations
-```bash
-cd apps/api
-# Generate migration files (jika belum ada)
-npm run db:generate
-# Push schema ke database
-npm run db:push
-```
----
-## Step 6: Start Development Servers
-### Terminal 1 - Backend API:
-```bash
-cd apps/api
-npm run dev
-```
-API akan jalan di: `http://localhost:3001`
-### Terminal 2 - Frontend:
-```bash
-# Dari root folder
-npm run dev
-# ATAU
-cd apps/web
-npm run dev
-```
-Frontend akan jalan di: `http://localhost:5173`
----
-## Step 7: Verify Everything Works
-1. **Buka browser:** `http://localhost:5173`
-2. **Register akun baru**
-3. **Login**
-4. **Test features:** Add habit, schedule, note, link
----
-## Optional: Database Studio
-Untuk melihat data di database:
-```bash
-cd apps/api
-npm run db:studio
-```
-Buka: `http://localhost:4983`
----
-## Troubleshooting
-### Error: ECONNREFUSED (database connection failed)
-- Pastikan PostgreSQL running
-- Cek `DATABASE_URL` di `.env`
-- Cek password PostgreSQL
-### Error: JWT_SECRET not defined
-- Pastikan `.env` sudah dibuat di `apps/api/`
-- Pastikan `JWT_SECRET` ada dan tidak kosong
-### Error: CORS blocked
-- Pastikan `FRONTEND_URL=http://localhost:5173` di `.env`
-- Restart backend setelah edit `.env`
-### Port already in use
-```bash
-# Kill process on port 3001 (backend)
-npx kill-port 3001
-# Kill process on port 5173 (frontend)
-npx kill-port 5173
-```
----
-## Project Structure
+# CoreHub 🚀
+
+Aplikasi produktivitas all-in-one untuk mengelola jadwal, catatan, link, dan kebiasaan harian.
+
+## ✨ Features
+
+- **📅 Schedule Management** - Kelola jadwal dengan reminder
+- **📝 Notes** - Markdown support dengan Mermaid diagrams & syntax highlighting
+- **🔗 Links Manager** - Simpan dan organisir bookmark
+- **🎯 Habits Tracker** - Track kebiasaan dengan streak counting
+- **🏠 Dashboard** - Overview dengan drag-and-drop activity cards
+- **⏱️ Pomodoro Timer** - Built-in timer untuk fokus
+- **🔔 Notifications** - Push notifications & real-time updates
+- **👤 Admin Panel** - User management & activity logs
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React 19, Vite 7, Tailwind CSS, React Router v7 |
+| **Backend** | Express.js, Better Auth, Drizzle ORM |
+| **Database** | PostgreSQL 14+ |
+| **Auth** | Better Auth (session-based) |
+
+## 📁 Project Structure
+
 ```
 coreHub/
 ├── apps/
-│   ├── api/           # Backend (Hono + Drizzle + PostgreSQL)
+│   ├── api/           # Backend (Express + Drizzle + PostgreSQL)
 │   │   ├── src/
-│   │   │   ├── config/
-│   │   │   ├── db/schema/
-│   │   │   ├── middleware/
-│   │   │   ├── routes/
-│   │   │   ├── services/
-│   │   │   └── index.ts
-│   │   ├── .env        # Environment variables (JANGAN COMMIT!)
+│   │   │   ├── config/       # Environment & auth config
+│   │   │   ├── db/schema/    # Database schema (10 tables)
+│   │   │   ├── middleware/   # Auth & admin middleware
+│   │   │   ├── routes/       # 14 API route handlers
+│   │   │   ├── services/     # Business logic
+│   │   │   └── index.ts      # Entry point
 │   │   └── package.json
 │   │
 │   └── web/           # Frontend (React + Vite + Tailwind)
 │       ├── src/
-│       │   ├── components/
-│       │   ├── pages/
-│       │   ├── lib/
-│       │   ├── context/
-│       │   └── App.tsx
+│       │   ├── components/   # 27 reusable components
+│       │   ├── pages/        # 16 page components
+│       │   ├── context/      # React contexts
+│       │   ├── hooks/        # Custom hooks
+│       │   ├── lib/          # API client & utilities
+│       │   └── App.tsx       # Router setup
 │       └── package.json
 │
-├── package.json       # Root package (workspaces)
-└── README.md
+└── package.json       # Root workspace config
 ```
+
 ---
-## Quick Commands
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js** v18+ ([download](https://nodejs.org))
+- **PostgreSQL** v14+ ([download](https://www.postgresql.org/download/))
+- **Git** ([download](https://git-scm.com))
+
+### 1. Clone & Install
+
+```bash
+git clone https://github.com/bakadenir/coreHub.git
+cd coreHub
+npm install
+```
+
+### 2. Setup Database
+
+```sql
+-- Run di psql atau pgAdmin
+CREATE DATABASE corehub;
+```
+
+### 3. Configure Environment
+
+```bash
+cd apps/api
+cp .env.example .env
+```
+
+Edit `apps/api/.env`:
+```env
+DATABASE_URL=postgresql://USERNAME:PASSWORD@localhost:5432/corehub
+BETTER_AUTH_SECRET=your-super-secret-key
+BETTER_AUTH_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:5173
+PORT=3001
+NODE_ENV=development
+```
+
+### 4. Push Database Schema
+
+```bash
+cd apps/api
+npm run db:push
+```
+
+### 5. Start Development
+
+```bash
+# Terminal 1 - Backend
+cd apps/api && npm run dev
+
+# Terminal 2 - Frontend (dari root)
+npm run dev
+```
+
+- **Frontend**: http://localhost:5173
+- **Backend**: http://localhost:3001
+
+---
+
+## 📋 Available Commands
+
 | Command | Description |
 |---------|-------------|
 | `npm install` | Install all dependencies |
 | `npm run dev` | Start frontend dev server |
-| `cd apps/api && npm run dev` | Start backend dev server |
-| `cd apps/api && npm run db:push` | Push schema to database |
-| `cd apps/api && npm run db:studio` | Open database GUI |
+| `npm run dev:api` | Start backend dev server |
+| `npm run dev:all` | Start both servers |
+
+### Backend Commands (apps/api)
+
+| Command | Description |
+|---------|-------------|
+| `npm run db:push` | Push schema to database |
+| `npm run db:generate` | Generate migrations |
+| `npm run db:studio` | Open Drizzle Studio (GUI) |
+
 ---
+
+## 🗄️ Database Schema
+
+| Table | Description |
+|-------|-------------|
+| `user` | User accounts & profiles |
+| `session` | Auth sessions |
+| `account` | OAuth accounts |
+| `habit` | Habit definitions & progress |
+| `schedule` | Calendar events |
+| `note` | Markdown notes |
+| `link` | Saved bookmarks |
+| `notification_settings` | User preferences |
+| `notifications` | In-app notifications |
+| `push_subscriptions` | Web push subscriptions |
+| `feedback` | User feedback |
+
+---
+
+## 🛣️ API Endpoints
+
+### Authentication
+- `POST /api/auth-custom/login` - Login
+- `POST /api/auth-custom/register` - Register
+- `ALL /api/auth/*` - Better Auth handler
+
+### Resources
+- `/api/habits` - Habits CRUD
+- `/api/schedules` - Schedules CRUD
+- `/api/notes` - Notes CRUD
+- `/api/links` - Links CRUD
+- `/api/users` - User profile
+- `/api/search` - Global search
+
+### Admin (Protected)
+- `/api/admin/stats` - Dashboard stats
+- `/api/admin/users` - User management
+- `/api/admin/activity-logs` - Activity logs
+
+---
+
+## 🔐 User Roles
+
+| Role | Access |
+|------|--------|
+| `user` | Basic features |
+| `pro` | Premium features |
+| `admin` | Full admin panel |
+| `banned` | No access |
+
+---
+
+## 🐛 Troubleshooting
+
+### Database Connection Error
+```bash
+# Pastikan PostgreSQL running
+# Cek DATABASE_URL di .env
+```
+
+### Port Already in Use
+```bash
+npx kill-port 3001  # Backend
+npx kill-port 5173  # Frontend
+```
+
+### CORS Error
+- Pastikan `FRONTEND_URL=http://localhost:5173` di `.env`
+- Restart backend setelah edit `.env`
+
+---
+
+## 📄 License
+
+MIT License
+
+---
+
 Happy coding! 🎉

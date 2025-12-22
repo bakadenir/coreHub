@@ -1,6 +1,6 @@
 import { db } from '../config/database';
 import { habits, habitCompletions } from '../db/schema';
-import { eq, and, isNull, desc, gte, lte, sql } from 'drizzle-orm';
+import { eq, and, isNull, desc } from 'drizzle-orm';
 
 export interface HabitFilters {
     frequency?: string;

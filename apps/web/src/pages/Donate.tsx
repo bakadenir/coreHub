@@ -2,9 +2,31 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
-import { feedbackApi, usersApi } from '../lib';
+import { feedbackApi, usersApi, donationsApi } from '../lib';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+
+declare global {
+    interface Window {
+        snap?: {
+            pay: (token: string, options: {
+                onSuccess?: (result: any) => void;
+                onPending?: (result: any) => void;
+                onError?: (result: any) => void;
+                onClose?: () => void;
+            }) => void;
+        };
+    }
+}
+
+interface Donation {
+    id: string;
+    amount: number;
+    currency: string;
+    name: string;
+    message?: string;
+    paidAt?: string;
+}
 
 interface Review {
     id: string;
@@ -26,6 +48,14 @@ export default function Donate() {
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [userAvatar, setUserAvatar] = useState<string | null>(null);
+
+    // Donation state
+    const [donationAmount, setDonationAmount] = useState('');
+    const [donorName, setDonorName] = useState('');
+    const [donationMessage, setDonationMessage] = useState('');
+    const [isDonating, setIsDonating] = useState(false);
+    const [donationsList, setDonationsList] = useState<Donation[]>([]);
+    const [isLoadingDonations, setIsLoadingDonations] = useState(true);
 
     // Helper to construct full URL for uploaded files
     const getFullAvatarUrl = (imageUrl: string | null | undefined): string => {
@@ -128,6 +158,103 @@ export default function Donate() {
     useEffect(() => {
         fetchReviews();
     }, []);
+
+    // Fetch donations on mount
+    useEffect(() => {
+        const fetchDonations = async () => {
+            try {
+                const result = await donationsApi.getPublic(20);
+                if (result.success && result.data) {
+                    setDonationsList(result.data);
+                }
+            } catch (error) {
+                console.error('Error fetching donations:', error);
+            } finally {
+                setIsLoadingDonations(false);
+            }
+        };
+        fetchDonations();
+
+        // Load Midtrans Snap script
+        const script = document.createElement('script');
+        script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+        script.setAttribute('data-client-key', import.meta.env.VITE_MIDTRANS_CLIENT_KEY || '');
+        document.head.appendChild(script);
+
+        return () => {
+            document.head.removeChild(script);
+        };
+    }, []);
+
+    // Set donor name from user when user is available
+    useEffect(() => {
+        if (user?.name && !donorName) {
+            setDonorName(user.name);
+        }
+    }, [user]);
+
+    // Handle Midtrans donation
+    const handleDonate = async () => {
+        const amount = parseInt(donationAmount.replace(/\D/g, ''));
+        if (!amount || amount < 1000) {
+            showToast('Minimum donasi Rp 1.000', 'error');
+            return;
+        }
+        if (!donorName.trim()) {
+            showToast('Nama harus diisi', 'error');
+            return;
+        }
+
+        setIsDonating(true);
+        try {
+            const result = await donationsApi.create({
+                amount,
+                name: donorName.trim(),
+                email: user?.email,
+                message: donationMessage.trim() || undefined,
+            });
+
+            if (result.success && result.data?.snapToken) {
+                // Open Midtrans Snap popup
+                if (window.snap) {
+                    window.snap.pay(result.data.snapToken, {
+                        onSuccess: () => {
+                            showToast('Terima kasih atas donasi Anda! 🎉', 'success');
+                            setDonationAmount('');
+                            setDonationMessage('');
+                            // Refresh donations list
+                            donationsApi.getPublic(20).then(res => {
+                                if (res.success && res.data) setDonationsList(res.data);
+                            });
+                        },
+                        onPending: () => {
+                            showToast('Pembayaran pending. Silakan selesaikan pembayaran.', 'info');
+                        },
+                        onError: () => {
+                            showToast('Pembayaran gagal', 'error');
+                        },
+                        onClose: () => {
+                            showToast('Popup pembayaran ditutup', 'info');
+                        },
+                    });
+                } else {
+                    showToast('Midtrans Snap tidak tersedia', 'error');
+                }
+            } else {
+                showToast(result.error || 'Gagal membuat transaksi', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        } finally {
+            setIsDonating(false);
+        }
+    };
+
+    // Format currency
+    const formatRupiah = (value: string) => {
+        const num = value.replace(/\D/g, '');
+        return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    };
 
     // Fetch user's own review and pre-fill form if logged in
     useEffect(() => {
@@ -267,26 +394,107 @@ export default function Donate() {
                 </header>
 
                 {/* Donation Options */}
-                <section className="mb-16 grid gap-4 sm:flex sm:items-center sm:gap-6 flex-wrap">
-                    {/* PayPal */}
-                    <a href="#" className="group relative flex items-center justify-center px-8 py-4 bg-[#FFC439] hover:bg-[#F4B400] text-black font-bold rounded-lg transition-all shadow-sm hover:shadow-md w-full sm:w-auto min-w-[200px] overflow-hidden">
-                        <span className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></span>
-                        <span className="italic font-display mr-2 relative z-10">Donate with</span>
-                        <span className="font-extrabold italic text-xl relative z-10 text-[#003087]">Pay</span>
-                        <span className="font-extrabold italic text-xl relative z-10 text-[#009cde]">Pal</span>
-                    </a>
+                <section className="mb-16">
+                    <div className="bg-white border border-border-light rounded-xl p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                            <span className="material-icons-outlined text-amber-500">volunteer_activism</span>
+                            Choose Payment Method
+                        </h3>
 
-                    {/* Card */}
-                    <a href="#" className="group flex items-center justify-center px-8 py-4 bg-black text-white font-medium rounded-lg border border-transparent hover:bg-gray-800 transition-all shadow-sm hover:shadow-md w-full sm:w-auto min-w-[200px] gap-3">
-                        <span className="uppercase tracking-wide">Donate with Card</span>
-                        <span className="material-icons-outlined text-xl">credit_card</span>
-                    </a>
+                        {/* Donation Form */}
+                        <div className="space-y-4 mb-6">
+                            {/* Amount Input */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Donation Amount (IDR)</label>
+                                <div className="relative">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">Rp</span>
+                                    <input
+                                        type="text"
+                                        value={formatRupiah(donationAmount)}
+                                        onChange={(e) => setDonationAmount(e.target.value.replace(/\D/g, ''))}
+                                        placeholder="10.000"
+                                        className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg text-lg font-medium focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+                                    />
+                                </div>
+                                <div className="flex gap-2 mt-2 flex-wrap">
+                                    {[10000, 25000, 50000, 100000, 250000].map((preset) => (
+                                        <button
+                                            key={preset}
+                                            type="button"
+                                            onClick={() => setDonationAmount(preset.toString())}
+                                            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                        >
+                                            {preset.toLocaleString('id-ID')}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                    {/* Bank Jago */}
-                    <a href="#" className="group flex items-center justify-center px-8 py-4 bg-[#FB8B01] hover:bg-[#E07A00] text-white font-medium rounded-lg border border-transparent transition-all shadow-sm hover:shadow-md w-full sm:w-auto min-w-[200px] gap-3">
-                        <span className="uppercase tracking-wide">Bank Jago</span>
-                        <span className="material-icons-outlined text-xl">account_balance_wallet</span>
-                    </a>
+                            {/* Name Input */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Donor Name</label>
+                                <input
+                                    type="text"
+                                    value={donorName}
+                                    onChange={(e) => setDonorName(e.target.value)}
+                                    placeholder="Your name"
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+                                />
+                            </div>
+
+                            {/* Message Input (Optional) */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
+                                <textarea
+                                    value={donationMessage}
+                                    onChange={(e) => setDonationMessage(e.target.value)}
+                                    placeholder="Write a message for the developer..."
+                                    rows={2}
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400 resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Payment Buttons */}
+                        <div className="grid sm:grid-cols-3 gap-4">
+                            {/* Midtrans Button */}
+                            <button
+                                onClick={handleDonate}
+                                disabled={isDonating}
+                                className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#0A8AFF] hover:bg-[#0070E0] text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {isDonating ? (
+                                    <>
+                                        <span className="material-icons-outlined text-xl animate-spin">refresh</span>
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-lg font-bold">Midtrans</span>
+                                        <span className="text-sm opacity-80">(GoPay, QRIS, Bank Transfer)</span>
+                                    </>
+                                )}
+                            </button>
+
+                            {/* PayPal Button (Placeholder) */}
+                            <button
+                                disabled
+                                className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#FFC439] text-[#003087] font-bold rounded-lg opacity-60 cursor-not-allowed"
+                            >
+                                <span className="text-lg font-extrabold italic">PayPal</span>
+                                <span className="text-sm opacity-80">(Coming Soon)</span>
+                            </button>
+
+                            {/* Stripe Button (Placeholder) */}
+                            <button
+                                disabled
+                                className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#635BFF] text-white font-bold rounded-lg opacity-60 cursor-not-allowed"
+                            >
+                                <span className="text-lg font-bold">Stripe</span>
+                                <span className="text-sm opacity-80">(Coming Soon)</span>
+                            </button>
+                        </div>
+                    </div>
                 </section>
 
                 <hr className="border-border-light mb-12" />
@@ -299,46 +507,56 @@ export default function Donate() {
                             Donation History
                         </h2>
                         <div className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
-                            LIVE FEED
+                            {donationsList.length} DONATIONS
                         </div>
                     </div>
                     <div className="overflow-x-auto rounded-lg border border-border-light bg-white shadow-sm">
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-gray-50 border-b border-border-light">
                                 <tr>
-                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500 w-48">Date</th>
-                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500">Comment</th>
-                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500 text-right w-32">Amount</th>
+                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500 w-36">Date</th>
+                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500 w-40">Donatur</th>
+                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500">Pesan</th>
+                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500 text-right w-36">Amount</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-light text-sm">
-                                {[
-                                    { date: '16 Dec 2025', comment: 'thank you for lovely +brilliant tool', amount: '$5.00 USD' },
-                                    { date: '16 Dec 2025', comment: "After many years of use, I still claim that it's one of the best tools of any kind. It's the best. Many, many thanks!", amount: '$50.00 USD' },
-                                    { date: '16 Dec 2025', comment: 'Hallo. Ich bin der Dicke und spende auch.', amount: '€10.00 EUR', italic: true },
-                                    { date: '16 Dec 2025', comment: 'Ich hoffe der Dicke spendet auch.', amount: '€10.00 EUR', italic: true },
-                                    { date: '16 Dec 2025', comment: 'No comment', amount: '$2.00 USD', muted: true },
-                                    { date: '15 Dec 2025', comment: "I've had this hidden gem installed for years but only recently figured out how to set it up properly and now it's absolutely mind-blowing. Thanks so much!", amount: '$10.00 USD' },
-                                    { date: '15 Dec 2025', comment: 'I just discovered multi-file renaming, so useful, thank you!', amount: '$100.00 USD' },
-                                    { date: '15 Dec 2025', comment: 'Great utility and meaning to get this done.', amount: '$25.00 USD' },
-                                    { date: '14 Dec 2025', comment: "You've saved my bacon many times!", amount: '$25.00 USD' },
-                                    { date: '14 Dec 2025', comment: 'Amazing tool. What Windows built-in search should\'ve been. Merry XMAS!', amount: '$10.00 USD' },
-                                ].map((item, index) => (
-                                    <tr key={index} className="hover:bg-gray-50 transition-colors group">
-                                        <td className="py-4 px-6 font-mono text-gray-500 whitespace-nowrap">{item.date}</td>
-                                        <td className={`py-4 px-6 ${item.muted ? 'text-gray-400 italic text-xs' : 'text-gray-800'} ${item.italic && !item.muted ? 'italic' : ''} group-hover:text-black`}>
-                                            {item.comment}
+                                {isLoadingDonations ? (
+                                    <tr>
+                                        <td colSpan={4} className="py-12 text-center">
+                                            <span className="material-icons-outlined text-2xl animate-spin text-gray-400">refresh</span>
                                         </td>
-                                        <td className="py-4 px-6 text-right font-mono font-medium text-gray-900">{item.amount}</td>
                                     </tr>
-                                ))}
+                                ) : donationsList.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="py-12 text-center text-gray-400">
+                                            Belum ada donasi. Jadilah yang pertama! 🎉
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    donationsList.map((donation) => (
+                                        <tr key={donation.id} className="hover:bg-gray-50 transition-colors group">
+                                            <td className="py-4 px-6 font-mono text-gray-500 whitespace-nowrap text-xs">
+                                                {donation.paidAt ? new Date(donation.paidAt).toLocaleDateString('id-ID', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric',
+                                                }) : '-'}
+                                            </td>
+                                            <td className="py-4 px-6 text-gray-800 font-medium">
+                                                {donation.name}
+                                            </td>
+                                            <td className={`py-4 px-6 ${donation.message ? 'text-gray-700' : 'text-gray-400 italic'} group-hover:text-black`}>
+                                                {donation.message || 'No message'}
+                                            </td>
+                                            <td className="py-4 px-6 text-right font-mono font-medium text-amber-600">
+                                                Rp {donation.amount.toLocaleString('id-ID')}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
-                    </div>
-                    <div className="mt-6 flex justify-center">
-                        <button className="text-sm font-mono text-gray-500 hover:text-black transition-colors border border-border-light bg-white px-4 py-2 rounded hover:bg-gray-50">
-                            Load more entries...
-                        </button>
                     </div>
                 </section>
 

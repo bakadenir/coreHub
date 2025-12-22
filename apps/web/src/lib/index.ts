@@ -8,6 +8,7 @@ export { searchApi } from './search.api';
 export { adminApi } from './admin.api';
 export { notificationsApi } from './notifications.api';
 export { feedbackApi } from './feedback.api';
+export { donationsApi } from './donations.api';
 export { api } from './api';
 export { authClient, signIn, signUp, signOut, useSession, getSession } from './auth';
 

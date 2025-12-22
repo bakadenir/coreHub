@@ -1,6 +1,6 @@
 import { db } from '../config/database';
-import { scheduleEvents, eventAttendees } from '../db/schema';
-import { eq, and, isNull, desc, gte, lte, or } from 'drizzle-orm';
+import { scheduleEvents } from '../db/schema';
+import { eq, and, isNull, desc, gte, lte } from 'drizzle-orm';
 
 export interface ScheduleFilters {
     startDate?: string;

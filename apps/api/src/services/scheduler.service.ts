@@ -1,11 +1,11 @@
-import cron from 'node-cron';
+import cron, { ScheduledTask } from 'node-cron';
 import { db } from '../config/database';
 import { habits, scheduleEvents, notificationSettings } from '../db/schema';
 import { eq, and, lte, gte, isNull } from 'drizzle-orm';
 import { sendPushNotification } from './push.service';
 
-// Store for scheduled jobs
-const scheduledJobs: Map<string, cron.ScheduledTask> = new Map();
+// Store for scheduled jobs (null for notification markers, ScheduledTask for actual cron jobs)
+const scheduledJobs: Map<string, ScheduledTask | null> = new Map();
 
 // Check for upcoming schedule reminders
 async function checkScheduleReminders() {
@@ -54,7 +54,7 @@ async function checkScheduleReminders() {
                     );
 
                     // Mark as notified (temporary in-memory)
-                    scheduledJobs.set(notifKey, null as unknown as cron.ScheduledTask);
+                    scheduledJobs.set(notifKey, null);
                 }
             }
         }
@@ -119,7 +119,7 @@ async function checkHabitReminders() {
                                 'habit'
                             );
 
-                            scheduledJobs.set(notifKey, null as unknown as cron.ScheduledTask);
+                            scheduledJobs.set(notifKey, null);
                         }
                     }
                 }

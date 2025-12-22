@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../config/database';
-import { user, session } from '../db/schema';
-import { eq, or } from 'drizzle-orm';
+import { user } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { successResponse, errorResponse, serverErrorResponse } from '../utils/response';
 import { auth } from '../config/auth';
 

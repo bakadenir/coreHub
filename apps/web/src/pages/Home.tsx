@@ -208,7 +208,6 @@ export default function Home() {
     // Calendar helpers
     const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
     const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-    const formatMonth = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase();
     const navigateMonth = (direction: number) => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
 
     const today = new Date();
@@ -309,30 +308,69 @@ export default function Home() {
                         className={isMain ? "z-10 flex-1 flex flex-col" : "bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col"}
                         onMouseLeave={() => handleDayHover(null)}
                     >
-                        <div className={isMain ? "flex flex-col lg:flex-row gap-6 flex-1" : ""}>
+                        <div className={isMain ? "flex flex-col lg:flex-row lg:items-stretch flex-1" : ""}>
                             {/* Calendar Grid */}
-                            <div className={isMain ? "lg:w-1/2" : ""}>
-                                <div className="flex items-center justify-between mb-4">
-                                    <div
-                                        className={`flex items-center ${dragHandle ? 'cursor-grab active:cursor-grabbing select-none group/title' : ''}`}
-                                        {...(dragHandle ? (({ className: _, ...rest }) => rest)(dragHandle.titleProps) : {})}
-                                    >
-                                        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Calendar</h2>
-                                        {dragHandle?.icon}
+                            <div className={isMain ? "lg:w-1/2 flex flex-col" : ""}>
+                                {/* Title + Navigation Row */}
+                                {isMain ? (
+                                    <>
+                                        {/* Main: Title on its own row */}
+                                        <div
+                                            className={`flex items-center mb-3 ${dragHandle ? 'cursor-grab active:cursor-grabbing select-none group/title' : ''}`}
+                                            {...(dragHandle ? (({ className: _, ...rest }) => rest)(dragHandle.titleProps) : {})}
+                                        >
+                                            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Calendar</h2>
+                                            {dragHandle?.icon}
+                                        </div>
+                                        {/* Main: Month navigation centered on its own row */}
+                                        <div className="flex items-center justify-center gap-1 mb-4">
+                                            <button onClick={() => navigateMonth(-12)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Previous year">
+                                                <span className="material-icons-outlined text-sm text-gray-400">keyboard_double_arrow_left</span>
+                                            </button>
+                                            <button onClick={() => navigateMonth(-1)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Previous month">
+                                                <span className="material-icons-outlined text-sm text-gray-500">chevron_left</span>
+                                            </button>
+                                            <span className="text-xs font-mono text-gray-500 min-w-[120px] text-center">
+                                                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}
+                                            </span>
+                                            <button onClick={() => navigateMonth(1)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Next month">
+                                                <span className="material-icons-outlined text-sm text-gray-500">chevron_right</span>
+                                            </button>
+                                            <button onClick={() => navigateMonth(12)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Next year">
+                                                <span className="material-icons-outlined text-sm text-gray-400">keyboard_double_arrow_right</span>
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    /* Sidebar: Original format - title and nav on same row */
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div
+                                            className={`flex items-center ${dragHandle ? 'cursor-grab active:cursor-grabbing select-none group/title' : ''}`}
+                                            {...(dragHandle ? (({ className: _, ...rest }) => rest)(dragHandle.titleProps) : {})}
+                                        >
+                                            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Calendar</h2>
+                                            {dragHandle?.icon}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => navigateMonth(-1)} className="p-1 hover:bg-gray-100 rounded transition-colors">
+                                                <span className="material-icons-outlined text-sm text-gray-500">chevron_left</span>
+                                            </button>
+                                            <span className="text-xs font-mono text-gray-500 min-w-[80px] text-center">
+                                                {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()}
+                                            </span>
+                                            <button onClick={() => navigateMonth(1)} className="p-1 hover:bg-gray-100 rounded transition-colors">
+                                                <span className="material-icons-outlined text-sm text-gray-500">chevron_right</span>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={() => navigateMonth(-1)} className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                            <span className="material-icons-outlined text-sm text-gray-500">chevron_left</span>
-                                        </button>
-                                        <span className="text-xs font-mono text-gray-500 min-w-[80px] text-center">{formatMonth(currentDate)}</span>
-                                        <button onClick={() => navigateMonth(1)} className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                            <span className="material-icons-outlined text-sm text-gray-500">chevron_right</span>
-                                        </button>
-                                    </div>
-                                </div>
+                                )}
+
+                                {/* Days Header */}
                                 <div className={`grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-2 font-medium`}>
                                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <div key={i}>{day}</div>)}
                                 </div>
+
+                                {/* Dates Grid */}
                                 <div className={`grid grid-cols-7 gap-1 text-center ${isMain ? 'text-base' : 'text-sm'}`}>
                                     {[...Array(firstDay)].map((_, i) => (
                                         <div key={`prev-${i}`} className="p-2 text-gray-300">{prevMonthDays - firstDay + i + 1}</div>
@@ -356,7 +394,7 @@ export default function Home() {
 
                             {/* Inline Schedule Preview - only shown when Calendar is main */}
                             {isMain && (
-                                <div className="lg:w-1/2 border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-6 mt-4 lg:mt-0 flex flex-col">
+                                <div className="lg:w-1/2 border-t lg:border-t-0 lg:border-l border-gray-200 pt-4 lg:pt-0 lg:pl-6 lg:pb-4 mt-4 lg:mt-0 flex flex-col justify-center">
                                     <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">
                                         {hoveredDate ? 'Schedule' : 'Select a date'}
                                     </h3>

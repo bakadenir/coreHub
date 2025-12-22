@@ -1,6 +1,6 @@
 import { db } from '../config/database';
 import { notes } from '../db/schema';
-import { eq, and, isNull, desc, asc, like, or } from 'drizzle-orm';
+import { eq, and, isNull, desc, asc } from 'drizzle-orm';
 
 export interface NoteFilters {
     tag?: string;

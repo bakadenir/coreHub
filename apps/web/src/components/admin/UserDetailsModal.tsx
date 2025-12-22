@@ -74,8 +74,8 @@ export default function UserDetailsModal({ isOpen, onClose, userId }: UserDetail
                             {/* Avatar & Name */}
                             <div className="flex items-center gap-4">
                                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center text-2xl font-bold text-gray-600">
-                                    {user.image ? (
-                                        <img src={user.image} alt="" className="w-full h-full rounded-full object-cover" />
+                                    {user.avatar ? (
+                                        <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
                                     ) : (
                                         user.name.charAt(0)
                                     )}
@@ -91,9 +91,9 @@ export default function UserDetailsModal({ isOpen, onClose, userId }: UserDetail
                                 <div className="flex justify-between py-2 border-b border-gray-100">
                                     <span className="text-sm text-gray-500">Role</span>
                                     <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                                            user.role === 'pro' ? 'bg-blue-100 text-blue-700' :
-                                                user.role === 'banned' ? 'bg-red-100 text-red-700' :
-                                                    'bg-gray-100 text-gray-700'
+                                        user.role === 'pro' ? 'bg-blue-100 text-blue-700' :
+                                            user.role === 'banned' ? 'bg-red-100 text-red-700' :
+                                                'bg-gray-100 text-gray-700'
                                         }`}>
                                         {user.role}
                                     </span>
