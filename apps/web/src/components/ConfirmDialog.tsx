@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -10,6 +10,7 @@ interface ConfirmDialogProps {
     cancelLabel?: string;
     variant?: 'danger' | 'warning' | 'default';
     isLoading?: boolean;
+    confirmText?: string; // If provided, user must type this text to enable confirm button
 }
 
 export default function ConfirmDialog({
@@ -22,8 +23,17 @@ export default function ConfirmDialog({
     cancelLabel = 'Cancel',
     variant = 'danger',
     isLoading = false,
+    confirmText,
 }: ConfirmDialogProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
+    const [typedText, setTypedText] = useState('');
+
+    // Reset typed text when dialog opens/closes
+    useEffect(() => {
+        if (!isOpen) {
+            setTypedText('');
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -68,6 +78,9 @@ export default function ConfirmDialog({
 
     const styles = variantStyles[variant];
 
+    // Check if confirm is allowed
+    const isConfirmDisabled = isLoading || (!!confirmText && typedText.toLowerCase() !== confirmText.toLowerCase());
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
@@ -96,6 +109,23 @@ export default function ConfirmDialog({
                     {message}
                 </p>
 
+                {/* Type to confirm input */}
+                {confirmText && (
+                    <div className="mb-6">
+                        <label className="block text-sm text-gray-600 mb-2 text-center">
+                            Type <span className="font-bold text-red-600">"{confirmText}"</span> to confirm
+                        </label>
+                        <input
+                            type="text"
+                            value={typedText}
+                            onChange={(e) => setTypedText(e.target.value)}
+                            placeholder={confirmText}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-center text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                            autoFocus
+                        />
+                    </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex gap-3">
                     <button
@@ -107,8 +137,8 @@ export default function ConfirmDialog({
                     </button>
                     <button
                         onClick={onConfirm}
-                        disabled={isLoading}
-                        className={`flex-1 px-4 py-2.5 text-sm font-medium text-white ${styles.buttonBg} rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2`}
+                        disabled={isConfirmDisabled}
+                        className={`flex-1 px-4 py-2.5 text-sm font-medium text-white ${styles.buttonBg} rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
                     >
                         {isLoading && (
                             <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
@@ -120,3 +150,4 @@ export default function ConfirmDialog({
         </div>
     );
 }
+

@@ -89,4 +89,18 @@ router.get('/:orderId', async (req, res) => {
     }
 });
 
+// POST /api/donations/:orderId/verify - Manually verify transaction status with Midtrans
+router.post('/:orderId/verify', async (req, res) => {
+    try {
+        const donation = await donationsService.verifyTransaction(req.params.orderId);
+        if (!donation) {
+            return errorResponse(res, 'Not Found', 'Donation not found');
+        }
+        return successResponse(res, donation);
+    } catch (error) {
+        console.error('Error verifying donation:', error);
+        return serverErrorResponse(res);
+    }
+});
+
 export default router;

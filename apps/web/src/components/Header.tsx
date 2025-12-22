@@ -123,8 +123,8 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                                 <p className="text-sm font-semibold text-gray-900 leading-none">
                                     {displayName}
                                 </p>
-                                <p className="text-xs text-gray-500 mt-1 capitalize">
-                                    {user?.role || 'user'} Member
+                                <p className="text-xs text-gray-500 mt-1">
+                                    {user?.role === 'admin' ? 'Admin' : 'Free Trial'}
                                 </p>
                             </div>
                             <img

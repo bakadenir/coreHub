@@ -52,6 +52,7 @@ export class DonationsService {
         }).returning();
 
         // Create Midtrans transaction
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const parameter = {
             transaction_details: {
                 order_id: orderId,
@@ -67,6 +68,11 @@ export class DonationsService {
                 quantity: 1,
                 name: `Donation to coreHub${data.message ? ` - ${data.message.substring(0, 50)}` : ''}`,
             }],
+            callbacks: {
+                finish: `${frontendUrl}/donate?status=success&order_id=${orderId}`,
+                error: `${frontendUrl}/donate?status=error&order_id=${orderId}`,
+                pending: `${frontendUrl}/donate?status=pending&order_id=${orderId}`,
+            },
         };
 
         try {
@@ -124,6 +130,58 @@ export class DonationsService {
             .returning();
 
         return updated;
+    }
+
+    // Verify transaction status directly with Midtrans (for localhost testing when webhook can't reach)
+    async verifyTransaction(orderId: string) {
+        try {
+            // Get transaction status from Midtrans
+            const statusResponse = await coreApi.transaction.status(orderId);
+            console.log('Midtrans status check:', statusResponse);
+
+            const { transaction_status, fraud_status, transaction_id } = statusResponse;
+
+            let status: string;
+            if (transaction_status === 'capture' || transaction_status === 'settlement') {
+                if (fraud_status === 'accept' || !fraud_status) {
+                    status = 'success';
+                } else {
+                    status = 'failed';
+                }
+            } else if (transaction_status === 'pending') {
+                status = 'pending';
+            } else if (transaction_status === 'deny' || transaction_status === 'cancel' || transaction_status === 'expire') {
+                status = transaction_status === 'expire' ? 'expired' : 'failed';
+            } else {
+                status = 'pending';
+            }
+
+            // Update donation record
+            const [updated] = await db.update(donations)
+                .set({
+                    status,
+                    transactionId: transaction_id,
+                    paidAt: status === 'success' ? new Date() : null,
+                })
+                .where(eq(donations.orderId, orderId))
+                .returning();
+
+            // Create notification for user if payment was successful
+            if (status === 'success' && updated?.userId) {
+                const { createNotification } = await import('./notifications.service');
+                await createNotification(
+                    updated.userId,
+                    'system',
+                    'Thank you for your donation! 🎉',
+                    `Your donation of Rp ${updated.amount.toLocaleString('id-ID')} has been received. Thank you for supporting coreHub!`
+                );
+            }
+
+            return updated;
+        } catch (error) {
+            console.error('Error verifying transaction:', error);
+            throw error;
+        }
     }
 
     // Get all successful donations (public)

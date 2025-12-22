@@ -21,6 +21,7 @@ declare global {
 
 interface Donation {
     id: string;
+    orderId: string;
     amount: number;
     currency: string;
     name: string;
@@ -218,10 +219,16 @@ export default function Donate() {
                 // Open Midtrans Snap popup
                 if (window.snap) {
                     window.snap.pay(result.data.snapToken, {
-                        onSuccess: () => {
+                        onSuccess: async () => {
                             showToast('Terima kasih atas donasi Anda! 🎉', 'success');
                             setDonationAmount('');
                             setDonationMessage('');
+                            // Verify transaction status with Midtrans (needed for localhost)
+                            try {
+                                await donationsApi.verify(result.data!.donation.orderId);
+                            } catch (e) {
+                                console.error('Verify error:', e);
+                            }
                             // Refresh donations list
                             donationsApi.getPublic(20).then(res => {
                                 if (res.success && res.data) setDonationsList(res.data);

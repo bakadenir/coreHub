@@ -47,6 +47,8 @@ export default function NotificationBell() {
                 return 'check_circle';
             case 'schedule_reminder':
                 return 'event';
+            case 'system':
+                return 'volunteer_activism';
             default:
                 return 'notifications';
         }
@@ -100,7 +102,8 @@ export default function NotificationBell() {
                                 >
                                     <div className="flex gap-3">
                                         <div className={`w-8 h-8 flex items-center justify-center rounded-full ${notification.type === 'habit_reminder' ? 'bg-green-100 text-green-600' :
-                                                notification.type === 'schedule_reminder' ? 'bg-blue-100 text-blue-600' :
+                                            notification.type === 'schedule_reminder' ? 'bg-blue-100 text-blue-600' :
+                                                notification.type === 'system' ? 'bg-amber-100 text-amber-600' :
                                                     'bg-gray-100 text-gray-600'
                                             }`}>
                                             <span className="material-icons-outlined text-lg">

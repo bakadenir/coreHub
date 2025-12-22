@@ -9,6 +9,7 @@ export interface CreateDonationDto {
 
 export interface Donation {
     id: string;
+    orderId: string;
     amount: number;
     currency: string;
     name: string;
@@ -38,4 +39,8 @@ export const donationsApi = {
     // Get donation by order ID
     getByOrderId: (orderId: string): Promise<ApiResponse<Donation>> =>
         api.get(`/api/donations/${orderId}`),
+
+    // Verify transaction status with Midtrans (for localhost testing)
+    verify: (orderId: string): Promise<ApiResponse<Donation>> =>
+        api.post(`/api/donations/${orderId}/verify`),
 };

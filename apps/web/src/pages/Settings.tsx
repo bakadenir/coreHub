@@ -293,7 +293,7 @@ export default function Settings() {
                                 />
                                 <div className="hidden sm:block">
                                     <h3 className="text-lg font-bold text-text-primary">{name || 'User'}</h3>
-                                    <p className="text-sm text-text-secondary mb-2">{role === 'user' ? 'Free Member' : role === 'admin' ? 'Admin' : role}</p>
+                                    <p className="text-sm text-text-secondary mb-2">{role === 'user' ? 'Free Trial' : role === 'admin' ? 'Admin' : role}</p>
                                 </div>
                             </div>
 
@@ -587,6 +587,7 @@ export default function Settings() {
                 confirmLabel="Delete My Account"
                 variant="danger"
                 isLoading={isDeletingAccount}
+                confirmText="delete"
             />
         </div>
     );

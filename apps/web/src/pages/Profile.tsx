@@ -49,8 +49,8 @@ export default function Profile() {
 
     const name = user?.name || sessionUser?.name || 'User';
     const roleRaw = user?.role || sessionUser?.role || 'user';
-    // Convert 'user' role to 'Free Member' display
-    const role = roleRaw === 'user' ? 'Free Member' : roleRaw === 'admin' ? 'Admin' : roleRaw;
+    // Convert 'user' role to 'Free Trial' display
+    const role = roleRaw === 'user' ? 'Free Trial' : roleRaw === 'admin' ? 'Admin' : roleRaw;
     const email = user?.email || sessionUser?.email || '';
     const bio = user?.bio || 'No bio yet.';
     // Better fallback: check for null, undefined, or empty string

@@ -1,5 +1,6 @@
 
 import { Link } from 'react-router-dom';
+import CookieConsent from '../components/CookieConsent';
 
 export default function Landing() {
     return (
@@ -96,52 +97,52 @@ export default function Landing() {
                     <div className="w-full max-w-[1200px] mx-auto px-4 md:px-10 flex flex-col gap-16">
                         <div className="flex flex-col gap-4 text-center items-center">
                             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-text-primary max-w-[800px]">
-                                Your brain, <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">organized</span>.
+                                Your brain, <span className="text-gray-400">organized</span>.
                             </h2>
                             <p className="text-lg text-text-secondary max-w-[600px]">
                                 Stop switching between 4 different apps. coreHub gives you a unified system to track everything that matters.
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {/* Feature 1 */}
-                            <div className="group flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                <div className="w-16 h-16 flex items-center justify-center bg-purple-50 rounded-3xl text-purple-600 group-hover:scale-110 transition-transform duration-300">
-                                    <span className="material-icons-outlined text-[32px]">check_circle</span>
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                                    <span className="material-icons-outlined text-[24px]">check_circle</span>
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    <h3 className="text-xl font-bold text-gray-900">Habit Tracker</h3>
-                                    <p className="text-base text-gray-500 leading-relaxed">Build steel-strong habits with visual streaks and daily targets.</p>
+                                <div className="flex flex-col gap-1.5">
+                                    <h3 className="text-lg font-bold text-gray-900">Habit Tracker</h3>
+                                    <p className="text-sm text-gray-500 leading-relaxed">Build steel-strong habits with visual streaks and daily targets.</p>
                                 </div>
                             </div>
                             {/* Feature 2 */}
-                            <div className="group flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                <div className="w-16 h-16 flex items-center justify-center bg-blue-50 rounded-3xl text-blue-600 group-hover:scale-110 transition-transform duration-300">
-                                    <span className="material-icons-outlined text-[32px]">calendar_today</span>
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                                    <span className="material-icons-outlined text-[24px]">calendar_today</span>
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    <h3 className="text-xl font-bold text-gray-900">Smart Schedule</h3>
-                                    <p className="text-base text-gray-500 leading-relaxed">Time-block your day effortlessly and never miss a beat.</p>
+                                <div className="flex flex-col gap-1.5">
+                                    <h3 className="text-lg font-bold text-gray-900">Smart Schedule</h3>
+                                    <p className="text-sm text-gray-500 leading-relaxed">Time-block your day effortlessly and never miss a beat.</p>
                                 </div>
                             </div>
                             {/* Feature 3 */}
-                            <div className="group flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                <div className="w-16 h-16 flex items-center justify-center bg-amber-50 rounded-3xl text-amber-600 group-hover:scale-110 transition-transform duration-300">
-                                    <span className="material-icons-outlined text-[32px]">edit_note</span>
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                                    <span className="material-icons-outlined text-[24px]">edit_note</span>
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    <h3 className="text-xl font-bold text-gray-900">Quick Notes</h3>
-                                    <p className="text-base text-gray-500 leading-relaxed">Capture fleeting thoughts instantly in a distraction-free editor.</p>
+                                <div className="flex flex-col gap-1.5">
+                                    <h3 className="text-lg font-bold text-gray-900">Quick Notes</h3>
+                                    <p className="text-sm text-gray-500 leading-relaxed">Capture fleeting thoughts instantly in a distraction-free editor.</p>
                                 </div>
                             </div>
                             {/* Feature 4 */}
-                            <div className="group flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                                <div className="w-16 h-16 flex items-center justify-center bg-green-50 rounded-3xl text-green-600 group-hover:scale-110 transition-transform duration-300">
-                                    <span className="material-icons-outlined text-[32px]">link</span>
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                                    <span className="material-icons-outlined text-[24px]">link</span>
                                 </div>
-                                <div className="flex flex-col gap-2">
-                                    <h3 className="text-xl font-bold text-gray-900">Link Vault</h3>
-                                    <p className="text-base text-gray-500 leading-relaxed">Save resources and bookmarks for later reading and reference.</p>
+                                <div className="flex flex-col gap-1.5">
+                                    <h3 className="text-lg font-bold text-gray-900">Link Vault</h3>
+                                    <p className="text-sm text-gray-500 leading-relaxed">Save resources and bookmarks for later reading and reference.</p>
                                 </div>
                             </div>
                         </div>
@@ -175,6 +176,9 @@ export default function Landing() {
                     <p className="text-sm text-text-secondary">© 2025 coreHub. All rights reserved. Code with <a href="https://www.linkedin.com/in/bakadenir/" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
                 </div>
             </footer>
+
+            {/* Cookie Consent Banner */}
+            <CookieConsent />
         </div>
     );
 }
