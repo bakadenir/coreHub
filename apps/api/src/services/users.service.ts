@@ -1,48 +1,55 @@
-import { db } from '../config/database';
-import { user } from '../db/schema';  // Use 'user' table from better-auth, not 'users'
-import { eq } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 
 export interface UpdateUserDto {
     name?: string;
     bio?: string;
-    image?: string;  // Changed from 'avatar' to 'image' to match schema
+    image?: string;
 }
 
 export class UsersService {
     async findById(id: string) {
-        return db.query.user.findFirst({
-            where: eq(user.id, id),
-        });
+        // User data is now managed by Supabase Auth
+        // We can get user from auth.users or create a profiles table
+        const { data, error } = await supabase.auth.admin.getUserById(id);
+        if (error) throw error;
+        return data.user;
     }
 
     async update(id: string, data: UpdateUserDto) {
-        const [updatedUser] = await db.update(user)
-            .set({ ...data, updatedAt: new Date() })
-            .where(eq(user.id, id))
-            .returning();
-        return updatedUser;
+        // Update user metadata in Supabase Auth
+        const { data: userData, error } = await supabase.auth.admin.updateUserById(id, {
+            user_metadata: {
+                name: data.name,
+                bio: data.bio,
+                image: data.image,
+            },
+        });
+        if (error) throw error;
+        return userData.user;
     }
 
     async updateUsername(id: string, username: string) {
-        // Check if username is already taken
-        const existing = await db.query.user.findFirst({
-            where: eq(user.username, username),
-        });
+        // Check if username is already taken by listing users
+        const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+        if (listError) throw listError;
 
-        if (existing && existing.id !== id) {
+        const existing = users.users.find(u =>
+            u.user_metadata?.username === username && u.id !== id
+        );
+
+        if (existing) {
             throw new Error('Username already taken');
         }
 
-        const [updatedUser] = await db.update(user)
-            .set({ username, updatedAt: new Date() })
-            .where(eq(user.id, id))
-            .returning();
-        return updatedUser;
+        const { data: userData, error } = await supabase.auth.admin.updateUserById(id, {
+            user_metadata: { username },
+        });
+        if (error) throw error;
+        return userData.user;
     }
 
     async softDelete(id: string) {
-        // For better-auth, we should delete the user entirely
-        // or add a deletedAt field to the schema
-        await db.delete(user).where(eq(user.id, id));
+        const { error } = await supabase.auth.admin.deleteUser(id);
+        if (error) throw error;
     }
 }

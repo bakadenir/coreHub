@@ -1,6 +1,4 @@
-import { db } from '../config/database';
-import { notifications, notificationSettings, pushSubscriptions } from '../db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 
 // Create a new notification
 export async function createNotification(
@@ -11,84 +9,109 @@ export async function createNotification(
     referenceId?: string,
     referenceType?: 'habit' | 'schedule'
 ) {
-    const [notification] = await db.insert(notifications).values({
-        userId,
-        type,
-        title,
-        message,
-        referenceId,
-        referenceType,
-    }).returning();
-    return notification;
+    const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+            user_id: userId,
+            type,
+            title,
+            message,
+            reference_id: referenceId,
+            reference_type: referenceType,
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 }
 
 // Get notifications for a user
 export async function getNotifications(userId: string, limit = 20, unreadOnly = false) {
-    const conditions = [eq(notifications.userId, userId)];
+    let query = supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId);
+
     if (unreadOnly) {
-        conditions.push(eq(notifications.isRead, false));
+        query = query.eq('is_read', false);
     }
 
-    return db.select()
-        .from(notifications)
-        .where(and(...conditions))
-        .orderBy(desc(notifications.createdAt))
+    const { data, error } = await query
+        .order('created_at', { ascending: false })
         .limit(limit);
+
+    if (error) throw error;
+    return data || [];
 }
 
 // Get unread notification count
 export async function getUnreadCount(userId: string) {
-    const result = await db.select()
-        .from(notifications)
-        .where(and(
-            eq(notifications.userId, userId),
-            eq(notifications.isRead, false)
-        ));
-    return result.length;
+    const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+    if (error) throw error;
+    return count || 0;
 }
 
 // Mark a notification as read
 export async function markAsRead(notificationId: string, userId: string) {
-    const [updated] = await db.update(notifications)
-        .set({ isRead: true })
-        .where(and(
-            eq(notifications.id, notificationId),
-            eq(notifications.userId, userId)
-        ))
-        .returning();
-    return updated;
+    const { data, error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 }
 
 // Mark all notifications as read
 export async function markAllAsRead(userId: string) {
-    await db.update(notifications)
-        .set({ isRead: true })
-        .where(eq(notifications.userId, userId));
+    const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId);
+
+    if (error) throw error;
 }
 
 // Delete a notification
 export async function deleteNotification(notificationId: string, userId: string) {
-    const [deleted] = await db.delete(notifications)
-        .where(and(
-            eq(notifications.id, notificationId),
-            eq(notifications.userId, userId)
-        ))
-        .returning();
-    return deleted;
+    const { data, error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 }
 
 // Get or create notification settings
 export async function getNotificationSettings(userId: string) {
-    const [existing] = await db.select()
-        .from(notificationSettings)
-        .where(eq(notificationSettings.userId, userId));
+    const { data: existing } = await supabase
+        .from('notification_settings')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
     if (existing) return existing;
 
-    // Create default settings
-    const [created] = await db.insert(notificationSettings).values({
-        userId,
-    }).returning();
+    const { data: created, error } = await supabase
+        .from('notification_settings')
+        .insert({ user_id: userId })
+        .select()
+        .single();
+
+    if (error) throw error;
     return created;
 }
 
@@ -99,17 +122,23 @@ export async function updateNotificationSettings(userId: string, updates: {
     scheduleReminderMinutes?: number;
     pushEnabled?: boolean;
 }) {
-    // Ensure settings exist first
     await getNotificationSettings(userId);
 
-    const [updated] = await db.update(notificationSettings)
-        .set({
-            ...updates,
-            updatedAt: new Date(),
-        })
-        .where(eq(notificationSettings.userId, userId))
-        .returning();
-    return updated;
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (updates.habitReminders !== undefined) updateData.habit_reminders = updates.habitReminders;
+    if (updates.scheduleReminders !== undefined) updateData.schedule_reminders = updates.scheduleReminders;
+    if (updates.scheduleReminderMinutes !== undefined) updateData.schedule_reminder_minutes = updates.scheduleReminderMinutes;
+    if (updates.pushEnabled !== undefined) updateData.push_enabled = updates.pushEnabled;
+
+    const { data, error } = await supabase
+        .from('notification_settings')
+        .update(updateData)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 }
 
 // Save a push subscription
@@ -120,34 +149,48 @@ export async function savePushSubscription(
     auth: string,
     userAgent?: string
 ) {
-    // Remove existing subscription for this endpoint if exists
-    await db.delete(pushSubscriptions)
-        .where(eq(pushSubscriptions.endpoint, endpoint));
+    await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('endpoint', endpoint);
 
-    const [subscription] = await db.insert(pushSubscriptions).values({
-        userId,
-        endpoint,
-        p256dh,
-        auth,
-        userAgent,
-    }).returning();
-    return subscription;
+    const { data, error } = await supabase
+        .from('push_subscriptions')
+        .insert({
+            user_id: userId,
+            endpoint,
+            p256dh,
+            auth,
+            user_agent: userAgent,
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 }
 
 // Get push subscriptions for a user
 export async function getPushSubscriptions(userId: string) {
-    return db.select()
-        .from(pushSubscriptions)
-        .where(eq(pushSubscriptions.userId, userId));
+    const { data, error } = await supabase
+        .from('push_subscriptions')
+        .select('*')
+        .eq('user_id', userId);
+
+    if (error) throw error;
+    return data || [];
 }
 
 // Remove a push subscription
 export async function removePushSubscription(userId: string, endpoint: string) {
-    const [removed] = await db.delete(pushSubscriptions)
-        .where(and(
-            eq(pushSubscriptions.userId, userId),
-            eq(pushSubscriptions.endpoint, endpoint)
-        ))
-        .returning();
-    return removed;
+    const { data, error } = await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('endpoint', endpoint)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 }

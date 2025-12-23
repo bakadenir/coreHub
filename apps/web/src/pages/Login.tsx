@@ -44,25 +44,14 @@ export default function Login() {
         }
 
         try {
+            // Supabase only supports email login, not username
+            // If user entered a non-email, show error
             let emailToUse = formData.email;
 
-            // If not an email (no @), try to lookup by username
             if (!formData.email.includes('@')) {
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-                const lookupRes = await fetch(`${apiUrl}/api/auth-custom/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ identifier: formData.email, password: formData.password }),
-                });
-                const lookupData = await lookupRes.json();
-
-                if (!lookupRes.ok || !lookupData.data?.email) {
-                    showToast('Invalid username or password', 'error');
-                    setIsLoading(false);
-                    return;
-                }
-                emailToUse = lookupData.data.email;
+                showToast('Please use your email address to login', 'error');
+                setIsLoading(false);
+                return;
             }
 
             const result = await signIn.email({
@@ -77,10 +66,9 @@ export default function Login() {
             }
 
             // Check user role for admin redirect
-            const userRole = (result.data?.user as any)?.role;
+            const userRole = (result.data?.user as any)?.user_metadata?.role;
             if (userRole === 'admin') {
                 showToast('Welcome back! Redirecting to admin...', 'success');
-                // Use setTimeout to ensure session is fully set before redirect
                 setTimeout(() => {
                     window.location.href = '/admin';
                 }, 100);

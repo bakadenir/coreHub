@@ -10,6 +10,6 @@ export { notificationsApi } from './notifications.api';
 export { feedbackApi } from './feedback.api';
 export { donationsApi } from './donations.api';
 export { api } from './api';
-export { authClient, signIn, signUp, signOut, useSession, getSession } from './auth';
+export { signIn, signUp, signOut, getSession } from './auth';
 
 

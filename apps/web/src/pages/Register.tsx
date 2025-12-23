@@ -88,10 +88,11 @@ export default function Register() {
         }
 
         try {
+            // Username is stored in Supabase user_metadata
             const result = await signUp.email({
                 email: formData.email,
                 password: formData.password,
-                name: formData.username,  // Use username as display name
+                name: formData.username,
             });
 
             if (result.error) {
@@ -100,23 +101,7 @@ export default function Register() {
                 return;
             }
 
-            // Save username to database after account creation
-            if (result.data?.user) {
-                try {
-                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-                    await fetch(`${apiUrl}/api/auth-custom/set-username`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        credentials: 'include',
-                        body: JSON.stringify({ username: formData.username }),
-                    });
-                } catch {
-                    // Username save failed but account created
-                    console.log('Username save failed during registration');
-                }
-            }
-
-            showToast('Account created successfully! Please login.', 'success');
+            showToast('Account created successfully! Please check your email to verify.', 'success');
             navigate('/login');
         } catch (error) {
             showToast('An error occurred during registration', 'error');

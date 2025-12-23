@@ -1,9 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { successResponse, errorResponse, serverErrorResponse } from '../utils/response';
-import { db } from '../config/database';
-import { user } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 import fs from 'fs';
 import path from 'path';
 
@@ -43,13 +41,11 @@ router.post('/avatar', authMiddleware, async (req: Request, res: Response) => {
         const filename = `${req.user!.id}_${Date.now()}.${extension}`;
         const filepath = path.join(UPLOADS_DIR, filename);
 
-        // Delete old avatar if exists
-        const existingUser = await db.query.user.findFirst({
-            where: eq(user.id, req.user!.id),
-        });
+        // Get current user to find old avatar
+        const { data: userData } = await supabase.auth.admin.getUserById(req.user!.id);
 
-        if (existingUser?.image?.startsWith('/uploads/avatars/')) {
-            const oldFilename = existingUser.image.replace('/uploads/avatars/', '');
+        if (userData?.user?.user_metadata?.image?.startsWith('/uploads/avatars/')) {
+            const oldFilename = userData.user.user_metadata.image.replace('/uploads/avatars/', '');
             const oldFilepath = path.join(UPLOADS_DIR, oldFilename);
             if (fs.existsSync(oldFilepath)) {
                 fs.unlinkSync(oldFilepath);
@@ -59,11 +55,11 @@ router.post('/avatar', authMiddleware, async (req: Request, res: Response) => {
         // Save file
         fs.writeFileSync(filepath, buffer);
 
-        // Update database with URL (not base64)
+        // Update user metadata with avatar URL
         const avatarUrl = `/uploads/avatars/${filename}`;
-        await db.update(user)
-            .set({ image: avatarUrl, updatedAt: new Date() })
-            .where(eq(user.id, req.user!.id));
+        await supabase.auth.admin.updateUserById(req.user!.id, {
+            user_metadata: { image: avatarUrl },
+        });
 
         return successResponse(res, { avatarUrl });
     } catch (error) {

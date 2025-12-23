@@ -1,128 +1,135 @@
-import { db } from '../config/database';
-import { feedback } from '../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 
 export interface CreateFeedbackDto {
     name?: string;
-    avatar?: string; // user avatar URL
-    rating: number; // 1-5
+    avatar?: string;
+    rating: number;
     comment: string;
 }
 
 export class FeedbackService {
-    // Create or update feedback - one review per user
     async createOrUpdate(userId: string | null, data: CreateFeedbackDto) {
-        // If user is logged in, check if they already have a review
         if (userId) {
-            const existing = await db.query.feedback.findFirst({
-                where: eq(feedback.userId, userId),
-            });
+            const { data: existing } = await supabase
+                .from('feedback')
+                .select('*')
+                .eq('user_id', userId)
+                .single();
 
             if (existing) {
-                // Update existing review
-                const [result] = await db.update(feedback)
-                    .set({
+                const { data: result, error } = await supabase
+                    .from('feedback')
+                    .update({
                         name: data.name || existing.name,
                         rating: Math.min(5, Math.max(1, data.rating)),
                         comment: data.comment,
-                        updatedAt: new Date(),
+                        updated_at: new Date().toISOString(),
                     })
-                    .where(eq(feedback.id, existing.id))
-                    .returning();
+                    .eq('id', existing.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
                 return result;
             }
         }
 
-        // Create new review
-        const [result] = await db.insert(feedback).values({
-            userId,
-            name: data.name || 'Anonymous',
-            avatar: data.avatar || null,
-            rating: Math.min(5, Math.max(1, data.rating)),
-            comment: data.comment,
-            isPublic: true,
-            isApproved: true,
-        }).returning();
+        const { data: result, error } = await supabase
+            .from('feedback')
+            .insert({
+                user_id: userId,
+                name: data.name || 'Anonymous',
+                avatar: data.avatar || null,
+                rating: Math.min(5, Math.max(1, data.rating)),
+                comment: data.comment,
+                is_public: true,
+                is_approved: true,
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
         return result;
     }
 
-    // Update existing review by ID
     async update(id: string, userId: string, data: CreateFeedbackDto) {
-        // Verify ownership
-        const existing = await db.query.feedback.findFirst({
-            where: eq(feedback.id, id),
-        });
+        const { data: existing } = await supabase
+            .from('feedback')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-        if (!existing || existing.userId !== userId) {
-            return null; // Not found or not owner
+        if (!existing || existing.user_id !== userId) {
+            return null;
         }
 
-        const [result] = await db.update(feedback)
-            .set({
+        const { data: result, error } = await supabase
+            .from('feedback')
+            .update({
                 name: data.name || existing.name,
                 rating: Math.min(5, Math.max(1, data.rating)),
                 comment: data.comment,
-                updatedAt: new Date(),
+                updated_at: new Date().toISOString(),
             })
-            .where(eq(feedback.id, id))
-            .returning();
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
         return result;
     }
 
-    // Get all public reviews (transparent - no approval needed)
     async getPublicReviews(limit: number = 10) {
-        const results = await db.query.feedback.findMany({
-            orderBy: [desc(feedback.createdAt)],
-            limit,
-            with: {
-                user: true, // Include user relation to get avatar
-            },
-        });
+        const { data, error } = await supabase
+            .from('feedback')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(limit);
 
-        // Map user image to avatar for each review
-        return results.map((r: any) => ({
-            ...r,
-            avatar: r.user?.image || r.avatar || null, // Prefer user's image, fallback to stored avatar
-            user: undefined, // Don't expose full user object
-        }));
+        if (error) throw error;
+        return data || [];
     }
 
-    // Get all feedback for admin review
     async getAllForAdmin(filter?: 'pending' | 'approved' | 'all') {
-        let condition;
+        let query = supabase.from('feedback').select('*');
+
         if (filter === 'pending') {
-            condition = eq(feedback.isApproved, false);
+            query = query.eq('is_approved', false);
         } else if (filter === 'approved') {
-            condition = eq(feedback.isApproved, true);
+            query = query.eq('is_approved', true);
         }
 
-        const results = await db.query.feedback.findMany({
-            where: condition,
-            orderBy: [desc(feedback.createdAt)],
-        });
-        return results;
+        const { data, error } = await query.order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
     }
 
-    // Approve feedback (admin)
     async approve(id: string) {
-        const [result] = await db.update(feedback)
-            .set({ isApproved: true, updatedAt: new Date() })
-            .where(eq(feedback.id, id))
-            .returning();
-        return result;
+        const { data, error } = await supabase
+            .from('feedback')
+            .update({ is_approved: true, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
     }
 
-    // Reject/delete feedback (admin)
     async delete(id: string) {
-        await db.delete(feedback).where(eq(feedback.id, id));
+        const { error } = await supabase.from('feedback').delete().eq('id', id);
+        if (error) throw error;
     }
 
-    // Get feedback by user
     async getByUser(userId: string) {
-        const results = await db.query.feedback.findMany({
-            where: eq(feedback.userId, userId),
-            orderBy: [desc(feedback.createdAt)],
-        });
-        return results;
+        const { data, error } = await supabase
+            .from('feedback')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
     }
 }

@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware';
-import { db } from '../config/database';
-import { habits, notes, links, scheduleEvents } from '../db/schema';
-import { and, eq, ilike, or, isNull } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 import { successResponse, serverErrorResponse } from '../utils/response';
 
 const router = Router();
@@ -32,28 +30,15 @@ router.get('/', async (req, res) => {
         const results: SearchResult[] = [];
 
         // Search habits
-        const habitResults = await db
-            .select({
-                id: habits.id,
-                name: habits.name,
-                category: habits.category,
-                icon: habits.icon,
-            })
-            .from(habits)
-            .where(
-                and(
-                    eq(habits.userId, userId),
-                    isNull(habits.deletedAt),
-                    or(
-                        ilike(habits.name, searchTerm),
-                        ilike(habits.description, searchTerm),
-                        ilike(habits.category, searchTerm)
-                    )
-                )
-            )
+        const { data: habitResults } = await supabase
+            .from('habits')
+            .select('id, name, category, icon')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .or(`name.ilike.${searchTerm},description.ilike.${searchTerm},category.ilike.${searchTerm}`)
             .limit(5);
 
-        for (const habit of habitResults) {
+        for (const habit of habitResults || []) {
             results.push({
                 type: 'habit',
                 id: habit.id,
@@ -64,27 +49,15 @@ router.get('/', async (req, res) => {
         }
 
         // Search notes
-        const noteResults = await db
-            .select({
-                id: notes.id,
-                title: notes.title,
-                tag: notes.tag,
-            })
-            .from(notes)
-            .where(
-                and(
-                    eq(notes.userId, userId),
-                    isNull(notes.deletedAt),
-                    or(
-                        ilike(notes.title, searchTerm),
-                        ilike(notes.content, searchTerm),
-                        ilike(notes.tag, searchTerm)
-                    )
-                )
-            )
+        const { data: noteResults } = await supabase
+            .from('notes')
+            .select('id, title, tag')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .or(`title.ilike.${searchTerm},content.ilike.${searchTerm},tag.ilike.${searchTerm}`)
             .limit(5);
 
-        for (const note of noteResults) {
+        for (const note of noteResults || []) {
             results.push({
                 type: 'note',
                 id: note.id,
@@ -95,27 +68,15 @@ router.get('/', async (req, res) => {
         }
 
         // Search links
-        const linkResults = await db
-            .select({
-                id: links.id,
-                title: links.title,
-                url: links.url,
-            })
-            .from(links)
-            .where(
-                and(
-                    eq(links.userId, userId),
-                    isNull(links.deletedAt),
-                    or(
-                        ilike(links.title, searchTerm),
-                        ilike(links.description, searchTerm),
-                        ilike(links.url, searchTerm)
-                    )
-                )
-            )
+        const { data: linkResults } = await supabase
+            .from('links')
+            .select('id, title, url')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},url.ilike.${searchTerm}`)
             .limit(5);
 
-        for (const link of linkResults) {
+        for (const link of linkResults || []) {
             results.push({
                 type: 'link',
                 id: link.id,
@@ -127,27 +88,15 @@ router.get('/', async (req, res) => {
         }
 
         // Search schedules
-        const scheduleResults = await db
-            .select({
-                id: scheduleEvents.id,
-                title: scheduleEvents.title,
-                location: scheduleEvents.location,
-            })
-            .from(scheduleEvents)
-            .where(
-                and(
-                    eq(scheduleEvents.userId, userId),
-                    isNull(scheduleEvents.deletedAt),
-                    or(
-                        ilike(scheduleEvents.title, searchTerm),
-                        ilike(scheduleEvents.description, searchTerm),
-                        ilike(scheduleEvents.location, searchTerm)
-                    )
-                )
-            )
+        const { data: scheduleResults } = await supabase
+            .from('schedule_events')
+            .select('id, title, location')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .or(`title.ilike.${searchTerm},description.ilike.${searchTerm},location.ilike.${searchTerm}`)
             .limit(5);
 
-        for (const event of scheduleResults) {
+        for (const event of scheduleResults || []) {
             results.push({
                 type: 'schedule',
                 id: event.id,

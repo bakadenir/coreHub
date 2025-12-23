@@ -1,213 +1,201 @@
-# CoreHub Setup Guide 🚀
+# CoreHub - Project Setup Guide
 
-Panduan lengkap untuk setup project CoreHub di komputer baru.
+## 🎯 Project Status: Supabase Migration Complete
 
-## Prerequisites
-
-Pastikan sudah terinstall:
-- **Node.js** v18+ (https://nodejs.org)
-- **PostgreSQL** v14+ (https://www.postgresql.org/download/)
-- **Git** (https://git-scm.com)
+The project has been migrated from **Better Auth + Drizzle ORM** to **Supabase Cloud**.
 
 ---
 
-## Step 1: Clone Repository
+## 📋 Quick Start
 
+### Prerequisites
+- Node.js v22+
+- npm v10+
+- Supabase account (project already created)
+
+### 1. Clone & Install
 ```bash
-git clone https://github.com/bakadenir/coreHub.git
+git clone <your-repo-url>
 cd coreHub
-```
-
----
-
-## Step 2: Install Dependencies
-
-```bash
-# Install all dependencies (root + apps)
 npm install
 ```
 
----
+### 2. Environment Setup
 
-## Step 3: Setup PostgreSQL Database
-
-### Windows (pgAdmin atau psql):
-
-```sql
--- Buka psql atau pgAdmin, run:
-CREATE DATABASE corehub_db;
-```
-
-### macOS/Linux:
-
-```bash
-sudo -u postgres createdb corehub_db
-```
-
----
-
-## Step 4: Configure Environment Variables
-
-### Copy example dan edit:
-
-```bash
-cd apps/api
-cp .env.example .env
-```
-
-### Edit `apps/api/.env`:
-
+**Backend (`apps/api/.env`):**
 ```env
-# Database
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/corehub_db
-
-# JWT Secret (generate random string)
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-
-# Server
-PORT=3001
 NODE_ENV=development
-
-# Frontend URL (for CORS)
+PORT=3001
 FRONTEND_URL=http://localhost:5173
+
+# Supabase (REQUIRED)
+SUPABASE_URL=https://cicskrlvnuvsgvzphwod.supabase.co
+SUPABASE_ANON_KEY=<your-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+
+# Optional - Midtrans (for donations)
+MIDTRANS_SERVER_KEY=
+MIDTRANS_CLIENT_KEY=
+MIDTRANS_IS_PRODUCTION=false
+
+# Optional - Push Notifications
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:admin@corehub.app
 ```
 
-> ⚠️ Ganti `YOUR_PASSWORD` dengan password PostgreSQL kamu!
-
----
-
-## Step 5: Run Database Migrations
-
-```bash
-cd apps/api
-
-# Generate migration files (jika belum ada)
-npm run db:generate
-
-# Push schema ke database
-npm run db:push
+**Frontend (`apps/web/.env`):**
+```env
+VITE_API_URL=http://localhost:3001
+VITE_SUPABASE_URL=https://cicskrlvnuvsgvzphwod.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
 ```
 
----
-
-## Step 6: Start Development Servers
-
-### Terminal 1 - Backend API:
-
+### 3. Run Development Servers
 ```bash
+# Terminal 1 - Backend
 cd apps/api
 npm run dev
-```
 
-API akan jalan di: `http://localhost:3001`
-
-### Terminal 2 - Frontend:
-
-```bash
-# Dari root folder
-npm run dev
-# ATAU
+# Terminal 2 - Frontend
 cd apps/web
 npm run dev
 ```
 
-Frontend akan jalan di: `http://localhost:5173`
+- Backend: http://localhost:3001
+- Frontend: http://localhost:5173
 
 ---
 
-## Step 7: Verify Everything Works
+## 🔐 Supabase Configuration
 
-1. **Buka browser:** `http://localhost:5173`
-2. **Register akun baru**
-3. **Login**
-4. **Test features:** Add habit, schedule, note, link
+### Dashboard Settings (Authentication → Providers → Email)
+- ✅ Allow new users to sign up: **ON**
+- ✅ Confirm email: **OFF** (for development)
+- ✅ Email provider: **Enabled**
 
----
-
-## Optional: Database Studio
-
-Untuk melihat data di database:
-
-```bash
-cd apps/api
-npm run db:studio
-```
-
-Buka: `http://localhost:4983`
+### Get API Keys
+1. Go to https://supabase.com/dashboard
+2. Select your project
+3. Go to **Settings → API**
+4. Copy:
+   - Project URL
+   - anon/public key
+   - service_role key (keep secret!)
 
 ---
 
-## Troubleshooting
-
-### Error: ECONNREFUSED (database connection failed)
-
-- Pastikan PostgreSQL running
-- Cek `DATABASE_URL` di `.env`
-- Cek password PostgreSQL
-
-### Error: JWT_SECRET not defined
-
-- Pastikan `.env` sudah dibuat di `apps/api/`
-- Pastikan `JWT_SECRET` ada dan tidak kosong
-
-### Error: CORS blocked
-
-- Pastikan `FRONTEND_URL=http://localhost:5173` di `.env`
-- Restart backend setelah edit `.env`
-
-### Port already in use
-
-```bash
-# Kill process on port 3001 (backend)
-npx kill-port 3001
-
-# Kill process on port 5173 (frontend)
-npx kill-port 5173
-```
-
----
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 coreHub/
 ├── apps/
-│   ├── api/           # Backend (Hono + Drizzle + PostgreSQL)
+│   ├── api/           # Express.js Backend
 │   │   ├── src/
 │   │   │   ├── config/
-│   │   │   ├── db/schema/
+│   │   │   │   ├── supabase.ts    # Supabase admin client
+│   │   │   │   └── env.ts         # Environment validation
 │   │   │   ├── middleware/
-│   │   │   ├── routes/
-│   │   │   ├── services/
-│   │   │   └── index.ts
-│   │   ├── .env        # Environment variables (JANGAN COMMIT!)
-│   │   └── package.json
-│   │
-│   └── web/           # Frontend (React + Vite + Tailwind)
+│   │   │   │   └── auth.middleware.ts  # JWT verification
+│   │   │   ├── services/          # All 11 services (Supabase)
+│   │   │   └── routes/            # API routes
+│   │   └── .env
+│   └── web/           # React + Vite Frontend
 │       ├── src/
-│       │   ├── components/
-│       │   ├── pages/
 │       │   ├── lib/
+│       │   │   ├── supabaseClient.ts  # Supabase client
+│       │   │   ├── auth.ts            # Auth helpers
+│       │   │   └── api.ts             # API client with Bearer token
 │       │   ├── context/
-│       │   └── App.tsx
-│       └── package.json
-│
-├── package.json       # Root package (workspaces)
-└── README.md
+│       │   │   └── AuthContext.tsx    # Supabase session management
+│       │   └── pages/
+│       │       ├── Login.tsx
+│       │       └── Register.tsx
+│       └── .env
+└── package.json       # Monorepo root
 ```
 
 ---
 
-## Quick Commands
+## ✅ What's Done
 
-| Command | Description |
-|---------|-------------|
-| `npm install` | Install all dependencies |
-| `npm run dev` | Start frontend dev server |
-| `cd apps/api && npm run dev` | Start backend dev server |
-| `cd apps/api && npm run db:push` | Push schema to database |
-| `cd apps/api && npm run db:studio` | Open database GUI |
+- [x] Supabase project created
+- [x] Backend migrated to Supabase client
+- [x] All 11 services rewritten (habits, notes, links, schedules, etc.)
+- [x] Auth middleware uses JWT verification
+- [x] Frontend uses Supabase session
+- [x] API calls include Bearer token automatically
+- [x] Login/Register pages updated
 
 ---
 
-Happy coding! 🎉
+## ⚠️ Known Issues & TODOs
+
+### Current Issues
+1. **Email not confirmed error**: Users created before disabling "Confirm email" still need manual confirmation in Supabase Dashboard
+
+### To Fix
+- Delete test users from Supabase Dashboard and re-register
+- OR manually confirm users via Dashboard → Authentication → Users → ⋮ → Confirm email
+
+### Future TODOs
+- [ ] Test all CRUD operations
+- [ ] Configure Resend for production emails
+- [ ] Setup RLS policies in Supabase (optional)
+- [ ] Deploy to Netlify (frontend) + Railway (backend)
+
+---
+
+## 🌐 Target Deployment
+
+| Component | Service | Status |
+|-----------|---------|--------|
+| Database + Auth | Supabase Cloud | ✅ Ready |
+| Frontend | Netlify | 🔲 Not deployed |
+| Backend | Railway | 🔲 Not deployed |
+| Domain | Hostinger | 🔲 Not configured |
+| Email (OTP) | Resend | 🔲 Not configured |
+
+---
+
+## 🔑 Important Notes
+
+1. **Login only works with email** (username lookup removed)
+2. **Session is JWT-based** (not cookies)
+3. **User metadata** stored in Supabase `user_metadata`, not separate table
+4. **Drizzle ORM removed** - using Supabase client directly
+
+---
+
+## 📞 API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/health` | Health check |
+| `GET /api/habits` | Get user habits |
+| `GET /api/notes` | Get user notes |
+| `GET /api/links` | Get user links |
+| `GET /api/schedules` | Get user schedules |
+| `GET /api/search?q=` | Global search |
+
+All protected endpoints require `Authorization: Bearer <token>` header.
+
+---
+
+## 🆘 Troubleshooting
+
+### "Email not confirmed" on login
+- Delete user from Supabase Dashboard
+- Re-register (Confirm email setting should be OFF)
+
+### Port already in use
+```bash
+# Kill all node processes
+Stop-Process -Name "node" -Force  # Windows
+killall node                       # Mac/Linux
+```
+
+### Module not found errors
+```bash
+npm install  # from root directory
+```

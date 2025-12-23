@@ -1,6 +1,4 @@
-import { db } from '../config/database';
-import { donations } from '../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 /// <reference path="../types/midtrans-client.d.ts" />
 import midtransClient from 'midtrans-client';
 
@@ -35,23 +33,26 @@ export interface MidtransNotification {
 }
 
 export class DonationsService {
-    // Create a new donation and get Midtrans Snap token
     async create(data: CreateDonationDto) {
         const orderId = `DONATE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
-        // Create donation record in database
-        const [donation] = await db.insert(donations).values({
-            orderId,
-            amount: data.amount,
-            name: data.name,
-            email: data.email || null,
-            message: data.message || null,
-            userId: data.userId || null,
-            status: 'pending',
-            paymentType: 'midtrans',
-        }).returning();
+        const { data: donation, error } = await supabase
+            .from('donations')
+            .insert({
+                order_id: orderId,
+                amount: data.amount,
+                name: data.name,
+                email: data.email || null,
+                message: data.message || null,
+                user_id: data.userId || null,
+                status: 'pending',
+                payment_type: 'midtrans',
+            })
+            .select()
+            .single();
 
-        // Create Midtrans transaction
+        if (error) throw error;
+
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const parameter = {
             transaction_details: {
@@ -82,35 +83,28 @@ export class DonationsService {
                 snapToken: snapTransaction.token,
                 redirectUrl: snapTransaction.redirect_url,
             };
-        } catch (error) {
-            // If Midtrans fails, mark donation as failed
-            await db.update(donations)
-                .set({ status: 'failed' })
-                .where(eq(donations.id, donation.id));
-            throw error;
+        } catch (err) {
+            await supabase
+                .from('donations')
+                .update({ status: 'failed' })
+                .eq('id', donation.id);
+            throw err;
         }
     }
 
-    // Handle Midtrans webhook notification
     async handleWebhook(notification: MidtransNotification) {
         const { order_id, transaction_status, transaction_id, fraud_status } = notification;
 
-        // Verify notification signature (optional but recommended)
         try {
             const statusResponse = await coreApi.transaction.notification(notification);
             console.log('Midtrans notification verified:', statusResponse);
-        } catch (error) {
-            console.error('Midtrans notification verification failed:', error);
+        } catch (err) {
+            console.error('Midtrans notification verification failed:', err);
         }
 
         let status: string;
-
         if (transaction_status === 'capture' || transaction_status === 'settlement') {
-            if (fraud_status === 'accept' || !fraud_status) {
-                status = 'success';
-            } else {
-                status = 'failed';
-            }
+            status = (fraud_status === 'accept' || !fraud_status) ? 'success' : 'failed';
         } else if (transaction_status === 'pending') {
             status = 'pending';
         } else if (transaction_status === 'deny' || transaction_status === 'cancel' || transaction_status === 'expire') {
@@ -119,23 +113,23 @@ export class DonationsService {
             status = 'pending';
         }
 
-        // Update donation record
-        const [updated] = await db.update(donations)
-            .set({
+        const { data: updated, error } = await supabase
+            .from('donations')
+            .update({
                 status,
-                transactionId: transaction_id,
-                paidAt: status === 'success' ? new Date() : null,
+                transaction_id,
+                paid_at: status === 'success' ? new Date().toISOString() : null,
             })
-            .where(eq(donations.orderId, order_id))
-            .returning();
+            .eq('order_id', order_id)
+            .select()
+            .single();
 
+        if (error) throw error;
         return updated;
     }
 
-    // Verify transaction status directly with Midtrans (for localhost testing when webhook can't reach)
     async verifyTransaction(orderId: string) {
         try {
-            // Get transaction status from Midtrans
             const statusResponse = await coreApi.transaction.status(orderId);
             console.log('Midtrans status check:', statusResponse);
 
@@ -143,11 +137,7 @@ export class DonationsService {
 
             let status: string;
             if (transaction_status === 'capture' || transaction_status === 'settlement') {
-                if (fraud_status === 'accept' || !fraud_status) {
-                    status = 'success';
-                } else {
-                    status = 'failed';
-                }
+                status = (fraud_status === 'accept' || !fraud_status) ? 'success' : 'failed';
             } else if (transaction_status === 'pending') {
                 status = 'pending';
             } else if (transaction_status === 'deny' || transaction_status === 'cancel' || transaction_status === 'expire') {
@@ -156,63 +146,135 @@ export class DonationsService {
                 status = 'pending';
             }
 
-            // Update donation record
-            const [updated] = await db.update(donations)
-                .set({
+            const { data: updated, error } = await supabase
+                .from('donations')
+                .update({
                     status,
-                    transactionId: transaction_id,
-                    paidAt: status === 'success' ? new Date() : null,
+                    transaction_id,
+                    paid_at: status === 'success' ? new Date().toISOString() : null,
                 })
-                .where(eq(donations.orderId, orderId))
-                .returning();
+                .eq('order_id', orderId)
+                .select()
+                .single();
 
-            // Create notification for user if payment was successful
-            if (status === 'success' && updated?.userId) {
+            if (error) throw error;
+
+            if (status === 'success' && updated?.user_id) {
                 const { createNotification } = await import('./notifications.service');
                 await createNotification(
-                    updated.userId,
+                    updated.user_id,
                     'system',
                     'Thank you for your donation! 🎉',
-                    `Your donation of Rp ${updated.amount.toLocaleString('id-ID')} has been received. Thank you for supporting coreHub!`
+                    `Your donation of Rp ${updated.amount.toLocaleString('id-ID')} has been received.`
                 );
             }
 
             return updated;
-        } catch (error) {
-            console.error('Error verifying transaction:', error);
-            throw error;
+        } catch (err) {
+            console.error('Error verifying transaction:', err);
+            throw err;
         }
     }
 
-    // Get all successful donations (public)
+    async markAsSuccess(orderId: string) {
+        const { data: updated, error } = await supabase
+            .from('donations')
+            .update({ status: 'success', paid_at: new Date().toISOString() })
+            .eq('order_id', orderId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        if (!updated) return null;
+
+        if (updated.user_id) {
+            try {
+                const { createNotification } = await import('./notifications.service');
+                await createNotification(
+                    updated.user_id,
+                    'system',
+                    'Thank you for your donation! 🎉',
+                    `Your donation of Rp ${updated.amount.toLocaleString('id-ID')} has been received.`
+                );
+            } catch (e) {
+                console.error('Error creating notification:', e);
+            }
+        }
+
+        return updated;
+    }
+
     async findAllPublic(limit = 20) {
-        return db.query.donations.findMany({
-            where: eq(donations.status, 'success'),
-            orderBy: desc(donations.paidAt),
-            limit,
-            columns: {
-                id: true,
-                amount: true,
-                currency: true,
-                name: true,
-                message: true,
-                paidAt: true,
-            },
-        });
+        const { data, error } = await supabase
+            .from('donations')
+            .select('id, amount, currency, name, message, paid_at')
+            .eq('status', 'success')
+            .order('paid_at', { ascending: false })
+            .limit(limit);
+
+        if (error) throw error;
+        return data || [];
     }
 
-    // Get user's donations
     async findByUser(userId: string) {
-        return db.query.donations.findMany({
-            where: eq(donations.userId, userId),
-            orderBy: desc(donations.createdAt),
-        });
+        const { data, error } = await supabase
+            .from('donations')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
     }
 
-    // Get donation by order ID
     async findByOrderId(orderId: string) {
-        return db.query.donations.findFirst({
-            where: eq(donations.orderId, orderId),
-        });
+        const { data, error } = await supabase
+            .from('donations')
+            .select('*')
+            .eq('order_id', orderId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    }
+
+    async findAll() {
+        const { data, error } = await supabase
+            .from('donations')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async verifyAllPending() {
+        const { data: pendingDonations } = await supabase
+            .from('donations')
+            .select('*')
+            .eq('status', 'pending');
+
+        const results = [];
+        for (const donation of pendingDonations || []) {
+            try {
+                const updated = await this.verifyTransaction(donation.order_id);
+                results.push({
+                    orderId: donation.order_id,
+                    previousStatus: 'pending',
+                    newStatus: updated?.status || 'unknown',
+                    success: true,
+                });
+            } catch (err) {
+                results.push({
+                    orderId: donation.order_id,
+                    previousStatus: 'pending',
+                    newStatus: 'error',
+                    success: false,
+                    error: err instanceof Error ? err.message : 'Unknown error',
+                });
+            }
+        }
+
+        return { total: (pendingDonations || []).length, results };
     }
 }

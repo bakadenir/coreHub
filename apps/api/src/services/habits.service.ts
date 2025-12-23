@@ -1,6 +1,4 @@
-import { db } from '../config/database';
-import { habits, habitCompletions } from '../db/schema';
-import { eq, and, isNull, desc } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 
 export interface HabitFilters {
     frequency?: string;
@@ -32,72 +30,108 @@ export interface UpdateHabitDto {
 
 export class HabitsService {
     async findAll(userId: string, filters: HabitFilters) {
-        const conditions = [eq(habits.userId, userId), isNull(habits.deletedAt)];
+        let query = supabase
+            .from('habits')
+            .select('*, habit_completions(*)')
+            .eq('user_id', userId)
+            .is('deleted_at', null);
 
         if (filters.frequency) {
-            conditions.push(eq(habits.frequency, filters.frequency));
+            query = query.eq('frequency', filters.frequency);
         }
         if (filters.category) {
-            conditions.push(eq(habits.category, filters.category));
+            query = query.eq('category', filters.category);
         }
         if (!filters.archived) {
-            conditions.push(eq(habits.isArchived, false));
+            query = query.eq('is_archived', false);
         }
 
-        const result = await db.query.habits.findMany({
-            where: and(...conditions),
-            orderBy: desc(habits.createdAt),
-            with: {
-                completions: filters.date ? {
-                    where: eq(habitCompletions.date, filters.date),
-                } : {
-                    limit: 7,
-                    orderBy: desc(habitCompletions.completedAt),
-                },
-            },
-        });
+        const { data, error } = await query.order('created_at', { ascending: false });
 
-        return result.map(habit => ({
+        if (error) throw error;
+
+        const today = new Date().toISOString().split('T')[0];
+
+        return (data || []).map(habit => ({
             ...habit,
-            completed: filters.date
-                ? habit.completions.length > 0
-                : habit.completions.some(c => c.date === new Date().toISOString().split('T')[0]),
-            completionRate: this.calculateCompletionRate(habit.completions),
+            id: habit.id,
+            userId: habit.user_id,
+            specificDays: habit.specific_days,
+            reminderTime: habit.reminder_time,
+            startDate: habit.start_date,
+            isArchived: habit.is_archived,
+            createdAt: habit.created_at,
+            updatedAt: habit.updated_at,
+            completions: habit.habit_completions || [],
+            completed: (habit.habit_completions || []).some((c: any) => c.date === (filters.date || today)),
+            completionRate: this.calculateCompletionRate(habit.habit_completions || []),
         }));
     }
 
     async create(userId: string, data: CreateHabitDto) {
-        const [habit] = await db.insert(habits).values({
-            userId,
-            ...data,
-        }).returning();
+        const { data: habit, error } = await supabase
+            .from('habits')
+            .insert({
+                user_id: userId,
+                name: data.name,
+                description: data.description,
+                icon: data.icon,
+                category: data.category,
+                frequency: data.frequency,
+                specific_days: data.specificDays,
+                reminder_time: data.reminderTime,
+                start_date: data.startDate,
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
         return habit;
     }
 
     async findById(id: string, userId: string) {
-        return db.query.habits.findFirst({
-            where: and(eq(habits.id, id), eq(habits.userId, userId), isNull(habits.deletedAt)),
-            with: {
-                completions: {
-                    limit: 30,
-                    orderBy: desc(habitCompletions.completedAt),
-                },
-            },
-        });
+        const { data, error } = await supabase
+            .from('habits')
+            .select('*, habit_completions(*)')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
     }
 
     async update(id: string, userId: string, data: UpdateHabitDto) {
-        const [habit] = await db.update(habits)
-            .set({ ...data, updatedAt: new Date() })
-            .where(and(eq(habits.id, id), eq(habits.userId, userId)))
-            .returning();
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (data.name !== undefined) updateData.name = data.name;
+        if (data.description !== undefined) updateData.description = data.description;
+        if (data.icon !== undefined) updateData.icon = data.icon;
+        if (data.category !== undefined) updateData.category = data.category;
+        if (data.frequency !== undefined) updateData.frequency = data.frequency;
+        if (data.specificDays !== undefined) updateData.specific_days = data.specificDays;
+        if (data.reminderTime !== undefined) updateData.reminder_time = data.reminderTime;
+
+        const { data: habit, error } = await supabase
+            .from('habits')
+            .update(updateData)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
         return habit;
     }
 
     async softDelete(id: string, userId: string) {
-        await db.update(habits)
-            .set({ deletedAt: new Date() })
-            .where(and(eq(habits.id, id), eq(habits.userId, userId)));
+        const { error } = await supabase
+            .from('habits')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_id', userId);
+
+        if (error) throw error;
     }
 
     async markComplete(habitId: string, userId: string, date: Date) {
@@ -108,17 +142,26 @@ export class HabitsService {
         const dateStr = date.toISOString().split('T')[0];
 
         // Check if already completed
-        const existing = await db.query.habitCompletions.findFirst({
-            where: and(eq(habitCompletions.habitId, habitId), eq(habitCompletions.date, dateStr)),
-        });
+        const { data: existing } = await supabase
+            .from('habit_completions')
+            .select('*')
+            .eq('habit_id', habitId)
+            .eq('date', dateStr)
+            .single();
 
         if (existing) return existing;
 
-        const [completion] = await db.insert(habitCompletions).values({
-            habitId,
-            date: dateStr,
-            completedAt: new Date(),
-        }).returning();
+        const { data: completion, error } = await supabase
+            .from('habit_completions')
+            .insert({
+                habit_id: habitId,
+                date: dateStr,
+                completed_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
 
         // Update streak
         await this.updateStreak(habitId);
@@ -131,17 +174,28 @@ export class HabitsService {
         if (!habit) throw new Error('Habit not found');
 
         const dateStr = date.toISOString().split('T')[0];
-        await db.delete(habitCompletions)
-            .where(and(eq(habitCompletions.habitId, habitId), eq(habitCompletions.date, dateStr)));
+
+        const { error } = await supabase
+            .from('habit_completions')
+            .delete()
+            .eq('habit_id', habitId)
+            .eq('date', dateStr);
+
+        if (error) throw error;
 
         await this.updateStreak(habitId);
     }
 
     async setArchived(id: string, userId: string, archived: boolean) {
-        const [habit] = await db.update(habits)
-            .set({ isArchived: archived, updatedAt: new Date() })
-            .where(and(eq(habits.id, id), eq(habits.userId, userId)))
-            .returning();
+        const { data: habit, error } = await supabase
+            .from('habits')
+            .update({ is_archived: archived, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
         return habit;
     }
 
@@ -159,35 +213,34 @@ export class HabitsService {
     }
 
     private async updateStreak(habitId: string) {
-        // Simple streak calculation - count consecutive days
-        const completions = await db.query.habitCompletions.findMany({
-            where: eq(habitCompletions.habitId, habitId),
-            orderBy: desc(habitCompletions.date),
-            limit: 365,
-        });
+        const { data: completions } = await supabase
+            .from('habit_completions')
+            .select('date')
+            .eq('habit_id', habitId)
+            .order('date', { ascending: false })
+            .limit(365);
 
         let streak = 0;
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        for (let i = 0; i < completions.length; i++) {
+        for (let i = 0; i < (completions?.length || 0); i++) {
             const expectedDate = new Date(today);
             expectedDate.setDate(expectedDate.getDate() - i);
             const dateStr = expectedDate.toISOString().split('T')[0];
 
-            if (completions.some(c => c.date === dateStr)) {
+            if (completions?.some(c => c.date === dateStr)) {
                 streak++;
             } else {
                 break;
             }
         }
 
-        await db.update(habits).set({ streak }).where(eq(habits.id, habitId));
+        await supabase.from('habits').update({ streak }).eq('id', habitId);
     }
 
     private calculateCompletionRate(completions: any[]) {
         if (completions.length === 0) return 0;
-        // Simple calculation based on last 7 days
         return Math.round((completions.length / 7) * 100);
     }
 }

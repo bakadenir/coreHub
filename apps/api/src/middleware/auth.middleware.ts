@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { auth } from '../config/auth';
-import { fromNodeHeaders } from 'better-auth/node';
+import { supabase } from '../config/supabase';
 
 // Extend Express Request type to include user session
 declare global {
@@ -9,13 +8,8 @@ declare global {
             user?: {
                 id: string;
                 email: string;
-                name: string;
-                role: string;
-            };
-            session?: {
-                id: string;
-                userId: string;
-                expiresAt: Date;
+                name?: string;
+                role?: string;
             };
         }
     }
@@ -23,24 +17,27 @@ declare global {
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
-        const session = await auth.api.getSession({
-            headers: fromNodeHeaders(req.headers),
-        });
-
-        if (!session) {
-            return res.status(401).json({ error: 'Unauthorized', message: 'No valid session found' });
+        // Get token from Authorization header
+        const authHeader = req.headers.authorization;
+        if (!authHeader?.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Unauthorized', message: 'No valid token provided' });
         }
 
+        const token = authHeader.split(' ')[1];
+
+        // Verify token with Supabase
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+
+        if (error || !user) {
+            return res.status(401).json({ error: 'Unauthorized', message: 'Invalid or expired token' });
+        }
+
+        // Get user metadata from Supabase
         req.user = {
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.name,
-            role: (session.user as any).role || 'user',
-        };
-        req.session = {
-            id: session.session.id,
-            userId: session.session.userId,
-            expiresAt: session.session.expiresAt,
+            id: user.id,
+            email: user.email!,
+            name: user.user_metadata?.name || user.user_metadata?.username,
+            role: user.user_metadata?.role || 'user',
         };
 
         next();
@@ -50,25 +47,25 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     }
 }
 
-export function optionalAuthMiddleware(req: Request, _res: Response, next: NextFunction) {
-    auth.api.getSession({
-        headers: fromNodeHeaders(req.headers),
-    }).then((session) => {
-        if (session) {
-            req.user = {
-                id: session.user.id,
-                email: session.user.email,
-                name: session.user.name,
-                role: (session.user as any).role || 'user',
-            };
-            req.session = {
-                id: session.session.id,
-                userId: session.session.userId,
-                expiresAt: session.session.expiresAt,
-            };
+export async function optionalAuthMiddleware(req: Request, _res: Response, next: NextFunction) {
+    try {
+        const authHeader = req.headers.authorization;
+        if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            const { data: { user } } = await supabase.auth.getUser(token);
+
+            if (user) {
+                req.user = {
+                    id: user.id,
+                    email: user.email!,
+                    name: user.user_metadata?.name || user.user_metadata?.username,
+                    role: user.user_metadata?.role || 'user',
+                };
+            }
         }
         next();
-    }).catch(() => {
+    } catch {
+        // Silently proceed without user
         next();
-    });
+    }
 }

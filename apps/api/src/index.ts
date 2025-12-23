@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { env } from './config/env';
-import { auth } from './config/auth';
-import { toNodeHandler } from 'better-auth/node';
 
 // Import routes
 import habitsRouter from './routes/habits.routes';
@@ -14,7 +12,6 @@ import usersRouter from './routes/users.routes';
 import adminRouter from './routes/admin.routes';
 import searchRouter from './routes/search.routes';
 import uploadRouter from './routes/upload.routes';
-import authCustomRouter from './routes/auth-custom.routes';
 import notificationsRouter from './routes/notifications.routes';
 import pushRouter from './routes/push.routes';
 import notificationSettingsRouter from './routes/notification-settings.routes';
@@ -37,9 +34,6 @@ app.use(express.json({ limit: '2mb' }));  // Increased for base64 images
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// Better Auth handler - handles all /api/auth/* routes
-app.all('/api/auth/*', toNodeHandler(auth));
-
 // API Routes
 app.use('/api/habits', habitsRouter);
 app.use('/api/schedules', schedulesRouter);
@@ -49,7 +43,6 @@ app.use('/api/users', usersRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/upload', uploadRouter);
-app.use('/api/auth-custom', authCustomRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/notification-settings', notificationSettingsRouter);

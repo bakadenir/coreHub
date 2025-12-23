@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { useSession as useBetterAuthSession, signOut as betterAuthSignOut } from '../lib/auth';
+import { supabase } from '../lib/supabaseClient';
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 interface User {
     id: string;
@@ -13,6 +14,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
+    session: Session | null;
     isLoading: boolean;
     isAuthenticated: boolean;
     signOut: () => Promise<void>;
@@ -22,33 +24,61 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function mapSupabaseUser(supabaseUser: SupabaseUser | null): User | null {
+    if (!supabaseUser) return null;
+    return {
+        id: supabaseUser.id,
+        email: supabaseUser.email || '',
+        name: supabaseUser.user_metadata?.name || supabaseUser.user_metadata?.username || supabaseUser.email?.split('@')[0] || 'User',
+        role: supabaseUser.user_metadata?.role || 'user',
+        avatar: supabaseUser.user_metadata?.image || supabaseUser.user_metadata?.avatar_url,
+        bio: supabaseUser.user_metadata?.bio,
+        username: supabaseUser.user_metadata?.username,
+    };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const { data: session, isPending, refetch } = useBetterAuthSession();
+    const [session, setSession] = useState<Session | null>(null);
+    const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        setIsLoading(isPending);
-    }, [isPending]);
+        // Get initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+            setUser(mapSupabaseUser(session?.user ?? null));
+            setIsLoading(false);
+        });
 
-    const user: User | null = session?.user ? {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        role: (session.user as any).role || 'user',
-        avatar: (session.user as any).image,  // Map 'image' from DB to 'avatar' for UI
-        bio: (session.user as any).bio,
-        username: (session.user as any).username,
-    } : null;
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+            setUser(mapSupabaseUser(session?.user ?? null));
+            setIsLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     const handleSignOut = async () => {
-        await betterAuthSignOut();
-        refetch();
+        setIsLoading(true);
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setIsLoading(false);
+    };
+
+    const refetch = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(mapSupabaseUser(session?.user ?? null));
     };
 
     return (
         <AuthContext.Provider
             value={{
                 user,
+                session,
                 isLoading,
                 isAuthenticated: !!user,
                 signOut: handleSignOut,

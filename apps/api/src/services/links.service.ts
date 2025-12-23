@@ -1,6 +1,4 @@
-import { db } from '../config/database';
-import { links, linkTags } from '../db/schema';
-import { eq, and, isNull, desc } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 
 export interface LinkFilters {
     tags?: string[];
@@ -21,20 +19,21 @@ export interface UpdateLinkDto extends Partial<Omit<CreateLinkDto, 'tags'>> {
 
 export class LinksService {
     async findAll(userId: string, filters: LinkFilters) {
-        const result = await db.query.links.findMany({
-            where: and(eq(links.userId, userId), isNull(links.deletedAt)),
-            orderBy: desc(links.createdAt),
-            with: {
-                tags: true,
-            },
-        });
+        const { data, error } = await supabase
+            .from('links')
+            .select('*, link_tags(*)')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false });
 
-        let filtered = result;
+        if (error) throw error;
+
+        let filtered = data || [];
 
         // Filter by tags
         if (filters.tags && filters.tags.length > 0) {
             filtered = filtered.filter(link =>
-                link.tags.some(t => filters.tags!.includes(t.tag))
+                (link.link_tags || []).some((t: any) => filters.tags!.includes(t.tag))
             );
         }
 
@@ -50,59 +49,80 @@ export class LinksService {
 
         return filtered.map(link => ({
             ...link,
-            tags: link.tags.map(t => t.tag),
+            tags: (link.link_tags || []).map((t: any) => t.tag),
         }));
     }
 
     async create(userId: string, data: CreateLinkDto) {
         const { tags, ...linkData } = data;
 
-        const [link] = await db.insert(links).values({
-            userId,
-            ...linkData,
-        }).returning();
+        const { data: link, error } = await supabase
+            .from('links')
+            .insert({
+                user_id: userId,
+                url: linkData.url,
+                title: linkData.title,
+                description: linkData.description,
+                image: linkData.image,
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
 
         if (tags && tags.length > 0) {
-            await db.insert(linkTags).values(
-                tags.map(tag => ({ linkId: link.id, tag }))
-            );
+            await supabase
+                .from('link_tags')
+                .insert(tags.map(tag => ({ link_id: link.id, tag })));
         }
 
         return { ...link, tags: tags || [] };
     }
 
     async findById(id: string, userId: string) {
-        const link = await db.query.links.findFirst({
-            where: and(eq(links.id, id), eq(links.userId, userId), isNull(links.deletedAt)),
-            with: {
-                tags: true,
-            },
-        });
+        const { data: link, error } = await supabase
+            .from('links')
+            .select('*, link_tags(*)')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .single();
 
+        if (error && error.code !== 'PGRST116') throw error;
         if (!link) return null;
 
         return {
             ...link,
-            tags: link.tags.map(t => t.tag),
+            tags: (link.link_tags || []).map((t: any) => t.tag),
         };
     }
 
     async update(id: string, userId: string, data: UpdateLinkDto) {
         const { tags, ...linkData } = data;
 
-        const [link] = await db.update(links)
-            .set({ ...linkData, updatedAt: new Date() })
-            .where(and(eq(links.id, id), eq(links.userId, userId)))
-            .returning();
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (linkData.url !== undefined) updateData.url = linkData.url;
+        if (linkData.title !== undefined) updateData.title = linkData.title;
+        if (linkData.description !== undefined) updateData.description = linkData.description;
+        if (linkData.image !== undefined) updateData.image = linkData.image;
 
+        const { data: link, error } = await supabase
+            .from('links')
+            .update(updateData)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
         if (!link) return null;
 
         if (tags !== undefined) {
             // Remove existing tags and add new ones
-            await db.delete(linkTags).where(eq(linkTags.linkId, id));
+            await supabase.from('link_tags').delete().eq('link_id', id);
             if (tags.length > 0) {
-                await db.insert(linkTags).values(
-                    tags.map(tag => ({ linkId: id, tag }))
+                await supabase.from('link_tags').insert(
+                    tags.map(tag => ({ link_id: id, tag }))
                 );
             }
         }
@@ -111,13 +131,16 @@ export class LinksService {
     }
 
     async softDelete(id: string, userId: string) {
-        await db.update(links)
-            .set({ deletedAt: new Date() })
-            .where(and(eq(links.id, id), eq(links.userId, userId)));
+        const { error } = await supabase
+            .from('links')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_id', userId);
+
+        if (error) throw error;
     }
 
     async fetchMetadata(url: string) {
-        // Simple metadata fetching - in production, use a proper library like metascraper
         try {
             const response = await fetch(url, {
                 headers: { 'User-Agent': 'Mozilla/5.0 coreHub Link Preview' },
@@ -126,9 +149,9 @@ export class LinksService {
             const html = await response.text();
 
             const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-            const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)["']/i) ||
-                html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']*)["']/i);
-            const imageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']*)["']/i);
+            const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)['"]/i) ||
+                html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']*)['"]/i);
+            const imageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']*)['"]/i);
 
             return {
                 title: titleMatch ? titleMatch[1].trim() : url,

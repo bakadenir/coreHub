@@ -1,6 +1,4 @@
-import { db } from '../config/database';
-import { notes } from '../db/schema';
-import { eq, and, isNull, desc, asc } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 
 export interface NoteFilters {
     tag?: string;
@@ -19,33 +17,40 @@ export interface UpdateNoteDto extends Partial<CreateNoteDto> { }
 
 export class NotesService {
     async findAll(userId: string, filters: NoteFilters) {
-        const conditions = [eq(notes.userId, userId), isNull(notes.deletedAt)];
+        let query = supabase
+            .from('notes')
+            .select('*')
+            .eq('user_id', userId)
+            .is('deleted_at', null);
 
         if (filters.tag) {
-            conditions.push(eq(notes.tag, filters.tag));
+            query = query.eq('tag', filters.tag);
         }
 
-        let orderBy;
+        // Order by pinned first, then by sort preference
+        query = query.order('is_pinned', { ascending: false });
+
         switch (filters.sort) {
             case 'updated':
-                orderBy = desc(notes.updatedAt);
+                query = query.order('updated_at', { ascending: false });
                 break;
             case 'title':
-                orderBy = asc(notes.title);
+                query = query.order('title', { ascending: true });
                 break;
             default:
-                orderBy = desc(notes.createdAt);
+                query = query.order('created_at', { ascending: false });
         }
 
-        const result = await db.query.notes.findMany({
-            where: and(...conditions),
-            orderBy: [desc(notes.isPinned), orderBy],
-        });
+        const { data, error } = await query;
 
-        // Filter by search if provided (client-side for simplicity)
+        if (error) throw error;
+
+        let result = data || [];
+
+        // Filter by search if provided
         if (filters.search) {
             const searchLower = filters.search.toLowerCase();
-            return result.filter(n =>
+            result = result.filter(n =>
                 n.title.toLowerCase().includes(searchLower) ||
                 (n.content && n.content.toLowerCase().includes(searchLower))
             );
@@ -55,46 +60,78 @@ export class NotesService {
     }
 
     async create(userId: string, data: CreateNoteDto) {
-        const [note] = await db.insert(notes).values({
-            userId,
-            ...data,
-            reminderAt: data.reminderAt ? new Date(data.reminderAt) : null,
-        }).returning();
+        const { data: note, error } = await supabase
+            .from('notes')
+            .insert({
+                user_id: userId,
+                title: data.title,
+                content: data.content,
+                tag: data.tag,
+                reminder_at: data.reminderAt,
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
         return note;
     }
 
     async findById(id: string, userId: string) {
-        return db.query.notes.findFirst({
-            where: and(eq(notes.id, id), eq(notes.userId, userId), isNull(notes.deletedAt)),
-        });
+        const { data, error } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
     }
 
     async update(id: string, userId: string, data: UpdateNoteDto) {
-        const updateData: any = { ...data, updatedAt: new Date() };
-        if (data.reminderAt) updateData.reminderAt = new Date(data.reminderAt);
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (data.title !== undefined) updateData.title = data.title;
+        if (data.content !== undefined) updateData.content = data.content;
+        if (data.tag !== undefined) updateData.tag = data.tag;
+        if (data.reminderAt !== undefined) updateData.reminder_at = data.reminderAt;
 
-        const [note] = await db.update(notes)
-            .set(updateData)
-            .where(and(eq(notes.id, id), eq(notes.userId, userId)))
-            .returning();
+        const { data: note, error } = await supabase
+            .from('notes')
+            .update(updateData)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
         return note;
     }
 
     async softDelete(id: string, userId: string) {
-        await db.update(notes)
-            .set({ deletedAt: new Date() })
-            .where(and(eq(notes.id, id), eq(notes.userId, userId)));
+        const { error } = await supabase
+            .from('notes')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_id', userId);
+
+        if (error) throw error;
     }
 
     async setPin(id: string, userId: string, isPinned: boolean, pinnedUntil?: string) {
-        const [note] = await db.update(notes)
-            .set({
-                isPinned,
-                pinnedUntil: pinnedUntil ? new Date(pinnedUntil) : null,
-                updatedAt: new Date(),
+        const { data: note, error } = await supabase
+            .from('notes')
+            .update({
+                is_pinned: isPinned,
+                pinned_until: pinnedUntil || null,
+                updated_at: new Date().toISOString(),
             })
-            .where(and(eq(notes.id, id), eq(notes.userId, userId)))
-            .returning();
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
         return note;
     }
 }

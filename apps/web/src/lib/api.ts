@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 interface ApiResponse<T> {
@@ -14,17 +16,32 @@ class ApiClient {
         this.baseUrl = baseUrl;
     }
 
+    private async getAuthHeaders(): Promise<Record<string, string>> {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+
+        // Get current session and add Bearer token if exists
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+
+        return headers;
+    }
+
     private async request<T>(
         endpoint: string,
         options: RequestInit = {}
     ): Promise<ApiResponse<T>> {
         const url = `${this.baseUrl}${endpoint}`;
 
+        const authHeaders = await this.getAuthHeaders();
+
         const config: RequestInit = {
             ...options,
-            credentials: 'include', // Important for cookies/sessions
             headers: {
-                'Content-Type': 'application/json',
+                ...authHeaders,
                 ...options.headers,
             },
         };

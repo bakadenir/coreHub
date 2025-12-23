@@ -1,6 +1,4 @@
-import { db } from '../config/database';
-import { scheduleEvents } from '../db/schema';
-import { eq, and, isNull, desc, gte, lte } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 
 export interface ScheduleFilters {
     startDate?: string;
@@ -24,92 +22,119 @@ export interface UpdateScheduleDto extends Partial<CreateScheduleDto> { }
 
 export class SchedulesService {
     async findAll(userId: string, filters: ScheduleFilters) {
-        const conditions = [eq(scheduleEvents.userId, userId), isNull(scheduleEvents.deletedAt)];
+        let query = supabase
+            .from('schedule_events')
+            .select('*, schedule_attendees(*)')
+            .eq('user_id', userId)
+            .is('deleted_at', null);
 
         if (filters.startDate) {
-            conditions.push(gte(scheduleEvents.startTime, new Date(filters.startDate)));
+            query = query.gte('start_time', filters.startDate);
         }
         if (filters.endDate) {
-            conditions.push(lte(scheduleEvents.startTime, new Date(filters.endDate)));
+            query = query.lte('start_time', filters.endDate);
         }
 
-        return db.query.scheduleEvents.findMany({
-            where: and(...conditions),
-            orderBy: desc(scheduleEvents.startTime),
-            with: {
-                attendees: true,
-            },
-        });
+        const { data, error } = await query.order('start_time', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
     }
 
     async getAgenda(userId: string) {
-        const now = new Date();
-        const endOfWeek = new Date(now);
+        const now = new Date().toISOString();
+        const endOfWeek = new Date();
         endOfWeek.setDate(endOfWeek.getDate() + 7);
 
-        const events = await db.query.scheduleEvents.findMany({
-            where: and(
-                eq(scheduleEvents.userId, userId),
-                isNull(scheduleEvents.deletedAt),
-                gte(scheduleEvents.startTime, now),
-                lte(scheduleEvents.startTime, endOfWeek)
-            ),
-            orderBy: scheduleEvents.startTime,
-            with: {
-                attendees: true,
-            },
-            limit: 10,
-        });
+        const { data, error } = await supabase
+            .from('schedule_events')
+            .select('*, schedule_attendees(*)')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .gte('start_time', now)
+            .lte('start_time', endOfWeek.toISOString())
+            .order('start_time', { ascending: true })
+            .limit(10);
+
+        if (error) throw error;
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
-        return events.map(event => ({
+        return (data || []).map(event => ({
             ...event,
-            isToday: new Date(event.startTime) >= today && new Date(event.startTime) < tomorrow,
+            isToday: new Date(event.start_time) >= today && new Date(event.start_time) < tomorrow,
         }));
     }
 
     async create(userId: string, data: CreateScheduleDto) {
-        const [event] = await db.insert(scheduleEvents).values({
-            userId,
-            ...data,
-            startTime: new Date(data.startTime),
-            endTime: data.endTime ? new Date(data.endTime) : null,
-        }).returning();
+        const { data: event, error } = await supabase
+            .from('schedule_events')
+            .insert({
+                user_id: userId,
+                title: data.title,
+                description: data.description,
+                start_time: data.startTime,
+                end_time: data.endTime,
+                location: data.location,
+                platform: data.platform,
+                color: data.color,
+                is_all_day: data.isAllDay,
+                recurrence: data.recurrence,
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
         return event;
     }
 
     async findById(id: string, userId: string) {
-        return db.query.scheduleEvents.findFirst({
-            where: and(
-                eq(scheduleEvents.id, id),
-                eq(scheduleEvents.userId, userId),
-                isNull(scheduleEvents.deletedAt)
-            ),
-            with: {
-                attendees: true,
-            },
-        });
+        const { data, error } = await supabase
+            .from('schedule_events')
+            .select('*, schedule_attendees(*)')
+            .eq('id', id)
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
     }
 
     async update(id: string, userId: string, data: UpdateScheduleDto) {
-        const updateData: any = { ...data, updatedAt: new Date() };
-        if (data.startTime) updateData.startTime = new Date(data.startTime);
-        if (data.endTime) updateData.endTime = new Date(data.endTime);
+        const updateData: any = { updated_at: new Date().toISOString() };
+        if (data.title !== undefined) updateData.title = data.title;
+        if (data.description !== undefined) updateData.description = data.description;
+        if (data.startTime !== undefined) updateData.start_time = data.startTime;
+        if (data.endTime !== undefined) updateData.end_time = data.endTime;
+        if (data.location !== undefined) updateData.location = data.location;
+        if (data.platform !== undefined) updateData.platform = data.platform;
+        if (data.color !== undefined) updateData.color = data.color;
+        if (data.isAllDay !== undefined) updateData.is_all_day = data.isAllDay;
+        if (data.recurrence !== undefined) updateData.recurrence = data.recurrence;
 
-        const [event] = await db.update(scheduleEvents)
-            .set(updateData)
-            .where(and(eq(scheduleEvents.id, id), eq(scheduleEvents.userId, userId)))
-            .returning();
+        const { data: event, error } = await supabase
+            .from('schedule_events')
+            .update(updateData)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
         return event;
     }
 
     async delete(id: string, userId: string) {
-        await db.update(scheduleEvents)
-            .set({ deletedAt: new Date() })
-            .where(and(eq(scheduleEvents.id, id), eq(scheduleEvents.userId, userId)));
+        const { error } = await supabase
+            .from('schedule_events')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('id', id)
+            .eq('user_id', userId);
+
+        if (error) throw error;
     }
 }

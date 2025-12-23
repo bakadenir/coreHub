@@ -1,16 +1,46 @@
-import { createAuthClient } from 'better-auth/react';
+// Supabase Auth exports for backwards compatibility with existing imports
+import { supabase } from './supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Re-export commonly used auth methods
+export const signIn = {
+    email: async ({ email, password }: { email: string; password: string }) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        return { data: data.session ? { user: data.user, session: data.session } : null, error };
+    },
+};
 
-export const authClient = createAuthClient({
-    baseURL: API_BASE_URL,
-});
+export const signUp = {
+    email: async ({ email, password, name }: { email: string; password: string; name: string }) => {
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { name, username: name },
+            },
+        });
+        return { data: data.user ? { user: data.user } : null, error };
+    },
+};
 
-export const {
-    signIn,
-    signUp,
-    signOut,
-    useSession,
-    getSession,
-} = authClient;
+export const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    return { error };
+};
 
+export const getSession = async () => {
+    const { data, error } = await supabase.auth.getSession();
+    return { data: data.session, error };
+};
+
+// For components that still use useSession hook pattern
+export const useSession = () => {
+    // This is a placeholder - actual session management is in AuthContext
+    // Components should use useAuth() instead
+    console.warn('useSession is deprecated, use useAuth() from AuthContext instead');
+    return { data: null, isPending: false, refetch: () => { } };
+};
+
+export default supabase;

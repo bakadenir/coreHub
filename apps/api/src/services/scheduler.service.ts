@@ -1,7 +1,5 @@
 import cron, { ScheduledTask } from 'node-cron';
-import { db } from '../config/database';
-import { habits, scheduleEvents, notificationSettings } from '../db/schema';
-import { eq, and, lte, gte, isNull } from 'drizzle-orm';
+import { supabase } from '../config/supabase';
 import { sendPushNotification } from './push.service';
 
 // Store for scheduled jobs (null for notification markers, ScheduledTask for actual cron jobs)
@@ -12,35 +10,30 @@ async function checkScheduleReminders() {
     try {
         const now = new Date();
 
-        // Get all users with schedule reminders enabled
-        const settings = await db.select()
-            .from(notificationSettings)
-            .where(eq(notificationSettings.scheduleReminders, true));
+        const { data: settings } = await supabase
+            .from('notification_settings')
+            .select('*')
+            .eq('schedule_reminders', true);
 
-        for (const setting of settings) {
-            const reminderWindow = new Date(now.getTime() + (setting.scheduleReminderMinutes || 15) * 60 * 1000);
+        for (const setting of settings || []) {
+            const reminderWindow = new Date(now.getTime() + (setting.schedule_reminder_minutes || 15) * 60 * 1000);
 
-            // Find events starting within the reminder window
-            const upcomingEvents = await db.select()
-                .from(scheduleEvents)
-                .where(and(
-                    eq(scheduleEvents.userId, setting.userId),
-                    gte(scheduleEvents.startTime, now),
-                    lte(scheduleEvents.startTime, reminderWindow),
-                    isNull(scheduleEvents.deletedAt)
-                ));
+            const { data: upcomingEvents } = await supabase
+                .from('schedule_events')
+                .select('*')
+                .eq('user_id', setting.user_id)
+                .gte('start_time', now.toISOString())
+                .lte('start_time', reminderWindow.toISOString())
+                .is('deleted_at', null);
 
-            for (const event of upcomingEvents) {
-                // Create a unique notification key to avoid duplicates
-                const notifKey = `schedule_${event.id}_${event.startTime.getTime()}`;
+            for (const event of upcomingEvents || []) {
+                const notifKey = `schedule_${event.id}_${new Date(event.start_time).getTime()}`;
 
-                // Check if we already sent a notification for this event
-                // In production, we'd store this in the database
                 if (!scheduledJobs.has(notifKey)) {
-                    const minutesUntil = Math.round((event.startTime.getTime() - now.getTime()) / 60000);
+                    const minutesUntil = Math.round((new Date(event.start_time).getTime() - now.getTime()) / 60000);
 
                     await sendPushNotification(
-                        setting.userId,
+                        setting.user_id,
                         {
                             title: '📅 Upcoming Event',
                             body: `${event.title} starts in ${minutesUntil} minutes`,
@@ -53,7 +46,6 @@ async function checkScheduleReminders() {
                         'schedule'
                     );
 
-                    // Mark as notified (temporary in-memory)
                     scheduledJobs.set(notifKey, null);
                 }
             }
@@ -71,42 +63,38 @@ async function checkHabitReminders() {
         const currentMinute = now.getMinutes();
         const currentDay = now.getDay();
 
-        // Get all users with habit reminders enabled
-        const settings = await db.select()
-            .from(notificationSettings)
-            .where(eq(notificationSettings.habitReminders, true));
+        const { data: settings } = await supabase
+            .from('notification_settings')
+            .select('*')
+            .eq('habit_reminders', true);
 
-        for (const setting of settings) {
-            // Get habits with reminders for this user
-            const userHabits = await db.select()
-                .from(habits)
-                .where(and(
-                    eq(habits.userId, setting.userId),
-                    eq(habits.isArchived, false),
-                    isNull(habits.deletedAt)
-                ));
+        for (const setting of settings || []) {
+            const { data: userHabits } = await supabase
+                .from('habits')
+                .select('*')
+                .eq('user_id', setting.user_id)
+                .eq('is_archived', false)
+                .is('deleted_at', null);
 
-            for (const habit of userHabits) {
-                // Check if habit should run today
+            for (const habit of userHabits || []) {
                 const shouldRunToday =
                     habit.frequency === 'daily' ||
-                    (habit.frequency === 'weekly' && currentDay === 0) || // Sunday for weekly
+                    (habit.frequency === 'weekly' && currentDay === 0) ||
                     (habit.frequency === 'specific_days' &&
-                        habit.specificDays &&
-                        (habit.specificDays as number[]).includes(currentDay));
+                        habit.specific_days &&
+                        (habit.specific_days as number[]).includes(currentDay));
 
                 if (!shouldRunToday) continue;
 
-                // Check if reminder time matches current time
-                if (habit.reminderTime) {
-                    const [hours, minutes] = habit.reminderTime.split(':').map(Number);
+                if (habit.reminder_time) {
+                    const [hours, minutes] = habit.reminder_time.split(':').map(Number);
 
                     if (hours === currentHour && minutes === currentMinute) {
                         const notifKey = `habit_${habit.id}_${now.toDateString()}`;
 
                         if (!scheduledJobs.has(notifKey)) {
                             await sendPushNotification(
-                                setting.userId,
+                                setting.user_id,
                                 {
                                     title: '✅ Habit Reminder',
                                     body: `Don't forget: ${habit.name}`,
@@ -134,13 +122,9 @@ async function checkHabitReminders() {
 export function startScheduler() {
     console.log('🕐 Starting notification scheduler...');
 
-    // Check schedule reminders every minute
     cron.schedule('* * * * *', checkScheduleReminders);
-
-    // Check habit reminders every minute
     cron.schedule('* * * * *', checkHabitReminders);
 
-    // Clean up old notification keys every hour
     cron.schedule('0 * * * *', () => {
         scheduledJobs.clear();
         console.log('🧹 Cleared notification cache');
