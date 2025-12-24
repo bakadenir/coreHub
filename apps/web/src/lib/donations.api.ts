@@ -14,7 +14,9 @@ export interface Donation {
     currency: string;
     name: string;
     message?: string;
+    status?: string;
     paidAt?: string;
+    createdAt?: string;
 }
 
 export interface DonationResult {
@@ -36,6 +38,10 @@ export const donationsApi = {
     getMy: (): Promise<ApiResponse<Donation[]>> =>
         api.get('/api/donations/my'),
 
+    // Get pending donation for current user
+    getPending: (): Promise<ApiResponse<Donation | null>> =>
+        api.get('/api/donations/pending'),
+
     // Get donation by order ID
     getByOrderId: (orderId: string): Promise<ApiResponse<Donation>> =>
         api.get(`/api/donations/${orderId}`),
@@ -43,4 +49,8 @@ export const donationsApi = {
     // Verify transaction status with Midtrans (for localhost testing)
     verify: (orderId: string): Promise<ApiResponse<Donation>> =>
         api.post(`/api/donations/${orderId}/verify`),
+
+    // Cancel pending donation
+    cancel: (orderId: string): Promise<ApiResponse<{ cancelled: boolean }>> =>
+        api.post(`/api/donations/${orderId}/cancel`),
 };

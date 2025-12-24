@@ -1,16 +1,43 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 import FloatingInput from '../components/FloatingInput';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export default function ForgotPassword() {
+    const navigate = useNavigate();
+    const { user, isLoading: authLoading } = useAuth();
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
+
+    // Redirect to dashboard if already logged in
+    useEffect(() => {
+        if (!authLoading && user) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [user, authLoading, navigate]);
+
+    // Show loading while checking auth
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-gray-200 border-t-gray-800 rounded-full animate-spin"></div>
+                    <p className="text-gray-500 text-sm">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Don't render page if user is logged in (prevents flash)
+    if (user) {
+        return null;
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

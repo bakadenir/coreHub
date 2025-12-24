@@ -6,6 +6,21 @@ import { successResponse, createdResponse, errorResponse, serverErrorResponse } 
 const router = Router();
 const donationsService = new DonationsService();
 
+// Transform snake_case from Supabase to camelCase for frontend
+function transformDonation(d: any) {
+    return {
+        id: d.id,
+        orderId: d.order_id,
+        amount: d.amount,
+        currency: d.currency || 'IDR',
+        name: d.name,
+        message: d.message,
+        status: d.status,
+        paidAt: d.paid_at,
+        createdAt: d.created_at,
+    };
+}
+
 // POST /api/donations - Create donation and get Midtrans Snap token
 router.post('/', optionalAuthMiddleware, async (req, res) => {
     try {
@@ -27,7 +42,10 @@ router.post('/', optionalAuthMiddleware, async (req, res) => {
             userId: req.user?.id,
         });
 
-        return createdResponse(res, result);
+        return createdResponse(res, {
+            ...result,
+            donation: transformDonation(result.donation),
+        });
     } catch (error) {
         console.error('Error creating donation:', error);
         return serverErrorResponse(res);
@@ -57,9 +75,20 @@ router.get('/', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit as string) || 20;
         const donations = await donationsService.findAllPublic(limit);
-        return successResponse(res, donations);
+        return successResponse(res, donations.map(transformDonation));
     } catch (error) {
         console.error('Error fetching donations:', error);
+        return serverErrorResponse(res);
+    }
+});
+
+// GET /api/donations/pending - Get user's pending donation
+router.get('/pending', authMiddleware, async (req, res) => {
+    try {
+        const pending = await donationsService.findPendingByUser(req.user!.id);
+        return successResponse(res, pending ? transformDonation(pending) : null);
+    } catch (error) {
+        console.error('Error fetching pending donation:', error);
         return serverErrorResponse(res);
     }
 });
@@ -68,9 +97,23 @@ router.get('/', async (req, res) => {
 router.get('/my', authMiddleware, async (req, res) => {
     try {
         const donations = await donationsService.findByUser(req.user!.id);
-        return successResponse(res, donations);
+        return successResponse(res, donations.map(transformDonation));
     } catch (error) {
         console.error('Error fetching user donations:', error);
+        return serverErrorResponse(res);
+    }
+});
+
+// POST /api/donations/:orderId/cancel - Cancel pending donation
+router.post('/:orderId/cancel', authMiddleware, async (req, res) => {
+    try {
+        const cancelled = await donationsService.cancelByOrderId(req.params.orderId, req.user!.id);
+        if (!cancelled) {
+            return errorResponse(res, 'Not Found', 'Donation not found or already processed');
+        }
+        return successResponse(res, { cancelled: true });
+    } catch (error) {
+        console.error('Error cancelling donation:', error);
         return serverErrorResponse(res);
     }
 });
@@ -98,7 +141,7 @@ router.post('/:orderId/verify', async (req, res) => {
         if (!donation) {
             return errorResponse(res, 'Not Found', 'Donation not found');
         }
-        return successResponse(res, donation);
+        return successResponse(res, transformDonation(donation));
     } catch (error) {
         console.error('Error verifying with Midtrans API:', error);
 
@@ -110,7 +153,7 @@ router.post('/:orderId/verify', async (req, res) => {
             if (!donation) {
                 return errorResponse(res, 'Not Found', 'Donation not found');
             }
-            return successResponse(res, { ...donation, fallback: true });
+            return successResponse(res, { ...transformDonation(donation), fallback: true });
         } catch (fallbackError) {
             console.error('Fallback also failed:', fallbackError);
             return serverErrorResponse(res);

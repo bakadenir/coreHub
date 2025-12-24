@@ -21,6 +21,7 @@ export class FeedbackService {
                     .from('feedback')
                     .update({
                         name: data.name || existing.name,
+                        avatar: data.avatar !== undefined ? data.avatar : existing.avatar,
                         rating: Math.min(5, Math.max(1, data.rating)),
                         comment: data.comment,
                         updated_at: new Date().toISOString(),
@@ -67,6 +68,7 @@ export class FeedbackService {
             .from('feedback')
             .update({
                 name: data.name || existing.name,
+                avatar: data.avatar !== undefined ? data.avatar : existing.avatar,
                 rating: Math.min(5, Math.max(1, data.rating)),
                 comment: data.comment,
                 updated_at: new Date().toISOString(),

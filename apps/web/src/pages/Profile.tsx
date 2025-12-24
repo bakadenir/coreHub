@@ -50,7 +50,7 @@ export default function Profile() {
     const name = user?.name || sessionUser?.name || 'User';
     const roleRaw = user?.role || sessionUser?.role || 'user';
     // Convert 'user' role to 'Free Trial' display
-    const role = roleRaw === 'user' ? 'Free Trial' : roleRaw === 'admin' ? 'Admin' : roleRaw;
+    const role = (roleRaw === 'user' || roleRaw === 'authenticated') ? 'Free Trial' : roleRaw === 'admin' ? 'Admin' : roleRaw;
     const email = user?.email || sessionUser?.email || '';
     const bio = user?.bio || 'No bio yet.';
     // Better fallback: check for null, undefined, or empty string
@@ -80,14 +80,14 @@ export default function Profile() {
 
             <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow relative z-10">
 
-                {/* Back to Dashboard Control */}
+                {/* Back to Home Control */}
                 <div className="mb-8">
                     <Link
                         to="/dashboard"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
                         <span className="material-icons-outlined text-base">arrow_back</span>
-                        Back to Dashboard
+                        Back to Home
                     </Link>
                 </div>
 
@@ -112,7 +112,7 @@ export default function Profile() {
                         {/* Details Section */}
                         <div className="space-y-6">
                             <div className="space-y-2.5">
-                                <label className="block text-sm font-medium text-gray-500">Full Name</label>
+                                <label className="block text-sm font-medium text-gray-500">Username</label>
                                 <div className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 text-[15px] shadow-sm">
                                     {name}
                                 </div>

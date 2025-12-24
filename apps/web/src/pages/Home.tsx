@@ -16,8 +16,6 @@ import {
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import Header from '../components/Header';
-import NavigationSidebar from '../components/NavigationSidebar';
 import ActivityCards from '../components/ActivityCards';
 import AddHabitModal from '../components/AddHabitModal';
 import AddScheduleModal from '../components/AddScheduleModal';
@@ -453,132 +451,126 @@ export default function Home() {
     };
 
     return (
-        <div className="flex flex-col h-screen w-full bg-background-light text-text-primary font-sans overflow-hidden">
-            <Header />
+        <main className="flex-1 flex flex-col h-full relative overflow-y-auto">
             <AddHabitModal isOpen={isAddHabitOpen} onClose={() => handleModalClose(setIsAddHabitOpen)} />
             <AddScheduleModal isOpen={isAddScheduleOpen} onClose={() => handleModalClose(setIsAddScheduleOpen)} />
             <AddNoteModal isOpen={isAddNoteOpen} onClose={() => handleModalClose(setIsAddNoteOpen)} />
             <AddLinkModal isOpen={isAddLinkOpen} onClose={() => handleModalClose(setIsAddLinkOpen)} />
 
-            <div className="flex flex-1 overflow-hidden w-full">
-                <NavigationSidebar />
-                <main className="flex-1 flex flex-col h-full relative overflow-y-auto">
-                    <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
-                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                            <SortableContext items={widgetOrder} strategy={rectSortingStrategy}>
-                                {/* Main Layout: Sidebar + Right Column using Grid for height matching */}
-                                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] gap-6">
-                                    {/* Sidebar - 3 widgets stacked */}
-                                    <aside className="space-y-6 flex flex-col">
-                                        {sidebarWidgets.map((widgetId) => (
-                                            <SortableWidget key={widgetId} id={widgetId}>
-                                                {(dragHandle) => renderWidget(widgetId, false, dragHandle)}
-                                            </SortableWidget>
-                                        ))}
-                                    </aside>
+            <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={widgetOrder} strategy={rectSortingStrategy}>
+                        {/* Main Layout: Sidebar + Right Column using Grid for height matching */}
+                        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] gap-6">
+                            {/* Sidebar - 3 widgets stacked */}
+                            <aside className="space-y-6 flex flex-col">
+                                {sidebarWidgets.map((widgetId) => (
+                                    <SortableWidget key={widgetId} id={widgetId}>
+                                        {(dragHandle) => renderWidget(widgetId, false, dragHandle)}
+                                    </SortableWidget>
+                                ))}
+                            </aside>
 
-                                    {/* Right Column: Main Widget + Activity Cards */}
-                                    <div className="flex flex-col gap-6">
-                                        {/* Main Widget - stretches to fill space */}
-                                        {isShowingSchedule ? (
-                                            <section className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col">
-                                                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Schedule</h2>
-                                                <div className="text-center mb-4">
-                                                    <p className="text-lg font-medium text-gray-900">{formatDateHeader(hoveredDate)}</p>
-                                                </div>
-                                                {isLoadingSchedules ? (
-                                                    <div className="flex-1 flex items-center justify-center">
-                                                        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full"></div>
-                                                    </div>
-                                                ) : schedules.length === 0 ? (
-                                                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                                                        <span className="material-icons-outlined text-5xl mb-3">event_busy</span>
-                                                        <p className="text-base font-medium">No schedule for this day</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="flex-1 overflow-y-auto space-y-3">
-                                                        {schedules.map((schedule) => (
-                                                            <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
-                                                                <div className="flex items-start gap-4">
-                                                                    <div className="text-center min-w-[60px]">
-                                                                        <span className="text-lg font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>
-                                                                        {schedule.endTime && (
-                                                                            <>
-                                                                                <div className="text-xs text-gray-400">to</div>
-                                                                                <span className="text-sm font-mono text-gray-500">{formatTime(schedule.endTime)}</span>
-                                                                            </>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex-1">
-                                                                        <h4 className="font-bold text-gray-900 mb-1">{schedule.title}</h4>
-                                                                        {schedule.location && (
-                                                                            <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                                                                                <span className="material-icons-outlined text-[14px]">location_on</span>
-                                                                                {schedule.location}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
+                            {/* Right Column: Main Widget + Activity Cards */}
+                            <div className="flex flex-col gap-6">
+                                {/* Main Widget - stretches to fill space */}
+                                {isShowingSchedule ? (
+                                    <section className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col">
+                                        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Schedule</h2>
+                                        <div className="text-center mb-4">
+                                            <p className="text-lg font-medium text-gray-900">{formatDateHeader(hoveredDate)}</p>
+                                        </div>
+                                        {isLoadingSchedules ? (
+                                            <div className="flex-1 flex items-center justify-center">
+                                                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full"></div>
+                                            </div>
+                                        ) : schedules.length === 0 ? (
+                                            <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                                                <span className="material-icons-outlined text-5xl mb-3">event_busy</span>
+                                                <p className="text-base font-medium">No schedule for this day</p>
+                                            </div>
+                                        ) : (
+                                            <div className="flex-1 overflow-y-auto space-y-3">
+                                                {schedules.map((schedule) => (
+                                                    <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="text-center min-w-[60px]">
+                                                                <span className="text-lg font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>
+                                                                {schedule.endTime && (
+                                                                    <>
+                                                                        <div className="text-xs text-gray-400">to</div>
+                                                                        <span className="text-sm font-mono text-gray-500">{formatTime(schedule.endTime)}</span>
+                                                                    </>
+                                                                )}
                                                             </div>
-                                                        ))}
+                                                            <div className="flex-1">
+                                                                <h4 className="font-bold text-gray-900 mb-1">{schedule.title}</h4>
+                                                                {schedule.location && (
+                                                                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
+                                                                        <span className="material-icons-outlined text-[14px]">location_on</span>
+                                                                        {schedule.location}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                )}
+                                                ))}
+                                            </div>
+                                        )}
+                                    </section>
+                                ) : (
+                                    <SortableWidget id={mainWidget} isMain>
+                                        {(dragHandle) => mainWidget === 'calendar' ? (
+                                            // Calendar has its own container
+                                            <div className="relative group flex-1 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                                {renderWidget(mainWidget, true, dragHandle)}
+                                            </div>
+                                        ) : mainWidget === 'pomodoro' ? (
+                                            // Pomodoro - use section container like other widgets
+                                            <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
+                                                <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
+                                                    <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
+                                                        {widgetLabels[mainWidget]}
+                                                    </h2>
+                                                    {dragHandle?.icon}
+                                                </div>
+                                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                                                    backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                                                    backgroundSize: '24px 24px',
+                                                }}></div>
+                                                {renderWidget(mainWidget, true)}
                                             </section>
                                         ) : (
-                                            <SortableWidget id={mainWidget} isMain>
-                                                {(dragHandle) => mainWidget === 'calendar' ? (
-                                                    // Calendar has its own container
-                                                    <div className="relative group flex-1 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                                                        {renderWidget(mainWidget, true, dragHandle)}
-                                                    </div>
-                                                ) : mainWidget === 'pomodoro' ? (
-                                                    // Pomodoro - use section container like other widgets
-                                                    <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
-                                                        <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
-                                                            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
-                                                                {widgetLabels[mainWidget]}
-                                                            </h2>
-                                                            {dragHandle?.icon}
-                                                        </div>
-                                                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
-                                                            backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-                                                            backgroundSize: '24px 24px',
-                                                        }}></div>
-                                                        {renderWidget(mainWidget, true)}
-                                                    </section>
-                                                ) : (
-                                                    <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
-                                                        <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
-                                                            <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
-                                                                {widgetLabels[mainWidget]}
-                                                            </h2>
-                                                            {dragHandle?.icon}
-                                                        </div>
-                                                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
-                                                            backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
-                                                            backgroundSize: '24px 24px',
-                                                        }}></div>
-                                                        {renderWidget(mainWidget, true)}
-                                                    </section>
-                                                )}
-                                            </SortableWidget>
+                                            <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
+                                                <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
+                                                    <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
+                                                        {widgetLabels[mainWidget]}
+                                                    </h2>
+                                                    {dragHandle?.icon}
+                                                </div>
+                                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                                                    backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                                                    backgroundSize: '24px 24px',
+                                                }}></div>
+                                                {renderWidget(mainWidget, true)}
+                                            </section>
                                         )}
+                                    </SortableWidget>
+                                )}
 
-                                        {/* Activity Cards - fixed at bottom */}
-                                        <section className="shrink-0">
-                                            <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
-                                                Your Activity
-                                                <span className="h-px bg-gray-200 flex-1 ml-2"></span>
-                                            </h3>
-                                            <ActivityCards refreshTrigger={refreshTrigger} />
-                                        </section>
-                                    </div>
-                                </div>
-                            </SortableContext>
-                        </DndContext>
-                    </div>
-                </main>
+                                {/* Activity Cards - fixed at bottom */}
+                                <section className="shrink-0">
+                                    <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
+                                        Your Activity
+                                        <span className="h-px bg-gray-200 flex-1 ml-2"></span>
+                                    </h3>
+                                    <ActivityCards refreshTrigger={refreshTrigger} />
+                                </section>
+                            </div>
+                        </div>
+                    </SortableContext>
+                </DndContext>
             </div>
-        </div>
+        </main>
     );
 }

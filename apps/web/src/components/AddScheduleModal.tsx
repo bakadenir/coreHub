@@ -62,9 +62,15 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
 
         setIsSubmitting(true);
         try {
-            // Combine date and time into ISO string
-            const startTimeISO = `${startDate}T${startTime}:00`;
-            const endTimeISO = endDate && endTime ? `${endDate}T${endTime}:00` : undefined;
+            // Combine date and time into proper ISO string
+            const startDateTime = new Date(`${startDate}T${startTime}:00`);
+            const startTimeISO = startDateTime.toISOString();
+
+            let endTimeISO: string | undefined;
+            if (endDate && endTime) {
+                const endDateTime = new Date(`${endDate}T${endTime}:00`);
+                endTimeISO = endDateTime.toISOString();
+            }
 
             const result = await schedulesApi.create({
                 title: title.trim(),

@@ -55,6 +55,7 @@ export class HabitsService {
         return (data || []).map(habit => ({
             ...habit,
             id: habit.id,
+            name: habit.title,  // Map DB 'title' to frontend 'name'
             userId: habit.user_id,
             specificDays: habit.specific_days,
             reminderTime: habit.reminder_time,
@@ -73,7 +74,7 @@ export class HabitsService {
             .from('habits')
             .insert({
                 user_id: userId,
-                name: data.name,
+                title: data.name,  // Frontend sends 'name', DB uses 'title'
                 description: data.description,
                 icon: data.icon,
                 category: data.category,
@@ -104,7 +105,7 @@ export class HabitsService {
 
     async update(id: string, userId: string, data: UpdateHabitDto) {
         const updateData: any = { updated_at: new Date().toISOString() };
-        if (data.name !== undefined) updateData.name = data.name;
+        if (data.name !== undefined) updateData.title = data.name;  // Frontend sends 'name', DB uses 'title'
         if (data.description !== undefined) updateData.description = data.description;
         if (data.icon !== undefined) updateData.icon = data.icon;
         if (data.category !== undefined) updateData.category = data.category;

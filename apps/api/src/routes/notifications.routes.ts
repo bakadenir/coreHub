@@ -4,6 +4,21 @@ import * as notificationsService from '../services/notifications.service';
 
 const router = Router();
 
+// Transform snake_case to camelCase for frontend
+function transformNotification(n: any) {
+    return {
+        id: n.id,
+        userId: n.user_id,
+        type: n.type,
+        title: n.title,
+        message: n.message,
+        referenceId: n.reference_id,
+        referenceType: n.reference_type,
+        isRead: n.is_read,
+        createdAt: n.created_at,
+    };
+}
+
 // Get user notifications
 router.get('/', authMiddleware, async (req, res) => {
     try {
@@ -12,7 +27,8 @@ router.get('/', authMiddleware, async (req, res) => {
         const unreadOnly = req.query.unreadOnly === 'true';
 
         const notifications = await notificationsService.getNotifications(userId, limit, unreadOnly);
-        res.json({ success: true, data: notifications });
+        const transformed = notifications.map(transformNotification);
+        res.json({ success: true, data: transformed });
     } catch (error) {
         console.error('Error getting notifications:', error);
         res.status(500).json({ success: false, error: 'Failed to get notifications' });

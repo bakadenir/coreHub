@@ -1,8 +1,37 @@
 
-import { Link } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import CookieConsent from '../components/CookieConsent';
 
 export default function Landing() {
+    const navigate = useNavigate();
+    const { user, isLoading } = useAuth();
+
+    // Redirect to dashboard if already logged in
+    useEffect(() => {
+        if (!isLoading && user) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [user, isLoading, navigate]);
+
+    // Show loading while checking auth
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-gray-200 border-t-gray-800 rounded-full animate-spin"></div>
+                    <p className="text-gray-500 text-sm">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Don't render landing page if user is logged in (prevents flash)
+    if (user) {
+        return null;
+    }
+
     return (
         <div className="flex flex-col min-h-screen font-sans text-text-primary relative overflow-hidden">
             {/* Dynamic Background */}

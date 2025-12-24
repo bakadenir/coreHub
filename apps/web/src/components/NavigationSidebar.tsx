@@ -1,42 +1,109 @@
 
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function NavigationSidebar() {
     const location = useLocation();
-    const isDashboard = location.pathname === '/dashboard';
+    const [isHovered, setIsHovered] = useState(false);
+    const sidebarRef = useRef<HTMLElement>(null);
+    const isMouseInsideRef = useRef(false);
+
+    // Apply collapsible sidebar to all main pages
+    const mainPages = ['/dashboard', '/habits', '/schedule', '/notes', '/links'];
+    const isMainPage = mainPages.includes(location.pathname);
+
+    // Check if mouse is inside sidebar on mount and after navigation
+    const checkMousePosition = useCallback(() => {
+        if (isMouseInsideRef.current) {
+            setIsHovered(true);
+        }
+    }, []);
+
+    // Re-check hover state after route change
+    useEffect(() => {
+        checkMousePosition();
+    }, [location.pathname, checkMousePosition]);
+
+    const handleMouseEnter = () => {
+        isMouseInsideRef.current = true;
+        setIsHovered(true);
+    };
+
+    const handleMouseLeave = () => {
+        isMouseInsideRef.current = false;
+        setIsHovered(false);
+    };
+
+    // Use state-based expansion
+    const isExpanded = isHovered;
+
+    const linkClass = (path: string) => `
+        flex items-center text-sm font-medium rounded-lg transition-all duration-300 group h-10
+        ${isMainPage && !isExpanded ? 'w-10 justify-center' : 'w-full px-3 gap-3'}
+        ${location.pathname === path
+            ? 'bg-surface-light text-primary'
+            : 'text-gray-700 hover:bg-surface-light'
+        }
+    `;
+
+    const iconClass = (path: string) => `
+        flex items-center justify-center w-6 h-6 rounded transition-colors shrink-0
+        ${location.pathname === path ? 'bg-gray-100 text-primary' : 'text-gray-500'}
+    `;
+
+    const textClass = `
+        ${isMainPage && !isExpanded ? 'opacity-0 w-0' : 'opacity-100'} 
+        whitespace-nowrap transition-all duration-300 overflow-hidden
+    `;
 
     return (
-        <aside className={`${isDashboard ? '-ml-20 lg:-ml-64' : 'ml-0'} w-20 lg:w-64 flex flex-col border-r border-border-light bg-white shrink-0 transition-all duration-500 ease-in-out overflow-hidden`}>
-            <nav className="flex flex-col gap-2 px-3 py-4 flex-1 min-w-[5rem] lg:min-w-[16rem]">
-                <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/dashboard' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/dashboard">
-                    <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/dashboard' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
+        <aside
+            ref={sidebarRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className={`
+                flex flex-col border-r border-border-light bg-white shrink-0 overflow-hidden
+                transition-all duration-300 ease-in-out relative
+                ${isMainPage
+                    ? isExpanded ? 'w-64' : 'w-14'
+                    : 'w-20 lg:w-64'
+                }
+            `}
+        >
+            <nav className={`
+                flex flex-col gap-2 px-2 py-4 flex-1
+                ${isMainPage && !isExpanded ? 'items-center' : 'items-start px-3'}
+                transition-all duration-300
+            `}>
+                <Link className={linkClass('/dashboard')} to="/dashboard">
+                    <span className={iconClass('/dashboard')}>
                         <span className="material-icons-outlined text-sm">dashboard</span>
                     </span>
-                    <span className="hidden lg:block">Dashboard</span>
+                    <span className={textClass}>Home</span>
                 </Link>
-                <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/habits' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/habits">
-                    <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/habits' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
+                <Link className={linkClass('/habits')} to="/habits">
+                    <span className={iconClass('/habits')}>
                         <span className="material-icons-outlined text-sm">check_circle</span>
                     </span>
-                    <span className="hidden lg:block">Habits</span>
+                    <span className={textClass}>Habits</span>
                 </Link>
-                <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/schedule' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/schedule">
-                    <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/schedule' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
+                <Link className={linkClass('/schedule')} to="/schedule">
+                    <span className={iconClass('/schedule')}>
                         <span className="material-icons-outlined text-sm">calendar_today</span>
                     </span>
-                    <span className="hidden lg:block">Schedule</span>
+                    <span className={textClass}>Schedule</span>
                 </Link>
-                <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/notes' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/notes">
-                    <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/notes' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
+                <Link className={linkClass('/notes')} to="/notes">
+                    <span className={iconClass('/notes')}>
                         <span className="material-icons-outlined text-sm">description</span>
                     </span>
-                    <span className="hidden lg:block">Notes</span>
+                    <span className={textClass}>Notes</span>
                 </Link>
-                <Link className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all border group ${location.pathname === '/links' ? 'bg-surface-light border-gray-200 text-primary' : 'text-gray-700 border-transparent hover:bg-surface-light hover:border-gray-200'}`} to="/links">
-                    <span className={`flex items-center justify-center w-6 h-6 rounded transition-colors shadow-sm ${location.pathname === '/links' ? 'bg-white text-primary' : 'bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary'}`}>
+                <Link className={linkClass('/links')} to="/links">
+                    <span className={iconClass('/links')}>
                         <span className="material-icons-outlined text-sm">link</span>
                     </span>
-                    <span className="hidden lg:block">Links</span>
+                    <span className={textClass}>Links</span>
                 </Link>
             </nav>
         </aside>

@@ -7,7 +7,7 @@ import { usersApi, notificationsApi } from '../lib';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
 
 export default function Settings() {
     const navigate = useNavigate();
@@ -18,7 +18,7 @@ export default function Settings() {
     const [name, setName] = useState('');
     const [bio, setBio] = useState('');
     const [avatar, setAvatar] = useState('');
-    const [username, setUsername] = useState('');
+
 
     // Loading states
     const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -59,7 +59,7 @@ export default function Settings() {
                     setName(userData.name || '');
                     setBio(userData.bio || '');
                     setAvatar(getFullAvatarUrl(userData.image));  // Apply full URL for uploaded images
-                    setUsername(userData.username || '');
+
                 }
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -68,7 +68,7 @@ export default function Settings() {
                     setName(user.name || '');
                     setBio(user.bio || '');
                     setAvatar(user.avatar || '');
-                    setUsername(user.username || '');
+
                 }
             }
         };
@@ -171,23 +171,28 @@ export default function Settings() {
 
         setIsSavingPassword(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword,
-                    revokeOtherSessions: false,
-                }),
+            // Import supabase client
+            const { supabase } = await import('../lib/supabaseClient');
+
+            // First verify current password by trying to sign in
+            const { error: verifyError } = await supabase.auth.signInWithPassword({
+                email: user?.email || '',
+                password: currentPassword,
             });
 
-            const data = await response.json();
+            if (verifyError) {
+                showToast('Current password is incorrect', 'error');
+                setIsSavingPassword(false);
+                return;
+            }
 
-            if (!response.ok || data.error) {
-                showToast(data.message || 'Failed to change password', 'error');
+            // Update password
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword,
+            });
+
+            if (error) {
+                showToast(error.message || 'Failed to change password', 'error');
             } else {
                 showToast('Password changed successfully', 'success');
                 setCurrentPassword('');
@@ -242,7 +247,7 @@ export default function Settings() {
         }
     };
 
-    const email = user?.email || '';
+
     const role = user?.role || 'user';
 
     return (
@@ -267,14 +272,14 @@ export default function Settings() {
 
             <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow relative z-10">
 
-                {/* Back to Dashboard Control */}
+                {/* Back to Home Control */}
                 <div className="mb-8">
                     <Link
                         to="/dashboard"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
                         <span className="material-icons-outlined text-base">arrow_back</span>
-                        Back to Dashboard
+                        Back to Home
                     </Link>
                 </div>
 
@@ -293,14 +298,14 @@ export default function Settings() {
                                 />
                                 <div className="hidden sm:block">
                                     <h3 className="text-lg font-bold text-text-primary">{name || 'User'}</h3>
-                                    <p className="text-sm text-text-secondary mb-2">{role === 'user' ? 'Free Trial' : role === 'admin' ? 'Admin' : role}</p>
+                                    <p className="text-sm text-text-secondary mb-2">{(role === 'user' || role === 'authenticated') ? 'Free Trial' : role === 'admin' ? 'Admin' : role}</p>
                                 </div>
                             </div>
 
                             {/* Form Fields */}
                             <div className="space-y-6">
                                 <div className="space-y-2.5">
-                                    <label className="block text-sm font-medium text-gray-500">Full Name</label>
+                                    <label className="block text-sm font-medium text-gray-500">Username</label>
                                     <input
                                         type="text"
                                         value={name}
@@ -308,17 +313,6 @@ export default function Settings() {
                                         placeholder="Enter your name"
                                         className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     />
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <label className="block text-sm font-medium text-gray-500">Email Address</label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        readOnly
-                                        className="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-500 text-[15px] shadow-sm cursor-not-allowed"
-                                    />
-                                    <p className="text-xs text-gray-400">Email cannot be changed</p>
                                 </div>
 
                                 <div className="space-y-2.5">
@@ -361,23 +355,6 @@ export default function Settings() {
 
                         <div className="bg-white border border-border-light rounded-xl p-8 shadow-sm">
                             <div className="space-y-6">
-                                <div className="space-y-2.5">
-                                    <label className="block text-sm font-medium text-gray-500">Username</label>
-                                    <div className="flex">
-                                        <span className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-gray-200 bg-gray-100 text-gray-400 text-[15px]">
-                                            @
-                                        </span>
-                                        <input
-                                            type="text"
-                                            value={username}
-                                            readOnly
-                                            disabled
-                                            placeholder="username"
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-r-lg px-4 py-3 text-gray-500 placeholder-gray-300 cursor-not-allowed text-[15px] shadow-sm outline-none"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-400">Username cannot be changed</p>
-                                </div>
 
                                 <div className="space-y-2.5">
                                     <label className="block text-sm font-medium text-gray-500">Email</label>

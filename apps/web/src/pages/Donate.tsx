@@ -57,6 +57,9 @@ export default function Donate() {
     const [isDonating, setIsDonating] = useState(false);
     const [donationsList, setDonationsList] = useState<Donation[]>([]);
     const [isLoadingDonations, setIsLoadingDonations] = useState(true);
+    const [pendingDonation, setPendingDonation] = useState<Donation | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
+
 
     // Helper to construct full URL for uploaded files
     const getFullAvatarUrl = (imageUrl: string | null | undefined): string => {
@@ -187,12 +190,61 @@ export default function Donate() {
         };
     }, []);
 
+    // Fetch pending donation on mount (if logged in) and verify its status
+    useEffect(() => {
+        const fetchPending = async () => {
+            if (!user) return;
+            try {
+                const result = await donationsApi.getPending();
+                if (result.success && result.data) {
+                    // Try to verify status with Midtrans (for localhost)
+                    try {
+                        const verifyResult = await donationsApi.verify(result.data.orderId);
+                        if (verifyResult.success && verifyResult.data?.status === 'success') {
+                            // Payment was successful, don't show pending panel
+                            setPendingDonation(null);
+                            // Refresh donations list
+                            const updated = await donationsApi.getPublic(20);
+                            if (updated.success && updated.data) {
+                                setDonationsList(updated.data);
+                            }
+                            return;
+                        }
+                    } catch (e) {
+                        console.log('Verify check failed, showing pending panel');
+                    }
+                    setPendingDonation(result.data);
+                }
+            } catch (error) {
+                console.error('Error fetching pending donation:', error);
+            }
+        };
+        fetchPending();
+    }, [user]);
+
     // Set donor name from user when user is available
     useEffect(() => {
         if (user?.name && !donorName) {
             setDonorName(user.name);
         }
     }, [user]);
+
+    // Handle cancel pending donation
+    const handleCancelPending = async () => {
+        if (!pendingDonation) return;
+        setIsCancelling(true);
+        try {
+            const result = await donationsApi.cancel(pendingDonation.orderId);
+            if (result.success) {
+                setPendingDonation(null);
+                showToast('Donasi pending dibatalkan', 'success');
+            }
+        } catch (error) {
+            showToast('Gagal membatalkan donasi', 'error');
+        } finally {
+            setIsCancelling(false);
+        }
+    };
 
     // Handle Midtrans donation
     const handleDonate = async () => {
@@ -235,13 +287,13 @@ export default function Donate() {
                             });
                         },
                         onPending: () => {
-                            showToast('Pembayaran pending. Silakan selesaikan pembayaran.', 'info');
+                            showToast('Pembayaran pending. Selesaikan pembayaran atau akan dibatalkan jika membuat donasi baru.', 'info');
                         },
                         onError: () => {
                             showToast('Pembayaran gagal', 'error');
                         },
                         onClose: () => {
-                            showToast('Popup pembayaran ditutup', 'info');
+                            showToast('Transaksi pending. Akan dibatalkan otomatis jika membuat donasi baru.', 'info');
                         },
                     });
                 } else {
@@ -365,14 +417,14 @@ export default function Donate() {
 
             <main className="w-full max-w-4xl mx-auto px-6 md:px-12 py-12 flex-grow relative z-10">
 
-                {/* Back to Dashboard Control */}
+                {/* Back to Home Control */}
                 <div className="mb-8">
                     <Link
                         to="/dashboard"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
                         <span className="material-icons-outlined text-base">arrow_back</span>
-                        Back to Dashboard
+                        Back to Home
                     </Link>
                 </div>
 
@@ -403,104 +455,151 @@ export default function Donate() {
                 {/* Donation Options */}
                 <section className="mb-16">
                     <div className="bg-white border border-border-light rounded-xl p-6 shadow-sm">
-                        <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                            <span className="material-icons-outlined text-amber-500">volunteer_activism</span>
-                            Choose Payment Method
-                        </h3>
-
-                        {/* Donation Form */}
-                        <div className="space-y-4 mb-6">
-                            {/* Amount Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Donation Amount (IDR)</label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">Rp</span>
-                                    <input
-                                        type="text"
-                                        value={formatRupiah(donationAmount)}
-                                        onChange={(e) => setDonationAmount(e.target.value.replace(/\D/g, ''))}
-                                        placeholder="10.000"
-                                        className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg text-lg font-medium focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
-                                    />
-                                </div>
-                                <div className="flex gap-2 mt-2 flex-wrap">
-                                    {[10000, 25000, 50000, 100000, 250000].map((preset) => (
+                        {pendingDonation ? (
+                            /* Pending Payment Panel */
+                            <>
+                                <h3 className="text-lg font-bold text-amber-600 mb-4 flex items-center gap-2">
+                                    <span className="material-icons-outlined">pending</span>
+                                    Awaiting Payment
+                                </h3>
+                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                        <div>
+                                            <p className="text-sm text-gray-500">Order ID</p>
+                                            <p className="font-mono text-sm text-gray-700">{pendingDonation.orderId}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm text-gray-500">Total Amount</p>
+                                            <p className="text-2xl font-bold text-amber-600">
+                                                Rp {pendingDonation.amount.toLocaleString('id-ID')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        Please complete the payment or cancel to create a new donation.
+                                    </p>
+                                    <div className="flex gap-3">
                                         <button
-                                            key={preset}
-                                            type="button"
-                                            onClick={() => setDonationAmount(preset.toString())}
-                                            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                            onClick={handleCancelPending}
+                                            disabled={isCancelling}
+                                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
                                         >
-                                            {preset.toLocaleString('id-ID')}
+                                            {isCancelling ? 'Cancelling...' : 'Cancel'}
                                         </button>
-                                    ))}
+                                        <button
+                                            onClick={() => {
+                                                setPendingDonation(null);
+                                            }}
+                                            className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors"
+                                        >
+                                            Create New Donation
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
+                            </>
+                        ) : (
+                            /* Donation Form */
+                            <>
+                                <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                    <span className="material-icons-outlined text-amber-500">volunteer_activism</span>
+                                    Choose Payment Method
+                                </h3>
 
-                            {/* Name Input */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Donor Name</label>
-                                <input
-                                    type="text"
-                                    value={donorName}
-                                    onChange={(e) => setDonorName(e.target.value)}
-                                    placeholder="Your name"
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
-                                />
-                            </div>
+                                {/* Donation Form */}
+                                <div className="space-y-4 mb-6">
+                                    {/* Amount Input */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Donation Amount (IDR)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">Rp</span>
+                                            <input
+                                                type="text"
+                                                value={formatRupiah(donationAmount)}
+                                                onChange={(e) => setDonationAmount(e.target.value.replace(/\D/g, ''))}
+                                                placeholder="10.000"
+                                                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg text-lg font-medium focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+                                            />
+                                        </div>
+                                        <div className="flex gap-2 mt-2 flex-wrap">
+                                            {[10000, 25000, 50000, 100000, 250000].map((preset) => (
+                                                <button
+                                                    key={preset}
+                                                    type="button"
+                                                    onClick={() => setDonationAmount(preset.toString())}
+                                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                                >
+                                                    {preset.toLocaleString('id-ID')}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
 
-                            {/* Message Input (Optional) */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
-                                <textarea
-                                    value={donationMessage}
-                                    onChange={(e) => setDonationMessage(e.target.value)}
-                                    placeholder="Write a message for the developer..."
-                                    rows={2}
-                                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400 resize-none"
-                                />
-                            </div>
-                        </div>
+                                    {/* Name Input */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Donor Name</label>
+                                        <input
+                                            type="text"
+                                            value={donorName}
+                                            onChange={(e) => setDonorName(e.target.value)}
+                                            placeholder="Your name"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+                                        />
+                                    </div>
 
-                        {/* Payment Buttons */}
-                        <div className="grid sm:grid-cols-3 gap-4">
-                            {/* Midtrans Button */}
-                            <button
-                                onClick={handleDonate}
-                                disabled={isDonating}
-                                className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#0A8AFF] hover:bg-[#0070E0] text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {isDonating ? (
-                                    <>
-                                        <span className="material-icons-outlined text-xl animate-spin">refresh</span>
-                                        Processing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="text-lg font-bold">Midtrans</span>
-                                        <span className="text-sm opacity-80">(GoPay, QRIS, Bank Transfer)</span>
-                                    </>
-                                )}
-                            </button>
+                                    {/* Message Input (Optional) */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
+                                        <textarea
+                                            value={donationMessage}
+                                            onChange={(e) => setDonationMessage(e.target.value)}
+                                            placeholder="Write a message for the developer..."
+                                            rows={2}
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400 resize-none"
+                                        />
+                                    </div>
+                                </div>
 
-                            {/* PayPal Button (Placeholder) */}
-                            <button
-                                disabled
-                                className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#FFC439] text-[#003087] font-bold rounded-lg opacity-60 cursor-not-allowed"
-                            >
-                                <span className="text-lg font-extrabold italic">PayPal</span>
-                                <span className="text-sm opacity-80">(Coming Soon)</span>
-                            </button>
+                                {/* Payment Buttons */}
+                                <div className="grid sm:grid-cols-3 gap-4">
+                                    {/* Midtrans Button */}
+                                    <button
+                                        onClick={handleDonate}
+                                        disabled={isDonating}
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#0A8AFF] hover:bg-[#0070E0] text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        {isDonating ? (
+                                            <>
+                                                <span className="material-icons-outlined text-xl animate-spin">refresh</span>
+                                                Processing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="text-lg font-bold">Midtrans</span>
+                                                <span className="text-sm opacity-80">(GoPay, QRIS, Bank Transfer)</span>
+                                            </>
+                                        )}
+                                    </button>
 
-                            {/* Stripe Button (Placeholder) */}
-                            <button
-                                disabled
-                                className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#635BFF] text-white font-bold rounded-lg opacity-60 cursor-not-allowed"
-                            >
-                                <span className="text-lg font-bold">Stripe</span>
-                                <span className="text-sm opacity-80">(Coming Soon)</span>
-                            </button>
-                        </div>
+                                    {/* PayPal Button (Placeholder) */}
+                                    <button
+                                        disabled
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#FFC439] text-[#003087] font-bold rounded-lg opacity-60 cursor-not-allowed"
+                                    >
+                                        <span className="text-lg font-extrabold italic">PayPal</span>
+                                        <span className="text-sm opacity-80">(Coming Soon)</span>
+                                    </button>
+
+                                    {/* Stripe Button (Placeholder) */}
+                                    <button
+                                        disabled
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#635BFF] text-white font-bold rounded-lg opacity-60 cursor-not-allowed"
+                                    >
+                                        <span className="text-lg font-bold">Stripe</span>
+                                        <span className="text-sm opacity-80">(Coming Soon)</span>
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </section>
 

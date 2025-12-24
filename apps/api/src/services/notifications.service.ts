@@ -26,6 +26,42 @@ export async function createNotification(
     return data;
 }
 
+// Create welcome notification for new users (idempotent - only creates if not exists)
+export async function createWelcomeNotificationIfNeeded(userId: string, userName?: string) {
+    // Check if user already has a welcome notification
+    const { data: existing } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('type', 'system')
+        .ilike('title', '%Welcome to coreHub%')
+        .limit(1);
+
+    if (existing && existing.length > 0) {
+        return null; // Already has welcome notification
+    }
+
+    // Create welcome notification
+    const displayName = userName || 'there';
+    const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+            user_id: userId,
+            type: 'system',
+            title: `Welcome to coreHub, ${displayName}! 🎉`,
+            message: 'Your productivity journey starts here. Let\'s make it count!',
+            is_read: false,
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error creating welcome notification:', error);
+        return null;
+    }
+    return data;
+}
+
 // Get notifications for a user
 export async function getNotifications(userId: string, limit = 20, unreadOnly = false) {
     let query = supabase

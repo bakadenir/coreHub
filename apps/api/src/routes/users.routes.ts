@@ -1,10 +1,25 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { UsersService } from '../services/users.service';
+import { createWelcomeNotificationIfNeeded } from '../services/notifications.service';
 import { successResponse, serverErrorResponse } from '../utils/response';
 
 const router = Router();
 const usersService = new UsersService();
+
+// Transform Supabase user to flat structure for frontend
+function transformUser(user: any) {
+    return {
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.name || user.user_metadata?.username || null,
+        username: user.user_metadata?.username || user.user_metadata?.name || null,
+        bio: user.user_metadata?.bio || null,
+        image: user.user_metadata?.image || null,
+        role: user.user_metadata?.role || user.role || 'user',
+        createdAt: user.created_at,
+    };
+}
 
 router.use(authMiddleware);
 
@@ -12,7 +27,14 @@ router.use(authMiddleware);
 router.get('/me', async (req, res) => {
     try {
         const user = await usersService.findById(req.user!.id);
-        return successResponse(res, user);
+
+        // Create welcome notification for new users (idempotent)
+        const userName = user?.user_metadata?.name || user?.user_metadata?.username;
+        createWelcomeNotificationIfNeeded(req.user!.id, userName).catch(err => {
+            console.error('Error creating welcome notification:', err);
+        });
+
+        return successResponse(res, transformUser(user));
     } catch (error) {
         console.error('Error fetching user:', error);
         return serverErrorResponse(res);

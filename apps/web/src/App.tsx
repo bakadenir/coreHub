@@ -15,6 +15,7 @@ import Donate from './pages/Donate';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
+import MainLayout from './components/MainLayout';
 import { PageTitleUpdater } from './components/PageTitleUpdater';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -29,12 +30,17 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        {/* Protected routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/schedule" element={<ProtectedRoute><Schedule /></ProtectedRoute>} />
-        <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
-        <Route path="/links" element={<ProtectedRoute><Links /></ProtectedRoute>} />
-        <Route path="/habits" element={<ProtectedRoute><Habits /></ProtectedRoute>} />
+
+        {/* Main protected routes with shared layout */}
+        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<Home />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/notes" element={<Notes />} />
+          <Route path="/links" element={<Links />} />
+          <Route path="/habits" element={<Habits />} />
+        </Route>
+
+        {/* Other protected routes */}
         <Route path="/donate" element={<ProtectedRoute><Donate /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -47,4 +53,3 @@ function App() {
 }
 
 export default App;
-

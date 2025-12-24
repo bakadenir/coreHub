@@ -34,6 +34,20 @@ export interface MidtransNotification {
 
 export class DonationsService {
     async create(data: CreateDonationDto) {
+        // Cancel any existing pending donations for this user/email to prevent duplicates
+        if (data.userId || data.email) {
+            const query = supabase
+                .from('donations')
+                .update({ status: 'cancelled' })
+                .eq('status', 'pending');
+
+            if (data.userId) {
+                await query.eq('user_id', data.userId);
+            } else if (data.email) {
+                await query.eq('email', data.email);
+            }
+        }
+
         const orderId = `DONATE-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
         const { data: donation, error } = await supabase
@@ -246,6 +260,34 @@ export class DonationsService {
 
         if (error) throw error;
         return data || [];
+    }
+
+    async findPendingByUser(userId: string) {
+        const { data, error } = await supabase
+            .from('donations')
+            .select('*')
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    }
+
+    async cancelByOrderId(orderId: string, userId: string) {
+        const { data, error } = await supabase
+            .from('donations')
+            .update({ status: 'cancelled' })
+            .eq('order_id', orderId)
+            .eq('user_id', userId)
+            .eq('status', 'pending')
+            .select()
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
     }
 
     async verifyAllPending() {

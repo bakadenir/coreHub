@@ -40,9 +40,9 @@ router.post('/', async (req, res) => {
     try {
         const event = await schedulesService.create(req.user!.id, req.body);
         return createdResponse(res, event);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating schedule:', error);
-        return serverErrorResponse(res);
+        return res.status(500).json({ success: false, error: error?.message || 'Server error', details: error });
     }
 });
 

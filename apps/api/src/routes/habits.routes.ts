@@ -42,9 +42,9 @@ router.post('/', async (req, res) => {
     try {
         const habit = await habitsService.create(req.user!.id, req.body);
         return createdResponse(res, habit);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating habit:', error);
-        return serverErrorResponse(res);
+        return res.status(500).json({ success: false, error: error?.message || 'Server error', details: error });
     }
 });
 

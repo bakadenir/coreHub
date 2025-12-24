@@ -22,7 +22,7 @@ router.get('/reviews', async (req, res) => {
 // POST /api/feedback - Submit feedback (optional auth - can be anonymous)
 router.post('/', optionalAuthMiddleware, async (req, res) => {
     try {
-        const { name, rating, comment } = req.body;
+        const { name, avatar, rating, comment } = req.body;
 
         if (!rating || !comment) {
             return errorResponse(res, 'Bad Request', 'Rating and comment are required');
@@ -35,6 +35,7 @@ router.post('/', optionalAuthMiddleware, async (req, res) => {
         const userId = req.user?.id || null;
         const feedback = await feedbackService.createOrUpdate(userId, {
             name,
+            avatar,
             rating,
             comment,
         });

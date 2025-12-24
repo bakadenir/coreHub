@@ -21,7 +21,7 @@ export const PageTitleUpdater = () => {
     const location = useLocation();
 
     useEffect(() => {
-        const title = titles[location.pathname] ?? 'coreHub Dashboard';
+        const title = titles[location.pathname] ?? 'coreHub Home';
         document.title = title;
     }, [location]);
 

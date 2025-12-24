@@ -78,11 +78,7 @@ export class SchedulesService {
                 description: data.description,
                 start_time: data.startTime,
                 end_time: data.endTime,
-                location: data.location,
-                platform: data.platform,
-                color: data.color,
-                is_all_day: data.isAllDay,
-                recurrence: data.recurrence,
+                // Note: location, platform, color, is_all_day, recurrence columns may not exist in DB
             })
             .select()
             .single();
@@ -110,11 +106,7 @@ export class SchedulesService {
         if (data.description !== undefined) updateData.description = data.description;
         if (data.startTime !== undefined) updateData.start_time = data.startTime;
         if (data.endTime !== undefined) updateData.end_time = data.endTime;
-        if (data.location !== undefined) updateData.location = data.location;
-        if (data.platform !== undefined) updateData.platform = data.platform;
-        if (data.color !== undefined) updateData.color = data.color;
-        if (data.isAllDay !== undefined) updateData.is_all_day = data.isAllDay;
-        if (data.recurrence !== undefined) updateData.recurrence = data.recurrence;
+        // Note: location, platform, color, is_all_day, recurrence columns may not exist in DB
 
         const { data: event, error } = await supabase
             .from('schedule_events')
