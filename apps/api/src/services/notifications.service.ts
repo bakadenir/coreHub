@@ -131,6 +131,19 @@ export async function deleteNotification(notificationId: string, userId: string)
     return data;
 }
 
+// Transform snake_case to camelCase for frontend
+function transformSettings(settings: any) {
+    return {
+        id: settings.id,
+        userId: settings.user_id,
+        habitReminders: settings.habit_reminders,
+        scheduleReminders: settings.schedule_reminders,
+        scheduleReminderMinutes: settings.schedule_reminder_minutes,
+        pushEnabled: settings.push_enabled,
+        updatedAt: settings.updated_at,
+    };
+}
+
 // Get or create notification settings
 export async function getNotificationSettings(userId: string) {
     const { data: existing } = await supabase
@@ -139,7 +152,7 @@ export async function getNotificationSettings(userId: string) {
         .eq('user_id', userId)
         .single();
 
-    if (existing) return existing;
+    if (existing) return transformSettings(existing);
 
     const { data: created, error } = await supabase
         .from('notification_settings')
@@ -148,7 +161,7 @@ export async function getNotificationSettings(userId: string) {
         .single();
 
     if (error) throw error;
-    return created;
+    return transformSettings(created);
 }
 
 // Update notification settings
@@ -174,7 +187,7 @@ export async function updateNotificationSettings(userId: string, updates: {
         .single();
 
     if (error) throw error;
-    return data;
+    return transformSettings(data);
 }
 
 // Save a push subscription

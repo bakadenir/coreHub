@@ -9,7 +9,7 @@ export default function NavigationSidebar() {
     const isMouseInsideRef = useRef(false);
 
     // Apply collapsible sidebar to all main pages
-    const mainPages = ['/dashboard', '/habits', '/schedule', '/notes', '/links'];
+    const mainPages = ['/home', '/habits', '/schedule', '/notes', '/links'];
     const isMainPage = mainPages.includes(location.pathname);
 
     // Check if mouse is inside sidebar on mount and after navigation
@@ -75,8 +75,8 @@ export default function NavigationSidebar() {
                 ${isMainPage && !isExpanded ? 'items-center' : 'items-start px-3'}
                 transition-all duration-300
             `}>
-                <Link className={linkClass('/dashboard')} to="/dashboard">
-                    <span className={iconClass('/dashboard')}>
+                <Link className={linkClass('/home')} to="/home">
+                    <span className={iconClass('/home')}>
                         <span className="material-icons-outlined text-sm">dashboard</span>
                     </span>
                     <span className={textClass}>Home</span>

@@ -14,6 +14,16 @@ interface CreateNoteData {
     reminderAt?: string;
 }
 
+interface PublicNote {
+    id: string;
+    title: string;
+    content: string;
+    authorName: string;
+    authorImage?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export const notesApi = {
     getAll: (filters?: NoteFilters) => {
         const params = new URLSearchParams();
@@ -35,4 +45,11 @@ export const notesApi = {
 
     pin: (id: string, isPinned: boolean, pinnedUntil?: string) =>
         api.patch(`/api/notes/${id}/pin`, { isPinned, pinnedUntil }),
+
+    publish: (id: string) => api.post<Note>(`/api/notes/${id}/publish`),
+
+    unpublish: (id: string) => api.post<Note>(`/api/notes/${id}/unpublish`),
+
+    getPublic: (slug: string) => api.get<PublicNote>(`/api/public/notes/${slug}`),
 };
+

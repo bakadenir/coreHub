@@ -144,7 +144,7 @@ export default function AdminDashboard() {
                             <span className="material-icons-outlined">notifications</span>
                             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
                         </button>
-                        <Link to="/dashboard" className="text-sm font-medium text-primary hover:underline">
+                        <Link to="/home" className="text-sm font-medium text-primary hover:underline">
                             Go to App
                         </Link>
                     </div>

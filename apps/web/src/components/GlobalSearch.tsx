@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchApi, type SearchResult } from '../lib/search.api';
 
@@ -7,28 +7,98 @@ interface GlobalSearchProps {
     onClose: () => void;
 }
 
+// Static navigation items for quick access
+interface NavItem {
+    id: string;
+    title: string;
+    subtitle: string;
+    icon: string;
+    path: string;
+    type: 'navigation';
+    keywords: string[];
+}
+
+const navigationItems: NavItem[] = [
+    // Main Pages
+    { id: 'nav-home', title: 'Home', subtitle: 'Dashboard & Overview', icon: 'dashboard', path: '/home', type: 'navigation', keywords: ['home', 'dashboard', 'overview', 'main', 'beranda'] },
+    { id: 'nav-habits', title: 'Habits', subtitle: 'Track your daily habits', icon: 'check_circle', path: '/habits', type: 'navigation', keywords: ['habits', 'track', 'daily', 'routine', 'kebiasaan'] },
+    { id: 'nav-schedule', title: 'Schedule', subtitle: 'Calendar & Events', icon: 'calendar_today', path: '/schedule', type: 'navigation', keywords: ['schedule', 'calendar', 'events', 'appointments', 'jadwal'] },
+    { id: 'nav-notes', title: 'Notes', subtitle: 'Your personal notes', icon: 'description', path: '/notes', type: 'navigation', keywords: ['notes', 'write', 'text', 'document', 'catatan'] },
+    { id: 'nav-links', title: 'Links', subtitle: 'Saved bookmarks', icon: 'link', path: '/links', type: 'navigation', keywords: ['links', 'bookmarks', 'urls', 'websites', 'tautan'] },
+
+    // Profile & Settings
+    { id: 'nav-profile', title: 'My Profile', subtitle: 'View your profile', icon: 'person', path: '/profile', type: 'navigation', keywords: ['profile', 'account', 'user', 'me', 'profil'] },
+    { id: 'nav-settings', title: 'Settings', subtitle: 'Account settings', icon: 'settings', path: '/settings', type: 'navigation', keywords: ['settings', 'preferences', 'configuration', 'pengaturan'] },
+    { id: 'nav-profile-settings', title: 'Profile Settings', subtitle: 'Update name, bio, avatar', icon: 'manage_accounts', path: '/settings', type: 'navigation', keywords: ['profile settings', 'name', 'bio', 'avatar', 'username', 'location', 'foto profil'] },
+    { id: 'nav-security', title: 'Security & Login', subtitle: 'Password & authentication', icon: 'security', path: '/settings', type: 'navigation', keywords: ['security', 'password', 'login', 'authentication', 'change password', 'keamanan', 'kata sandi'] },
+    { id: 'nav-notifications', title: 'Notification Settings', subtitle: 'Manage reminders', icon: 'notifications', path: '/settings', type: 'navigation', keywords: ['notifications', 'reminders', 'alerts', 'push', 'notifikasi'] },
+    { id: 'nav-delete-account', title: 'Delete Account', subtitle: 'Remove your account permanently', icon: 'delete_forever', path: '/settings', type: 'navigation', keywords: ['delete account', 'remove account', 'hapus akun', 'account actions'] },
+
+    // Donate
+    { id: 'nav-donate', title: 'Donate', subtitle: 'Support the developer', icon: 'volunteer_activism', path: '/donate', type: 'navigation', keywords: ['donate', 'support', 'contribute', 'coffee', 'donasi'] },
+    { id: 'nav-feedback', title: 'Feedback', subtitle: 'Send feedback & suggestions', icon: 'feedback', path: '/donate', type: 'navigation', keywords: ['feedback', 'suggestion', 'report', 'bug', 'feature request', 'saran', 'masukan'] },
+
+    // Dashboard Features
+    { id: 'nav-pomodoro', title: 'Pomodoro Timer', subtitle: 'Focus timer on dashboard', icon: 'timer', path: '/home', type: 'navigation', keywords: ['pomodoro', 'timer', 'focus', 'productivity', 'time management', 'waktu'] },
+    { id: 'nav-quick-actions', title: 'Quick Actions', subtitle: 'Add habits, notes, links quickly', icon: 'add_circle', path: '/home', type: 'navigation', keywords: ['quick actions', 'add', 'create', 'new', 'tambah'] },
+    { id: 'nav-activity', title: 'Your Activity', subtitle: 'Recent activities overview', icon: 'insights', path: '/home', type: 'navigation', keywords: ['activity', 'recent', 'overview', 'aktivitas'] },
+    { id: 'nav-clock', title: 'Clock Widget', subtitle: 'Time display on dashboard', icon: 'schedule', path: '/home', type: 'navigation', keywords: ['clock', 'time', 'jam', 'widget'] },
+
+    // Specific Features
+    { id: 'nav-habit-reminders', title: 'Habit Reminders', subtitle: 'Get notified about habits', icon: 'alarm', path: '/settings', type: 'navigation', keywords: ['habit reminders', 'habit notifications', 'pengingat kebiasaan'] },
+    { id: 'nav-schedule-reminders', title: 'Schedule Reminders', subtitle: 'Event notifications', icon: 'event_available', path: '/settings', type: 'navigation', keywords: ['schedule reminders', 'event notifications', 'pengingat jadwal'] },
+    { id: 'nav-push-notifications', title: 'Push Notifications', subtitle: 'Browser notifications', icon: 'notifications_active', path: '/settings', type: 'navigation', keywords: ['push notifications', 'browser notifications', 'desktop notifications'] },
+
+    // Legal
+    { id: 'nav-privacy', title: 'Privacy Policy', subtitle: 'Our privacy policy', icon: 'privacy_tip', path: '/privacy', type: 'navigation', keywords: ['privacy', 'policy', 'data', 'privasi', 'kebijakan'] },
+    { id: 'nav-terms', title: 'Terms of Service', subtitle: 'Terms and conditions', icon: 'gavel', path: '/terms', type: 'navigation', keywords: ['terms', 'service', 'conditions', 'syarat', 'ketentuan'] },
+];
+
 export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     const [query, setQuery] = useState('');
-    const [results, setResults] = useState<SearchResult[]>([]);
+    const [apiResults, setApiResults] = useState<SearchResult[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
+    // Filter navigation items based on query
+    const navResults = useMemo(() => {
+        if (!query.trim() || query.length < 2) return [];
+        const q = query.toLowerCase();
+        return navigationItems.filter(item =>
+            item.title.toLowerCase().includes(q) ||
+            item.subtitle.toLowerCase().includes(q) ||
+            item.keywords.some(kw => kw.includes(q))
+        ).map(item => ({
+            id: item.id,
+            type: item.type,
+            title: item.title,
+            subtitle: item.subtitle,
+            icon: item.icon,
+            path: item.path,
+        }));
+    }, [query]);
+
+    // Combine nav results with API results
+    const results = useMemo(() => {
+        return [...navResults, ...apiResults];
+    }, [navResults, apiResults]);
+
     // Focus input when modal opens
     useEffect(() => {
         if (isOpen) {
             setQuery('');
-            setResults([]);
+            setApiResults([]);
             setSelectedIndex(0);
             setTimeout(() => inputRef.current?.focus(), 100);
         }
     }, [isOpen]);
 
-    // Debounced search
+    // Debounced API search
     useEffect(() => {
         if (!query.trim() || query.length < 2) {
-            setResults([]);
+            setApiResults([]);
             return;
         }
 
@@ -37,8 +107,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             try {
                 const result = await searchApi.search(query);
                 if (result.success && result.data) {
-                    setResults(result.data);
-                    setSelectedIndex(0);
+                    setApiResults(result.data);
                 }
             } catch {
                 console.error('Search failed');
@@ -50,16 +119,26 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         return () => clearTimeout(timer);
     }, [query]);
 
-    // Handle selecting a result
-    const handleSelect = useCallback((result: SearchResult) => {
-        const routes: Record<string, string> = {
-            habit: '/habits',
-            note: '/notes',
-            link: '/links',
-            schedule: '/schedule',
-        };
+    // Reset selected index when results change
+    useEffect(() => {
+        setSelectedIndex(0);
+    }, [results.length]);
 
-        navigate(routes[result.type] || '/dashboard');
+    // Handle selecting a result
+    const handleSelect = useCallback((result: any) => {
+        if (result.path) {
+            // Navigation item
+            navigate(result.path);
+        } else {
+            // Content item
+            const routes: Record<string, string> = {
+                habit: '/habits',
+                note: '/notes',
+                link: '/links',
+                schedule: '/schedule',
+            };
+            navigate(routes[result.type] || '/home');
+        }
         onClose();
     }, [navigate, onClose]);
 
@@ -85,6 +164,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             note: 'Note',
             link: 'Link',
             schedule: 'Event',
+            navigation: 'Page',
         };
         return labels[type] || type;
     };
@@ -95,6 +175,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             note: 'bg-blue-100 text-blue-700',
             link: 'bg-purple-100 text-purple-700',
             schedule: 'bg-orange-100 text-orange-700',
+            navigation: 'bg-gray-200 text-gray-700',
         };
         return colors[type] || 'bg-gray-100 text-gray-700';
     };
@@ -141,7 +222,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder="Search habits, notes, links, events..."
+                        placeholder="Search anything... pages, settings, content"
                         className="flex-1 text-lg text-text-primary placeholder-gray-400 outline-none bg-transparent"
                     />
                     {isLoading && (
@@ -165,6 +246,14 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                         <div className="p-6">
                             <p className="text-sm text-gray-400 text-center">Type at least 2 characters to search</p>
                             <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
+                                    <span className="material-icons-outlined text-[14px]">dashboard</span>
+                                    Pages
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
+                                    <span className="material-icons-outlined text-[14px]">settings</span>
+                                    Settings
+                                </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
                                     <span className="material-icons-outlined text-[14px]">self_improvement</span>
                                     Habits
@@ -196,7 +285,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                             : 'hover:bg-gray-50'
                                             }`}
                                     >
-                                        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                                        <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
                                             <span className="material-icons-outlined text-gray-600 text-lg">
                                                 {result.icon}
                                             </span>

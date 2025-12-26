@@ -18,7 +18,7 @@ export default function ForgotPassword() {
     // Redirect to dashboard if already logged in
     useEffect(() => {
         if (!authLoading && user) {
-            navigate('/dashboard', { replace: true });
+            navigate('/home', { replace: true });
         }
     }, [user, authLoading, navigate]);
 
@@ -102,7 +102,7 @@ export default function ForgotPassword() {
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 select-none cursor-default">
-                            <div className="flex items-center justify-center rounded-lg bg-black text-white size-8 shadow-md">
+                            <div className="flex items-center justify-center rounded-xl bg-black text-white size-8 shadow-md">
                                 <span className="material-icons-outlined text-[20px]">hub</span>
                             </div>
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">coreHub</h1>
@@ -136,7 +136,7 @@ export default function ForgotPassword() {
                                 <div className="pt-4">
                                     <Link
                                         to="/login"
-                                        className="inline-flex justify-center rounded-lg bg-black px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 transition-all"
+                                        className="inline-flex justify-center rounded-xl bg-black px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 transition-all"
                                     >
                                         Back to Login
                                     </Link>
@@ -168,7 +168,7 @@ export default function ForgotPassword() {
 
                                 <div className="pt-2">
                                     <button
-                                        className="flex w-full justify-center items-center gap-2 rounded-lg bg-black px-3 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+                                        className="flex w-full justify-center items-center gap-2 rounded-xl bg-black px-3 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
                                         type="submit"
                                         disabled={isLoading}
                                     >

@@ -59,11 +59,11 @@ export default function NotificationBell() {
             {/* Bell Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="relative w-[38px] h-[38px] flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
             >
                 <span className="material-icons-outlined text-xl">notifications</span>
                 {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1">
                         {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}

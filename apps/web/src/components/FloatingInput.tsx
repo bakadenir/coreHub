@@ -19,7 +19,7 @@ export default function FloatingInput({ label, error, className = '', value, ...
                 value={value}
                 placeholder=" " // Required for :placeholder-shown to work effectively
                 className={`
-                    block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border 
+                    block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-xl border 
                     ${error
                         ? 'border-red-600 focus:border-red-600'
                         : 'border-gray-300 focus:border-black'

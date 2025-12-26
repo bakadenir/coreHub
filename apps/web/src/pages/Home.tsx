@@ -288,7 +288,7 @@ export default function Home() {
                                         if (action.label === 'Add Notes') setIsAddNoteOpen(true);
                                         if (action.label === 'Add Link') setIsAddLinkOpen(true);
                                     }}
-                                    className={`flex items-center gap-3 ${isMain ? 'px-6 py-4 text-base border border-gray-200 hover:border-gray-300' : 'w-full px-3 py-2.5 text-sm border border-transparent hover:border-gray-200'} font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all group`}
+                                    className={`flex items-center gap-3 ${isMain ? 'px-6 py-4 text-base border border-gray-200 hover:border-gray-300' : 'w-full px-3 py-2.5 text-sm border border-transparent hover:border-gray-200'} font-medium text-gray-700 rounded-xl hover:bg-surface-light transition-all group`}
                                 >
                                     <span className={`flex items-center justify-center ${isMain ? 'w-10 h-10' : 'w-6 h-6'} rounded bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary transition-colors shadow-sm`}>
                                         <span className={`material-icons-outlined ${isMain ? 'text-xl' : 'text-sm'}`}>{action.icon}</span>
@@ -411,7 +411,7 @@ export default function Home() {
                                             ) : (
                                                 <div className="flex-1 overflow-y-auto space-y-2">
                                                     {schedules.map((schedule) => (
-                                                        <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-lg p-3 text-sm">
+                                                        <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>
                                                                 <span className="font-medium text-gray-900">{schedule.title}</span>
@@ -494,7 +494,7 @@ export default function Home() {
                                         ) : (
                                             <div className="flex-1 overflow-y-auto space-y-3">
                                                 {schedules.map((schedule) => (
-                                                    <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors">
+                                                    <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 hover:border-gray-200 transition-colors">
                                                         <div className="flex items-start gap-4">
                                                             <div className="text-center min-w-[60px]">
                                                                 <span className="text-lg font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>

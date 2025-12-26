@@ -14,6 +14,9 @@ export interface Habit {
     startDate?: string;
     specificDays?: number[];
     isArchived?: boolean;
+    hasStarted?: boolean; // true if today >= startDate
+    isDueToday?: boolean; // true if habit should be done today based on frequency
+    completions?: { completed_at: string }[]; // completion history for heatmap
 }
 
 export interface ActivityCardData {
@@ -52,6 +55,8 @@ export interface Note {
     tag: string;
     isPinned?: boolean;
     reminderAt?: string;
+    isPublic?: boolean;
+    publicSlug?: string;
 }
 
 export interface LinkItem {

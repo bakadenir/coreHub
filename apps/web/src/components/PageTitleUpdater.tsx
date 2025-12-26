@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 const titles: Record<string, string> = {
     '/': 'Welcome - coreHub',
-    '/dashboard': 'Home - coreHub',
+    '/home': 'Home - coreHub',
     '/admin': 'Admin Dashboard - coreHub',
     '/register': 'Register - coreHub',
     '/login': 'Login - coreHub',

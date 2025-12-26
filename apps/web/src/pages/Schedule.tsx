@@ -260,7 +260,7 @@ export default function Schedule() {
                     <div className="flex flex-wrap items-center gap-3">
                         <button
                             onClick={() => setIsAddScheduleOpen(true)}
-                            className="flex items-center justify-center rounded-lg h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50"
+                            className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50"
                         >
                             <span className="material-icons-outlined text-[20px]">add</span>
                             <span className="whitespace-nowrap">Add Schedule</span>
@@ -268,7 +268,7 @@ export default function Schedule() {
                     </div>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                    <div className="flex h-10 items-center justify-center rounded-lg bg-gray-100 p-1 border border-transparent self-start">
+                    <div className="flex h-10 items-center justify-center rounded-xl bg-gray-100 p-1 border border-transparent self-start">
                         {(['month', 'week', 'day'] as const).map((v) => (
                             <label key={v} className="cursor-pointer">
                                 <input
@@ -280,7 +280,7 @@ export default function Schedule() {
                                     onChange={() => setView(v)}
                                 />
                                 <div className="h-full px-4 py-2 rounded-[4px] flex items-center justify-center peer-checked:bg-white peer-checked:shadow-sm peer-checked:text-black text-text-secondary text-xs font-semibold transition-all capitalize">
-                                    {v}
+                                    {v === 'day' ? 'Today' : v}
                                 </div>
                             </label>
                         ))}
@@ -409,7 +409,7 @@ export default function Schedule() {
                                             <p className="text-base font-medium">No events for this day</p>
                                             <button
                                                 onClick={() => setIsAddScheduleOpen(true)}
-                                                className="mt-4 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-text-primary transition-colors"
+                                                className="mt-4 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-text-primary transition-colors"
                                             >
                                                 Add Event
                                             </button>

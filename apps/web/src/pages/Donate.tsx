@@ -420,7 +420,7 @@ export default function Donate() {
                 {/* Back to Home Control */}
                 <div className="mb-8">
                     <Link
-                        to="/dashboard"
+                        to="/home"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
                         <span className="material-icons-outlined text-base">arrow_back</span>
@@ -462,7 +462,7 @@ export default function Donate() {
                                     <span className="material-icons-outlined">pending</span>
                                     Awaiting Payment
                                 </h3>
-                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                         <div>
                                             <p className="text-sm text-gray-500">Order ID</p>
@@ -482,7 +482,7 @@ export default function Donate() {
                                         <button
                                             onClick={handleCancelPending}
                                             disabled={isCancelling}
-                                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
                                         >
                                             {isCancelling ? 'Cancelling...' : 'Cancel'}
                                         </button>
@@ -490,7 +490,7 @@ export default function Donate() {
                                             onClick={() => {
                                                 setPendingDonation(null);
                                             }}
-                                            className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors"
+                                            className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
                                         >
                                             Create New Donation
                                         </button>
@@ -517,7 +517,7 @@ export default function Donate() {
                                                 value={formatRupiah(donationAmount)}
                                                 onChange={(e) => setDonationAmount(e.target.value.replace(/\D/g, ''))}
                                                 placeholder="10.000"
-                                                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-lg text-lg font-medium focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+                                                className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-lg font-medium focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
                                             />
                                         </div>
                                         <div className="flex gap-2 mt-2 flex-wrap">
@@ -526,7 +526,7 @@ export default function Donate() {
                                                     key={preset}
                                                     type="button"
                                                     onClick={() => setDonationAmount(preset.toString())}
-                                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                                                    className="px-3 py-1.5 text-sm border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors"
                                                 >
                                                     {preset.toLocaleString('id-ID')}
                                                 </button>
@@ -542,7 +542,7 @@ export default function Donate() {
                                             value={donorName}
                                             onChange={(e) => setDonorName(e.target.value)}
                                             placeholder="Your name"
-                                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+                                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
                                         />
                                     </div>
 
@@ -565,7 +565,7 @@ export default function Donate() {
                                     <button
                                         onClick={handleDonate}
                                         disabled={isDonating}
-                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#0A8AFF] hover:bg-[#0070E0] text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#0A8AFF] hover:bg-[#0070E0] text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         {isDonating ? (
                                             <>
@@ -583,7 +583,7 @@ export default function Donate() {
                                     {/* PayPal Button (Placeholder) */}
                                     <button
                                         disabled
-                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#FFC439] text-[#003087] font-bold rounded-lg opacity-60 cursor-not-allowed"
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#FFC439] text-[#003087] font-bold rounded-xl opacity-60 cursor-not-allowed"
                                     >
                                         <span className="text-lg font-extrabold italic">PayPal</span>
                                         <span className="text-sm opacity-80">(Coming Soon)</span>
@@ -592,7 +592,7 @@ export default function Donate() {
                                     {/* Stripe Button (Placeholder) */}
                                     <button
                                         disabled
-                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#635BFF] text-white font-bold rounded-lg opacity-60 cursor-not-allowed"
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#635BFF] text-white font-bold rounded-xl opacity-60 cursor-not-allowed"
                                     >
                                         <span className="text-lg font-bold">Stripe</span>
                                         <span className="text-sm opacity-80">(Coming Soon)</span>
@@ -616,7 +616,7 @@ export default function Donate() {
                             {donationsList.length} DONATIONS
                         </div>
                     </div>
-                    <div className="overflow-x-auto rounded-lg border border-border-light bg-white shadow-sm">
+                    <div className="overflow-x-auto rounded-xl border border-border-light bg-white shadow-sm">
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-gray-50 border-b border-border-light">
                                 <tr>
@@ -680,7 +680,7 @@ export default function Donate() {
                         </div>
                     </div>
 
-                    <div className="bg-white border border-border-light rounded-lg p-6 shadow-sm">
+                    <div className="bg-white border border-border-light rounded-xl p-6 shadow-sm">
                         <p className="text-sm text-gray-600 mb-6">
                             Your feedback helps us improve coreHub. Share your experience and it may be featured as a review!
                         </p>
@@ -717,7 +717,7 @@ export default function Donate() {
                                 placeholder="Tell us about your experience with coreHub... What do you love? What could be improved?"
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400 resize-none bg-gray-50 focus:bg-white transition-colors"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-400 resize-none bg-gray-50 focus:bg-white transition-colors"
                                 rows={4}
                             />
                         </div>
@@ -742,7 +742,7 @@ export default function Donate() {
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting}
-                            className={`px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             {isSubmitting ? (
                                 <span className="material-icons-outlined text-base animate-spin">refresh</span>
@@ -809,9 +809,9 @@ export default function Donate() {
                                         placeholder="Search reviews"
                                         value={searchQuery}
                                         onChange={(e) => handleSearchChange(e.target.value)}
-                                        className="w-full sm:w-64 pl-4 pr-10 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400 bg-white"
+                                        className="w-full sm:w-64 pl-4 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-400 bg-white"
                                     />
-                                    <button className="absolute right-0 top-0 h-full px-3 bg-primary text-white rounded-r-lg hover:bg-gray-800 transition-colors">
+                                    <button className="absolute right-0 top-0 h-full px-3 bg-primary text-white rounded-r-xl hover:bg-gray-800 transition-colors">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                         </svg>
@@ -909,7 +909,7 @@ export default function Donate() {
                                 <button
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${currentPage === 1 ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${currentPage === 1 ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
                                 >
                                     ← Prev
                                 </button>
@@ -917,7 +917,7 @@ export default function Donate() {
                                     <button
                                         key={page}
                                         onClick={() => setCurrentPage(page)}
-                                        className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${currentPage === page ? 'bg-primary text-white' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
+                                        className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page ? 'bg-primary text-white' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
                                     >
                                         {page}
                                     </button>

@@ -4,6 +4,7 @@ import type { UserProfile } from '../types';
 interface UpdateProfileData {
     name?: string;
     bio?: string;
+    location?: string;
     // Note: avatar is uploaded separately via uploadAvatar
 }
 

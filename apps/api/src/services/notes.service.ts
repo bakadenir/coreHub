@@ -15,6 +15,17 @@ export interface CreateNoteDto {
 
 export interface UpdateNoteDto extends Partial<CreateNoteDto> { }
 
+// Helper to generate URL-friendly slug
+function generateSlug(title: string): string {
+    const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 50);
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    return `${slug}-${randomSuffix}`;
+}
+
 // Helper to transform snake_case DB fields to camelCase for frontend
 function transformNote(note: any) {
     if (!note) return null;
@@ -24,6 +35,8 @@ function transformNote(note: any) {
         content: note.content,
         tag: note.color, // Supabase uses 'color', frontend expects 'tag'
         isPinned: note.is_pinned,
+        isPublic: note.is_public || false,
+        publicSlug: note.public_slug || null,
         createdAt: note.created_at,
         updatedAt: note.updated_at,
     };
@@ -148,4 +161,93 @@ export class NotesService {
         if (error && error.code !== 'PGRST116') throw error;
         return transformNote(note);
     }
+
+    // Publish a note - make it public and generate slug
+    async publish(id: string, userId: string) {
+        // First get the note to generate slug from title
+        const existing = await this.findById(id, userId);
+        if (!existing) return null;
+
+        const slug = generateSlug(existing.title);
+
+        const { data: note, error } = await supabase
+            .from('notes')
+            .update({
+                is_public: true,
+                public_slug: slug,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return transformNote(note);
+    }
+
+    // Unpublish a note - make it private and clear slug
+    async unpublish(id: string, userId: string) {
+        const { data: note, error } = await supabase
+            .from('notes')
+            .update({
+                is_public: false,
+                public_slug: null,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return transformNote(note);
+    }
+
+    // Find public note by slug (no auth required)
+    async findBySlug(slug: string) {
+        const { data, error } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('public_slug', slug)
+            .eq('is_public', true)
+            .is('deleted_at', null)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        if (!data) return null;
+
+        // Get author info from Supabase Auth
+        let authorName = 'Anonymous';
+        let authorImage: string | null = null;
+        if (data.user_id) {
+            try {
+                const { data: userData } = await supabase.auth.admin.getUserById(data.user_id);
+                if (userData?.user?.user_metadata?.name) {
+                    authorName = userData.user.user_metadata.name;
+                } else if (userData?.user?.email) {
+                    // Fallback to email username
+                    authorName = userData.user.email.split('@')[0];
+                }
+                if (userData?.user?.user_metadata?.image) {
+                    authorImage = userData.user.user_metadata.image;
+                }
+            } catch (e) {
+                console.error('Error fetching author:', e);
+            }
+        }
+
+        return {
+            id: data.id,
+            title: data.title,
+            content: data.content,
+            authorName,
+            authorImage,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at,
+        };
+    }
 }
+
+
+

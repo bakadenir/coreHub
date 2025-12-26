@@ -172,7 +172,7 @@ export default function Links() {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setIsAddLinkOpen(true)}
-                        className="flex items-center justify-center rounded-lg h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50"
+                        className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50"
                     >
                         <span className="material-icons-outlined text-[20px]">add</span>
                         <span className="whitespace-nowrap">Add Links</span>
@@ -193,7 +193,7 @@ export default function Links() {
                                     <span className="material-icons-outlined text-[20px]">sort</span>
                                 </button>
                                 {showSortMenu && (
-                                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+                                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[140px]">
                                         <button
                                             onClick={() => { setSortBy('newest'); setShowSortMenu(false); }}
                                             className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'newest' ? 'text-primary font-medium' : 'text-text-primary'}`}
@@ -221,7 +221,7 @@ export default function Links() {
                         </div>
                         <div className="relative">
                             <input
-                                className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-100 border border-border-light focus:border-text-primary focus:ring-0 text-text-primary text-sm placeholder-gray-400"
+                                className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 border border-border-light focus:border-text-primary focus:ring-0 text-text-primary text-sm placeholder-gray-400"
                                 placeholder="Filter links..."
                                 type="text"
                                 value={searchTerm}
@@ -242,7 +242,7 @@ export default function Links() {
                                 <div
                                     key={link.id}
                                     onClick={() => setSelectedIndex(index)}
-                                    className={`group flex flex-col p-3 rounded-lg border transition-all cursor-pointer ${selectedIndex === index
+                                    className={`group flex flex-col p-3 rounded-xl border transition-all cursor-pointer ${selectedIndex === index
                                         ? 'bg-white border-border-light shadow-sm'
                                         : 'bg-background-light border-transparent hover:bg-gray-100'
                                         }`}
@@ -311,21 +311,21 @@ export default function Links() {
                                         href={selectedLink.url}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="flex items-center justify-center rounded-lg h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-semibold shadow-sm transition-all shadow-gray-200/50"
+                                        className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-semibold shadow-sm transition-all shadow-gray-200/50"
                                     >
                                         <span className="material-icons-outlined text-[20px]">open_in_new</span>
                                         <span className="whitespace-nowrap">Open Link</span>
                                     </a>
                                     <button
                                         onClick={() => handleEdit(selectedLink)}
-                                        className="flex items-center justify-center rounded-lg h-10 px-5 bg-gray-100 hover:bg-gray-200 text-text-primary gap-2 text-sm font-semibold shadow-sm transition-all"
+                                        className="flex items-center justify-center rounded-xl h-10 px-5 bg-gray-100 hover:bg-gray-200 text-text-primary gap-2 text-sm font-semibold shadow-sm transition-all"
                                     >
                                         <span className="material-icons-outlined text-[20px]">edit</span>
                                         <span className="whitespace-nowrap">Edit</span>
                                     </button>
                                     <button
                                         onClick={() => handleDeleteClick(selectedLink)}
-                                        className="flex items-center justify-center rounded-lg h-10 px-5 bg-red-100 hover:bg-red-200 text-red-600 gap-2 text-sm font-semibold shadow-sm transition-all"
+                                        className="flex items-center justify-center rounded-xl h-10 px-5 bg-red-100 hover:bg-red-200 text-red-600 gap-2 text-sm font-semibold shadow-sm transition-all"
                                     >
                                         <span className="material-icons-outlined text-[20px]">delete</span>
                                         <span className="whitespace-nowrap">Delete</span>

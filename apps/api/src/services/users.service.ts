@@ -3,6 +3,7 @@ import { supabase } from '../config/supabase';
 export interface UpdateUserDto {
     name?: string;
     bio?: string;
+    location?: string;
     image?: string;
 }
 
@@ -21,6 +22,7 @@ export class UsersService {
             user_metadata: {
                 name: data.name,
                 bio: data.bio,
+                location: data.location,
                 image: data.image,
             },
         });

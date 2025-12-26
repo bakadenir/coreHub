@@ -8,6 +8,7 @@ import Schedule from './pages/Schedule';
 import Notes from './pages/Notes';
 import Links from './pages/Links';
 import Habits from './pages/Habits';
+import Article from './pages/Article';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
@@ -34,10 +35,11 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/note/:slug" element={<Article />} />
 
         {/* Main protected routes with shared layout */}
         <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-          <Route path="/dashboard" element={<Home />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/notes" element={<Notes />} />
           <Route path="/links" element={<Links />} />

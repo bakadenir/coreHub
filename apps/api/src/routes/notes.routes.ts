@@ -89,4 +89,33 @@ router.patch('/:id/pin', async (req, res) => {
     }
 });
 
+// POST /api/notes/:id/publish - Make note public
+router.post('/:id/publish', async (req, res) => {
+    try {
+        const note = await notesService.publish(req.params.id, req.user!.id);
+        if (!note) {
+            return notFoundResponse(res, 'Note');
+        }
+        return successResponse(res, note);
+    } catch (error) {
+        console.error('Error publishing note:', error);
+        return serverErrorResponse(res);
+    }
+});
+
+// POST /api/notes/:id/unpublish - Make note private
+router.post('/:id/unpublish', async (req, res) => {
+    try {
+        const note = await notesService.unpublish(req.params.id, req.user!.id);
+        if (!note) {
+            return notFoundResponse(res, 'Note');
+        }
+        return successResponse(res, note);
+    } catch (error) {
+        console.error('Error unpublishing note:', error);
+        return serverErrorResponse(res);
+    }
+});
+
 export default router;
+

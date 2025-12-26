@@ -17,6 +17,7 @@ export default function Settings() {
     // Profile form state
     const [name, setName] = useState('');
     const [bio, setBio] = useState('');
+    const [location, setLocation] = useState('');
     const [avatar, setAvatar] = useState('');
 
 
@@ -58,6 +59,7 @@ export default function Settings() {
                     const userData = result.data as any;
                     setName(userData.name || '');
                     setBio(userData.bio || '');
+                    setLocation(userData.location || '');
                     setAvatar(getFullAvatarUrl(userData.image));  // Apply full URL for uploaded images
 
                 }
@@ -67,6 +69,7 @@ export default function Settings() {
                 if (user) {
                     setName(user.name || '');
                     setBio(user.bio || '');
+                    setLocation('');
                     setAvatar(user.avatar || '');
 
                 }
@@ -117,10 +120,11 @@ export default function Settings() {
                 }
             }
 
-            // Update profile (name and bio only - avatar already uploaded)
+            // Update profile (name, bio, location - avatar already uploaded)
             const result = await usersApi.updateProfile({
                 name: name.trim(),
                 bio: bio.trim(),
+                location: location.trim(),
             });
 
             if (result.success) {
@@ -140,6 +144,7 @@ export default function Settings() {
         if (user) {
             setName(user.name || '');
             setBio(user.bio || '');
+            setLocation('');
             setAvatar(user.avatar || '');
         }
     };
@@ -275,7 +280,7 @@ export default function Settings() {
                 {/* Back to Home Control */}
                 <div className="mb-8">
                     <Link
-                        to="/dashboard"
+                        to="/home"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
                         <span className="material-icons-outlined text-base">arrow_back</span>
@@ -311,7 +316,7 @@ export default function Settings() {
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="Enter your name"
-                                        className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                        className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     />
                                 </div>
 
@@ -322,13 +327,24 @@ export default function Settings() {
                                         onChange={(e) => setBio(e.target.value)}
                                         placeholder="Tell us about yourself..."
                                         rows={3}
-                                        className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none resize-none"
+                                        className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none resize-none"
+                                    />
+                                </div>
+
+                                <div className="space-y-2.5">
+                                    <label className="block text-sm font-medium text-gray-500">Location</label>
+                                    <input
+                                        type="text"
+                                        value={location}
+                                        onChange={(e) => setLocation(e.target.value)}
+                                        placeholder="e.g., Jakarta, Indonesia"
+                                        className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     />
                                 </div>
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-border-light">
+                            <div className="flex justify-end gap-3 mt-8">
                                 <button
                                     onClick={handleCancelProfile}
                                     className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:text-black transition-colors"
@@ -338,7 +354,7 @@ export default function Settings() {
                                 <button
                                     onClick={handleSaveProfile}
                                     disabled={isSavingProfile}
-                                    className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 flex items-center gap-2"
+                                    className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-xl hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {isSavingProfile && (
                                         <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
@@ -363,12 +379,12 @@ export default function Settings() {
                                         value={user?.email || ''}
                                         readOnly
                                         disabled
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-gray-500 cursor-not-allowed text-[15px] shadow-sm outline-none"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-500 cursor-not-allowed text-[15px] shadow-sm outline-none"
                                     />
                                     <p className="text-xs text-gray-400">Email cannot be changed</p>
                                 </div>
 
-                                <div className="border-t border-gray-100 pt-6"></div>
+
 
                                 <div>
                                     <h4 className="text-base font-bold text-text-primary mb-4">Change Password</h4>
@@ -379,7 +395,7 @@ export default function Settings() {
                                                 type="password"
                                                 value={currentPassword}
                                                 onChange={(e) => setCurrentPassword(e.target.value)}
-                                                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                             />
                                         </div>
                                         <div className="space-y-6">
@@ -389,7 +405,7 @@ export default function Settings() {
                                                     type="password"
                                                     value={newPassword}
                                                     onChange={(e) => setNewPassword(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                                 />
                                             </div>
                                             <div className="space-y-2.5">
@@ -398,16 +414,16 @@ export default function Settings() {
                                                     type="password"
                                                     value={confirmPassword}
                                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                                 />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex justify-end mt-4">
+                                    <div className="flex justify-end mt-8">
                                         <button
                                             onClick={handleChangePassword}
                                             disabled={isSavingPassword || !currentPassword || !newPassword || !confirmPassword}
-                                            className="px-5 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                            className="px-5 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                                         >
                                             {isSavingPassword && (
                                                 <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
@@ -439,7 +455,7 @@ export default function Settings() {
                                         </div>
                                         {typeof Notification !== 'undefined' && Notification.permission === 'denied' ? (
                                             <div className="text-right">
-                                                <span className="px-4 py-2 text-sm font-medium bg-red-100 text-red-700 rounded-lg">
+                                                <span className="px-4 py-2 text-sm font-medium bg-red-100 text-red-700 rounded-xl">
                                                     Blocked
                                                 </span>
                                                 <p className="text-xs text-gray-400 mt-1">Reset in browser settings</p>
@@ -457,7 +473,7 @@ export default function Settings() {
                                                     }
                                                 }}
                                                 disabled={typeof Notification !== 'undefined' && Notification.permission === 'granted'}
-                                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${typeof Notification !== 'undefined' && Notification.permission === 'granted'
+                                                className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-colors ${typeof Notification !== 'undefined' && Notification.permission === 'granted'
                                                     ? 'bg-green-100 text-green-700 cursor-default'
                                                     : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
                                                     }`}
@@ -505,17 +521,23 @@ export default function Settings() {
                                             <h4 className="font-medium text-gray-900">Reminder Time</h4>
                                             <p className="text-sm text-gray-500">How early to send event reminders</p>
                                         </div>
-                                        <select
-                                            value={scheduleReminderMinutes}
-                                            onChange={(e) => updateNotificationSetting('scheduleReminderMinutes', Number(e.target.value))}
-                                            disabled={isSavingNotifSetting}
-                                            className={`px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:border-gray-400 ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        >
-                                            <option value={5}>5 minutes before</option>
-                                            <option value={10}>10 minutes before</option>
-                                            <option value={15}>15 minutes before</option>
-                                            <option value={30}>30 minutes before</option>
-                                        </select>
+                                        <div className="relative">
+                                            <select
+                                                value={scheduleReminderMinutes}
+                                                onChange={(e) => updateNotificationSetting('scheduleReminderMinutes', Number(e.target.value))}
+                                                disabled={isSavingNotifSetting}
+                                                className={`appearance-none w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none focus:border-gray-400 cursor-pointer ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            >
+                                                <option value={5}>5 minutes before</option>
+                                                <option value={10}>10 minutes before</option>
+                                                <option value={15}>15 minutes before</option>
+                                                <option value={30}>30 minutes before</option>
+                                                <option value={60}>1 hour before</option>
+                                            </select>
+                                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                                                <span className="material-icons-outlined text-xl">expand_more</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
@@ -537,7 +559,7 @@ export default function Settings() {
                                 <button
                                     onClick={() => setShowDeleteConfirm(true)}
                                     disabled={isDeletingAccount}
-                                    className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2 shrink-0"
+                                    className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2 shrink-0"
                                 >
                                     {isDeletingAccount && (
                                         <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>

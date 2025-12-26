@@ -10,22 +10,27 @@ interface AddHabitModalProps {
 export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
     const { showToast } = useToast();
     const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
+    const [icon, setIcon] = useState('✓');
     const [frequency, setFrequency] = useState('daily');
     const [startDate, setStartDate] = useState('');
     const [reminderTime, setReminderTime] = useState('09:00');
-    const [selectedDays, setSelectedDays] = useState<number[]>([1, 3]); // Tue, Thu
+    const [selectedDays, setSelectedDays] = useState<number[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const habitEmojis = [
+        '✓', '📚', '💪', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎯',
+        '💡', '🎨', '🎵', '🧹', '💰', '🌱', '☕', '🙏', '📝', '⏰'
+    ];
 
     // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
             setName('');
-            setDescription('');
+            setIcon('✓');
             setFrequency('daily');
             setStartDate('');
             setReminderTime('09:00');
-            setSelectedDays([1, 3]);
+            setSelectedDays([]);
         }
     }, [isOpen]);
 
@@ -67,9 +72,10 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
         try {
             const result = await habitsApi.create({
                 name: name.trim(),
-                description: description.trim() || undefined,
+                icon: icon,
                 frequency: frequency.toLowerCase(),
-                specificDays: frequency === 'specific' ? selectedDays : undefined,
+                // Send specificDays when frequency is weekly and days are selected
+                specificDays: frequency === 'weekly' && selectedDays.length > 0 ? selectedDays : undefined,
                 startDate: startDate || undefined,
                 reminderTime: reminderTime || undefined,
             });
@@ -111,9 +117,29 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 max-h-[70vh]">
+                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6 max-h-[70vh]">
+                    {/* Icon Picker */}
+                    <div className="space-y-3">
+                        <label className="block text-sm font-medium text-gray-500">Icon</label>
+                        <div className="flex flex-wrap gap-2">
+                            {habitEmojis.map((emoji) => (
+                                <button
+                                    key={emoji}
+                                    type="button"
+                                    onClick={() => setIcon(emoji)}
+                                    className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center transition-all ${icon === emoji
+                                        ? 'bg-black text-white shadow-md scale-110'
+                                        : 'bg-gray-100 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Habit Name */}
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-500">Habit Name *</label>
                         <input
                             className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
@@ -124,59 +150,47 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                         />
                     </div>
 
-                    {/* Description */}
-                    <div className="space-y-2.5">
-                        <div className="flex justify-between">
-                            <label className="block text-sm font-medium text-gray-500">Description</label>
-                            <span className="text-xs text-gray-400">Optional</span>
-                        </div>
-                        <textarea
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
-                            placeholder="Explain why this habit matters to you"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                        ></textarea>
-                    </div>
-
                     {/* Frequency */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-500">Frequency</label>
-                        <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-lg border border-transparent">
-                            {[{ label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }, { label: 'Specific Days', value: 'specific' }].map((option) => (
-                                <label key={option.value} className="cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="frequency"
-                                        className="peer sr-only"
-                                        checked={frequency === option.value}
-                                        onChange={() => setFrequency(option.value)}
-                                    />
-                                    <div className="flex items-center justify-center py-2 text-sm font-medium text-gray-500 rounded-md transition-all peer-checked:bg-white peer-checked:text-black peer-checked:shadow-sm hover:text-black">
-                                        {option.label}
-                                    </div>
-                                </label>
+                        <div className="grid grid-cols-2 gap-1 bg-gray-100 p-1 rounded-lg border border-transparent">
+                            {[{ label: 'Daily', value: 'daily' }, { label: 'Weekly', value: 'weekly' }].map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setFrequency(option.value)}
+                                    className={`flex items-center justify-center py-2 text-sm font-medium rounded-md transition-all ${frequency === option.value
+                                        ? 'bg-white text-black shadow-sm'
+                                        : 'text-gray-500 hover:text-black'
+                                        }`}
+                                >
+                                    {option.label}
+                                </button>
                             ))}
                         </div>
 
-                        {/* Days Selection */}
-                        {frequency === 'specific' && (
-                            <div className="flex items-center justify-between pt-1 gap-2">
-                                {days.map((day, index) => {
-                                    const isSelected = selectedDays.includes(index);
-                                    return (
-                                        <button
-                                            key={index}
-                                            type="button"
-                                            onClick={() => toggleDay(index)}
-                                            className={`w-10 h-10 rounded-full text-xs font-mono font-bold flex items-center justify-center transition-all focus:outline-none ${isSelected
-                                                ? 'bg-black text-white border border-black shadow-md'
-                                                : 'border border-gray-200 bg-white text-gray-400 hover:border-gray-400 hover:text-black'
-                                                }`}
-                                        >
-                                            {day}
-                                        </button>
-                                    );
-                                })}
+                        {/* Days Selection - show when Weekly is selected */}
+                        {frequency === 'weekly' && (
+                            <div className="pt-2 space-y-3">
+                                <div className="flex items-center justify-between gap-2">
+                                    {days.map((day, index) => {
+                                        const isSelected = selectedDays.includes(index);
+                                        return (
+                                            <button
+                                                key={index}
+                                                type="button"
+                                                onClick={() => toggleDay(index)}
+                                                className={`w-10 h-10 rounded-full text-xs font-mono font-bold flex items-center justify-center transition-all focus:outline-none ${isSelected
+                                                    ? 'bg-black text-white border border-black shadow-md'
+                                                    : 'border border-gray-200 bg-white text-gray-400 hover:border-gray-400 hover:text-black'
+                                                    }`}
+                                            >
+                                                {day}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <p className="text-xs text-gray-400 pt-1">Select the days you want to do this habit</p>
                             </div>
                         )}
                     </div>

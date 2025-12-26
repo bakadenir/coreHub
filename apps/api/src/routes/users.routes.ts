@@ -15,6 +15,7 @@ function transformUser(user: any) {
         name: user.user_metadata?.name || user.user_metadata?.username || null,
         username: user.user_metadata?.username || user.user_metadata?.name || null,
         bio: user.user_metadata?.bio || null,
+        location: user.user_metadata?.location || null,
         image: user.user_metadata?.image || null,
         role: user.user_metadata?.role || user.role || 'user',
         createdAt: user.created_at,
@@ -41,16 +42,17 @@ router.get('/me', async (req, res) => {
     }
 });
 
-// PATCH /api/users/me - Update profile (name and bio only)
+// PATCH /api/users/me - Update profile (name, bio, location)
 // Note: Avatar is uploaded separately via /api/upload/avatar
 router.patch('/me', async (req, res) => {
     try {
-        const { name, bio } = req.body;
+        const { name, bio, location } = req.body;
 
         // Build update object only with defined values
         const updateData: Record<string, any> = {};
         if (name !== undefined) updateData.name = name;
         if (bio !== undefined) updateData.bio = bio;
+        if (location !== undefined) updateData.location = location;
 
         console.log('Update profile request:', { userId: req.user!.id, updateData });
 

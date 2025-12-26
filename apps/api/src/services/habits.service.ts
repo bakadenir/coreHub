@@ -53,25 +53,54 @@ export class HabitsService {
         if (error) throw error;
 
         const today = new Date().toISOString().split('T')[0];
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
 
-        return (data || []).map(habit => ({
-            ...habit,
-            id: habit.id,
-            name: habit.title,  // Map DB 'title' to frontend 'name'
-            userId: habit.user_id,
-            specificDays: habit.specific_days,
-            reminderTime: habit.reminder_time,
-            startDate: habit.start_date,
-            isArchived: habit.is_archived,
-            createdAt: habit.created_at,
-            updatedAt: habit.updated_at,
-            completions: habit.habit_completions || [],
-            completed: (habit.habit_completions || []).some((c: any) => {
-                const completedDate = c.completed_at ? c.completed_at.split('T')[0] : null;
-                return completedDate === (filters.date || today);
-            }),
-            completionRate: this.calculateCompletionRate(habit.habit_completions || []),
-        }));
+        // Get day of week (0 = Monday, 1 = Tuesday, ..., 6 = Sunday)
+        const todayDayOfWeek = todayDate.getDay() === 0 ? 6 : todayDate.getDay() - 1;
+
+        return (data || []).map(habit => {
+            // Check if habit has started
+            let hasStarted = true;
+            if (habit.start_date) {
+                const startDate = new Date(habit.start_date);
+                startDate.setHours(0, 0, 0, 0);
+                hasStarted = todayDate >= startDate;
+            }
+
+            // Check if habit is due today based on frequency and specific_days
+            let isDueToday = true;
+            if (habit.specific_days && habit.specific_days.length > 0) {
+                // specific_days is array of day indices: 0=Mon, 1=Tue, ..., 6=Sun
+                isDueToday = habit.specific_days.includes(todayDayOfWeek);
+            } else if (habit.frequency === 'weekly') {
+                // For weekly without specific days, always due (user can complete any day)
+                isDueToday = true;
+            }
+            // For daily, always due
+
+            return {
+                ...habit,
+                id: habit.id,
+                name: habit.title,  // Map DB 'title' to frontend 'name'
+                userId: habit.user_id,
+                specificDays: habit.specific_days,
+                reminderTime: habit.reminder_time,
+                startDate: habit.start_date,
+                isArchived: habit.is_archived,
+                createdAt: habit.created_at,
+                updatedAt: habit.updated_at,
+                completions: habit.habit_completions || [],
+                completed: (habit.habit_completions || []).some((c: any) => {
+                    const completedDate = c.completed_at ? c.completed_at.split('T')[0] : null;
+                    return completedDate === (filters.date || today);
+                }),
+                completionRate: this.calculateCompletionRate(habit.habit_completions || []),
+                streak: habit.streak || 0,  // Include streak from database
+                hasStarted,  // Indicates if the habit start_date has passed
+                isDueToday,  // Indicates if this habit should be completed today
+            };
+        });
     }
 
     async create(userId: string, data: CreateHabitDto) {
@@ -144,6 +173,18 @@ export class HabitsService {
         // Verify habit belongs to user
         const habit = await this.findById(habitId, userId);
         if (!habit) throw new Error('Habit not found');
+
+        // Check if habit has started (start_date validation)
+        if (habit.start_date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const startDate = new Date(habit.start_date);
+            startDate.setHours(0, 0, 0, 0);
+
+            if (today < startDate) {
+                throw new Error(`This habit starts on ${habit.start_date}. You cannot mark it complete before then.`);
+            }
+        }
 
         const dateStr = date.toISOString().split('T')[0];
 
@@ -229,24 +270,50 @@ export class HabitsService {
             .order('completed_at', { ascending: false })
             .limit(365);
 
+        if (!completions || completions.length === 0) {
+            await supabase.from('habits').update({ streak: 0 }).eq('id', habitId);
+            return;
+        }
+
         let streak = 0;
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
 
-        for (let i = 0; i < (completions?.length || 0); i++) {
-            const expectedDate = new Date(today);
-            expectedDate.setDate(expectedDate.getDate() - i);
-            const dateStr = expectedDate.toISOString().split('T')[0];
+        // Get today's date in local timezone as YYYY-MM-DD
+        const getLocalDateStr = (date: Date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
 
-            if (completions?.some(c => c.completed_at?.split('T')[0] === dateStr)) {
+        // Convert completion dates to local date strings for comparison
+        const completionDates = new Set(
+            completions.map(c => {
+                if (!c.completed_at) return null;
+                // Parse the ISO date and get local date string
+                const date = new Date(c.completed_at);
+                return getLocalDateStr(date);
+            }).filter(Boolean)
+        );
+
+        // Check consecutive days starting from today
+        for (let i = 0; i < 365; i++) {
+            const checkDate = new Date(today);
+            checkDate.setDate(today.getDate() - i);
+            const dateStr = getLocalDateStr(checkDate);
+
+            if (completionDates.has(dateStr)) {
                 streak++;
             } else {
+                // If it's not today (i > 0) and we break, keep the streak
+                // If today is not completed but yesterday was, streak should still count yesterday's
                 break;
             }
         }
 
         await supabase.from('habits').update({ streak }).eq('id', habitId);
     }
+
 
     private calculateCompletionRate(completions: any[]) {
         if (completions.length === 0) return 0;

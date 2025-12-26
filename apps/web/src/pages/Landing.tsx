@@ -11,7 +11,7 @@ export default function Landing() {
     // Redirect to dashboard if already logged in
     useEffect(() => {
         if (!isLoading && user) {
-            navigate('/dashboard', { replace: true });
+            navigate('/home', { replace: true });
         }
     }, [user, isLoading, navigate]);
 
