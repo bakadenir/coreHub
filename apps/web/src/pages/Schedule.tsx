@@ -113,6 +113,56 @@ export default function Schedule() {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + direction, 1));
     };
 
+    // Week view helpers
+    const getWeekDays = (date: Date) => {
+        const startOfWeek = new Date(date);
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+        startOfWeek.setDate(diff);
+
+        const days: Date[] = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+            days.push(d);
+        }
+        return days;
+    };
+
+    const navigateWeek = (direction: number) => {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + (direction * 7));
+        setCurrentDate(newDate);
+    };
+
+    const navigateDay = (direction: number) => {
+        const newDate = new Date(currentDate);
+        newDate.setDate(newDate.getDate() + direction);
+        setCurrentDate(newDate);
+    };
+
+    const getEventsForDate = (date: Date) => {
+        return events.filter(event => {
+            const eventDate = new Date(event.startTime);
+            return eventDate.getDate() === date.getDate() &&
+                eventDate.getMonth() === date.getMonth() &&
+                eventDate.getFullYear() === date.getFullYear();
+        }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    };
+
+    const formatDateFull = (date: Date) => {
+        return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    };
+
+    const formatWeekRange = (date: Date) => {
+        const weekDays = getWeekDays(date);
+        const start = weekDays[0];
+        const end = weekDays[6];
+        return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    };
+
+    const weekDays = getWeekDays(currentDate);
+
     const today = new Date();
     const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
     const todayDay = today.getDate();
@@ -189,16 +239,16 @@ export default function Schedule() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex flex-col gap-1">
                         <h2 className="text-text-primary text-3xl font-extrabold tracking-tight flex items-center gap-3">
-                            Schedule {formatMonthYear(currentDate)}
+                            Schedule {view === 'month' ? formatMonthYear(currentDate) : view === 'week' ? formatWeekRange(currentDate) : formatDateFull(currentDate)}
                             <div className="flex gap-1 ml-2">
                                 <button
-                                    onClick={() => navigateMonth(-1)}
+                                    onClick={() => view === 'month' ? navigateMonth(-1) : view === 'week' ? navigateWeek(-1) : navigateDay(-1)}
                                     className="p-1 rounded-full hover:bg-gray-100 text-text-secondary transition-colors"
                                 >
                                     <span className="material-icons-outlined text-xl">chevron_left</span>
                                 </button>
                                 <button
-                                    onClick={() => navigateMonth(1)}
+                                    onClick={() => view === 'month' ? navigateMonth(1) : view === 'week' ? navigateWeek(1) : navigateDay(1)}
                                     className="p-1 rounded-full hover:bg-gray-100 text-text-secondary transition-colors"
                                 >
                                     <span className="material-icons-outlined text-xl">chevron_right</span>
@@ -208,12 +258,6 @@ export default function Schedule() {
                         <p className="text-text-secondary text-base font-normal">Manage your time and upcoming events.</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <button
-                            onClick={() => setCurrentDate(new Date())}
-                            className="px-4 py-2 text-sm font-medium text-text-secondary hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            Today
-                        </button>
                         <button
                             onClick={() => setIsAddScheduleOpen(true)}
                             className="flex items-center justify-center rounded-lg h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50"
@@ -255,59 +299,161 @@ export default function Schedule() {
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-7 border-b border-border-light">
-                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                                    <div key={day} className="py-3 text-center text-xs font-bold uppercase text-text-secondary tracking-wider">{day}</div>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-7 flex-1 min-h-[600px] auto-rows-fr bg-border-light gap-[1px] border-b border-border-light">
-                                {/* Previous Month Days */}
-                                {[...Array(firstDay)].map((_, i) => (
-                                    <div key={`prev-${i}`} className="bg-gray-50 p-2 flex flex-col gap-1 min-h-[120px]">
-                                        <span className="text-text-secondary/50 font-mono text-sm p-1">{prevMonthDays - firstDay + i + 1}</span>
+                            {/* Month View */}
+                            {view === 'month' && (
+                                <>
+                                    <div className="grid grid-cols-7 border-b border-border-light">
+                                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                                            <div key={day} className="py-3 text-center text-xs font-bold uppercase text-text-secondary tracking-wider">{day}</div>
+                                        ))}
                                     </div>
-                                ))}
+                                    <div className="grid grid-cols-7 flex-1 min-h-[600px] auto-rows-fr bg-border-light gap-[1px] border-b border-border-light">
+                                        {/* Previous Month Days */}
+                                        {[...Array(firstDay)].map((_, i) => (
+                                            <div key={`prev-${i}`} className="bg-gray-50 p-2 flex flex-col gap-1 min-h-[120px]">
+                                                <span className="text-text-secondary/50 font-mono text-sm p-1">{prevMonthDays - firstDay + i + 1}</span>
+                                            </div>
+                                        ))}
 
-                                {/* Current Month Days */}
-                                {[...Array(daysInMonth)].map((_, i) => {
-                                    const day = i + 1;
-                                    const dayEvents = getEventsForDay(day);
-                                    const isToday = isCurrentMonth && day === todayDay;
-                                    return (
-                                        <div key={day} className="bg-white p-2 flex flex-col gap-1 min-h-[120px] group hover:bg-gray-50 transition-colors relative">
-                                            <span className={`text-text-primary font-mono text-sm font-medium p-1 ${isToday ? 'flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white shadow-md shadow-gray-500/30' : ''}`}>
-                                                {day}
-                                            </span>
-                                            {dayEvents.slice(0, 3).map((event, idx) => (
+                                        {/* Current Month Days */}
+                                        {[...Array(daysInMonth)].map((_, i) => {
+                                            const day = i + 1;
+                                            const dayEvents = getEventsForDay(day);
+                                            const isToday = isCurrentMonth && day === todayDay;
+                                            return (
+                                                <div key={day} className="bg-white p-2 flex flex-col gap-1 min-h-[120px] group hover:bg-gray-50 transition-colors relative">
+                                                    <span className={`text-text-primary font-mono text-sm font-medium p-1 ${isToday ? 'flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white shadow-md shadow-gray-500/30' : ''}`}>
+                                                        {day}
+                                                    </span>
+                                                    {dayEvents.slice(0, 3).map((event, idx) => (
+                                                        <div
+                                                            key={event.id}
+                                                            onClick={() => handleEdit(event)}
+                                                            className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-xs font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5 flex items-center justify-between group/event`}
+                                                            title={event.title}
+                                                        >
+                                                            <span className="truncate">{formatTime(event.startTime)} {event.title}</span>
+                                                            <div className="opacity-0 group-hover/event:opacity-100" onClick={(e) => e.stopPropagation()}>
+                                                                <ActionMenu
+                                                                    items={getActionMenuItems(event)}
+                                                                    trigger={<span className="material-icons-outlined text-[12px]">more_vert</span>}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {dayEvents.length > 3 && (
+                                                        <div className="text-xs text-text-secondary pl-2">+{dayEvents.length - 3} more</div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Next Month Days */}
+                                        {[...Array((7 - ((firstDay + daysInMonth) % 7)) % 7)].map((_, i) => (
+                                            <div key={`next-${i}`} className="bg-gray-50 p-2 min-h-[120px]">
+                                                <span className="text-text-secondary/50 font-mono text-sm p-1">{String(i + 1).padStart(2, '0')}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Week View */}
+                            {view === 'week' && (
+                                <>
+                                    <div className="grid grid-cols-7 border-b border-border-light">
+                                        {weekDays.map((date, i) => {
+                                            const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                                            const isToday = date.toDateString() === today.toDateString();
+                                            return (
+                                                <div key={i} className={`py-3 text-center ${isToday ? 'bg-primary/5' : ''}`}>
+                                                    <div className="text-xs font-bold uppercase text-text-secondary tracking-wider">{dayNames[i]}</div>
+                                                    <div className={`text-lg font-bold mt-1 ${isToday ? 'text-primary' : 'text-text-primary'}`}>{date.getDate()}</div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="grid grid-cols-7 flex-1 min-h-[500px] bg-border-light gap-[1px]">
+                                        {weekDays.map((date, i) => {
+                                            const dayEvents = getEventsForDate(date);
+                                            const isToday = date.toDateString() === today.toDateString();
+                                            return (
+                                                <div key={i} className={`bg-white p-2 flex flex-col gap-1 ${isToday ? 'bg-primary/5' : ''}`}>
+                                                    {dayEvents.length === 0 ? (
+                                                        <div className="text-xs text-text-secondary text-center py-4">No events</div>
+                                                    ) : (
+                                                        dayEvents.map((event, idx) => (
+                                                            <div
+                                                                key={event.id}
+                                                                onClick={() => handleEdit(event)}
+                                                                className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-xs font-medium p-2 rounded-r-md cursor-pointer hover:opacity-80 flex flex-col gap-1`}
+                                                            >
+                                                                <span className="font-mono text-[10px] text-gray-500">{formatTime(event.startTime)}</span>
+                                                                <span className="truncate font-semibold">{event.title}</span>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Day View */}
+                            {view === 'day' && (
+                                <div className="flex-1 p-4 overflow-y-auto">
+                                    {getEventsForDate(currentDate).length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-full text-text-secondary">
+                                            <span className="material-icons-outlined text-5xl mb-3">event_busy</span>
+                                            <p className="text-base font-medium">No events for this day</p>
+                                            <button
+                                                onClick={() => setIsAddScheduleOpen(true)}
+                                                className="mt-4 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-text-primary transition-colors"
+                                            >
+                                                Add Event
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3 max-w-2xl mx-auto">
+                                            {getEventsForDate(currentDate).map((event, idx) => (
                                                 <div
                                                     key={event.id}
                                                     onClick={() => handleEdit(event)}
-                                                    className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-xs font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5 flex items-center justify-between group/event`}
-                                                    title={event.title}
+                                                    className={`bg-white border border-border-light rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all border-l-4 ${getEventColor(idx).replace('border-l-', 'border-l-')}`}
                                                 >
-                                                    <span className="truncate">{formatTime(event.startTime)} {event.title}</span>
-                                                    <div className="opacity-0 group-hover/event:opacity-100" onClick={(e) => e.stopPropagation()}>
-                                                        <ActionMenu
-                                                            items={getActionMenuItems(event)}
-                                                            trigger={<span className="material-icons-outlined text-[12px]">more_vert</span>}
-                                                        />
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="font-mono text-sm font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
+                                                                    {formatTime(event.startTime)}
+                                                                    {event.endTime && ` - ${formatTime(event.endTime)}`}
+                                                                </span>
+                                                            </div>
+                                                            <h4 className="text-lg font-bold text-text-primary mb-1">{event.title}</h4>
+                                                            {event.location && (
+                                                                <div className="flex items-center gap-1.5 text-text-secondary text-sm mt-2">
+                                                                    <span className="material-icons-outlined text-[16px]">location_on</span>
+                                                                    <span>{event.location}</span>
+                                                                </div>
+                                                            )}
+                                                            {event.description && (
+                                                                <p className="text-sm text-text-secondary mt-2">{event.description}</p>
+                                                            )}
+                                                        </div>
+                                                        <div onClick={(e) => e.stopPropagation()}>
+                                                            <ActionMenu
+                                                                items={getActionMenuItems(event)}
+                                                                trigger={<span className="material-icons-outlined text-[20px] text-gray-400 hover:text-gray-600">more_vert</span>}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
-                                            {dayEvents.length > 3 && (
-                                                <div className="text-xs text-text-secondary pl-2">+{dayEvents.length - 3} more</div>
-                                            )}
                                         </div>
-                                    );
-                                })}
-
-                                {/* Next Month Days */}
-                                {[...Array((7 - ((firstDay + daysInMonth) % 7)) % 7)].map((_, i) => (
-                                    <div key={`next-${i}`} className="bg-gray-50 p-2 min-h-[120px]">
-                                        <span className="text-text-secondary/50 font-mono text-sm p-1">{String(i + 1).padStart(2, '0')}</span>
-                                    </div>
-                                ))}
-                            </div>
+                                    )}
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

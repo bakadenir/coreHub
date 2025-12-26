@@ -17,6 +17,8 @@ export default function Links() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
+    const [showSortMenu, setShowSortMenu] = useState(false);
     const { showToast } = useToast();
 
     // Delete confirmation state
@@ -47,6 +49,24 @@ export default function Links() {
     useEffect(() => {
         fetchLinks();
     }, [fetchLinks]);
+
+    // Sort links based on sortBy, but always keep pinned links at top
+    const sortedLinks = [...links].sort((a, b) => {
+        // Pinned links always come first
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+
+        // Within the same pin status, apply the selected sort
+        switch (sortBy) {
+            case 'oldest':
+                return new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime();
+            case 'title':
+                return (a.title || '').localeCompare(b.title || '');
+            case 'newest':
+            default:
+                return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+        }
+    });
 
     const handleEdit = (link: LinkItem) => {
         setEditingLink(link);
@@ -85,6 +105,21 @@ export default function Links() {
         showToast('Link copied to clipboard', 'success');
     };
 
+    const handlePin = async (link: LinkItem) => {
+        try {
+            const newPinned = !link.isPinned;
+            const result = await linksApi.pin(String(link.id), newPinned);
+            if (result.success) {
+                showToast(newPinned ? 'Link pinned' : 'Link unpinned', 'success');
+                fetchLinks();
+            } else {
+                showToast('Failed to update link', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        }
+    };
+
     const getActionMenuItems = (link: LinkItem) => [
         {
             label: 'Edit',
@@ -97,6 +132,11 @@ export default function Links() {
             onClick: () => handleCopyLink(link),
         },
         {
+            label: link.isPinned ? 'Unpin' : 'Pin',
+            icon: 'push_pin',
+            onClick: () => handlePin(link),
+        },
+        {
             label: 'Delete',
             icon: 'delete',
             onClick: () => handleDeleteClick(link),
@@ -104,7 +144,7 @@ export default function Links() {
         },
     ];
 
-    const selectedLink = links[selectedIndex] || null;
+    const selectedLink = sortedLinks[selectedIndex] || null;
 
     return (
         <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-background-light">
@@ -145,9 +185,39 @@ export default function Links() {
                     <div className="p-5 border-b border-border-light sticky top-0 bg-background-light z-10 flex flex-col gap-3">
                         <div className="flex justify-between items-center">
                             <h3 className="text-base font-bold text-text-primary">Link Vault ({links.length})</h3>
-                            <button className="text-text-secondary hover:text-text-primary transition-colors">
-                                <span className="material-icons-outlined text-[20px]">sort</span>
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowSortMenu(!showSortMenu)}
+                                    className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded hover:bg-gray-100"
+                                >
+                                    <span className="material-icons-outlined text-[20px]">sort</span>
+                                </button>
+                                {showSortMenu && (
+                                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+                                        <button
+                                            onClick={() => { setSortBy('newest'); setShowSortMenu(false); }}
+                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'newest' ? 'text-primary font-medium' : 'text-text-primary'}`}
+                                        >
+                                            {sortBy === 'newest' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            <span className={sortBy === 'newest' ? '' : 'ml-6'}>Newest</span>
+                                        </button>
+                                        <button
+                                            onClick={() => { setSortBy('oldest'); setShowSortMenu(false); }}
+                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'oldest' ? 'text-primary font-medium' : 'text-text-primary'}`}
+                                        >
+                                            {sortBy === 'oldest' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            <span className={sortBy === 'oldest' ? '' : 'ml-6'}>Oldest</span>
+                                        </button>
+                                        <button
+                                            onClick={() => { setSortBy('title'); setShowSortMenu(false); }}
+                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'title' ? 'text-primary font-medium' : 'text-text-primary'}`}
+                                        >
+                                            {sortBy === 'title' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            <span className={sortBy === 'title' ? '' : 'ml-6'}>A-Z (Title)</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="relative">
                             <input
@@ -168,29 +238,34 @@ export default function Links() {
                         ) : links.length === 0 ? (
                             <EmptyState message="No links yet" icon="link" />
                         ) : (
-                            links.map((link, index) => (
+                            sortedLinks.map((link, index) => (
                                 <div
                                     key={link.id}
                                     onClick={() => setSelectedIndex(index)}
-                                    className={`group flex items-center p-3 rounded-lg border transition-all cursor-pointer ${selectedIndex === index
+                                    className={`group flex flex-col p-3 rounded-lg border transition-all cursor-pointer ${selectedIndex === index
                                         ? 'bg-white border-border-light shadow-sm'
                                         : 'bg-background-light border-transparent hover:bg-gray-100'
                                         }`}
                                 >
-                                    <img
-                                        alt={`Favicon for ${link.title}`}
-                                        className="size-5 shrink-0 mr-3 rounded grayscale"
-                                        src={link.image || `https://www.google.com/s2/favicons?domain=${link.url}&sz=32`}
-                                    />
-                                    <div className="flex flex-col flex-1 overflow-hidden">
-                                        <h4 className={`text-sm font-bold line-clamp-1 ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{link.title || 'Untitled'}</h4>
-                                        <p className="text-xs text-text-secondary line-clamp-1">{link.url.replace('https://', '').replace('http://', '')}</p>
+                                    <div className="flex justify-between items-start mb-1">
+                                        <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                            <img
+                                                alt={`Favicon for ${link.title}`}
+                                                className="size-4 shrink-0 rounded grayscale"
+                                                src={link.image || `https://www.google.com/s2/favicons?domain=${link.url}&sz=32`}
+                                            />
+                                            <h4 className={`text-sm font-bold line-clamp-1 ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{link.title || 'Untitled'}</h4>
+                                        </div>
+                                        <ActionMenu
+                                            items={getActionMenuItems(link)}
+                                            trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                            className="opacity-0 group-hover:opacity-100"
+                                        />
                                     </div>
-                                    <ActionMenu
-                                        items={getActionMenuItems(link)}
-                                        trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
-                                        className="opacity-0 group-hover:opacity-100 ml-2"
-                                    />
+                                    <p className="text-xs text-text-secondary mb-2 line-clamp-1 pl-6">{link.url.replace('https://', '').replace('http://', '')}</p>
+                                    <div className="flex items-center justify-end text-xs text-gray-500">
+                                        {link.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
+                                    </div>
                                 </div>
                             ))
                         )}

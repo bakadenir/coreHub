@@ -20,6 +20,25 @@ export interface CreateScheduleDto {
 
 export interface UpdateScheduleDto extends Partial<CreateScheduleDto> { }
 
+// Helper to transform snake_case DB fields to camelCase for frontend
+function transformEvent(event: any) {
+    if (!event) return null;
+    return {
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        startTime: event.start_time,
+        endTime: event.end_time,
+        location: event.location,
+        platform: event.platform,
+        color: event.color || 'border-gray-600',
+        isAllDay: event.is_all_day,
+        recurrence: event.recurrence,
+        createdAt: event.created_at,
+        updatedAt: event.updated_at,
+    };
+}
+
 export class SchedulesService {
     async findAll(userId: string, filters: ScheduleFilters) {
         let query = supabase
@@ -35,10 +54,10 @@ export class SchedulesService {
             query = query.lte('start_time', filters.endDate);
         }
 
-        const { data, error } = await query.order('start_time', { ascending: false });
+        const { data, error } = await query.order('start_time', { ascending: true });
 
         if (error) throw error;
-        return data || [];
+        return (data || []).map(transformEvent);
     }
 
     async getAgenda(userId: string) {
@@ -64,7 +83,7 @@ export class SchedulesService {
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         return (data || []).map(event => ({
-            ...event,
+            ...transformEvent(event),
             isToday: new Date(event.start_time) >= today && new Date(event.start_time) < tomorrow,
         }));
     }
@@ -84,7 +103,7 @@ export class SchedulesService {
             .single();
 
         if (error) throw error;
-        return event;
+        return transformEvent(event);
     }
 
     async findById(id: string, userId: string) {
@@ -97,7 +116,7 @@ export class SchedulesService {
             .single();
 
         if (error && error.code !== 'PGRST116') throw error;
-        return data;
+        return transformEvent(data);
     }
 
     async update(id: string, userId: string, data: UpdateScheduleDto) {
@@ -117,7 +136,7 @@ export class SchedulesService {
             .single();
 
         if (error) throw error;
-        return event;
+        return transformEvent(event);
     }
 
     async delete(id: string, userId: string) {

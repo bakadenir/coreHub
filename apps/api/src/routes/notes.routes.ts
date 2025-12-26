@@ -77,8 +77,11 @@ router.delete('/:id', async (req, res) => {
 // PATCH /api/notes/:id/pin - Pin/unpin note
 router.patch('/:id/pin', async (req, res) => {
     try {
-        const { isPinned, pinnedUntil } = req.body;
-        const note = await notesService.setPin(req.params.id, req.user!.id, isPinned, pinnedUntil);
+        const { isPinned } = req.body;
+        const note = await notesService.setPin(req.params.id, req.user!.id, isPinned);
+        if (!note) {
+            return notFoundResponse(res, 'Note');
+        }
         return successResponse(res, note);
     } catch (error) {
         console.error('Error pinning note:', error);

@@ -15,6 +15,20 @@ export interface CreateNoteDto {
 
 export interface UpdateNoteDto extends Partial<CreateNoteDto> { }
 
+// Helper to transform snake_case DB fields to camelCase for frontend
+function transformNote(note: any) {
+    if (!note) return null;
+    return {
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        tag: note.color, // Supabase uses 'color', frontend expects 'tag'
+        isPinned: note.is_pinned,
+        createdAt: note.created_at,
+        updatedAt: note.updated_at,
+    };
+}
+
 export class NotesService {
     async findAll(userId: string, filters: NoteFilters) {
         let query = supabase
@@ -56,7 +70,7 @@ export class NotesService {
             );
         }
 
-        return result;
+        return result.map(transformNote);
     }
 
     async create(userId: string, data: CreateNoteDto) {
@@ -73,7 +87,7 @@ export class NotesService {
             .single();
 
         if (error) throw error;
-        return note;
+        return transformNote(note);
     }
 
     async findById(id: string, userId: string) {
@@ -86,7 +100,7 @@ export class NotesService {
             .single();
 
         if (error && error.code !== 'PGRST116') throw error;
-        return data;
+        return transformNote(data);
     }
 
     async update(id: string, userId: string, data: UpdateNoteDto) {
@@ -105,7 +119,7 @@ export class NotesService {
             .single();
 
         if (error) throw error;
-        return note;
+        return transformNote(note);
     }
 
     async softDelete(id: string, userId: string) {
@@ -118,12 +132,11 @@ export class NotesService {
         if (error) throw error;
     }
 
-    async setPin(id: string, userId: string, isPinned: boolean, pinnedUntil?: string) {
+    async setPin(id: string, userId: string, isPinned: boolean) {
         const { data: note, error } = await supabase
             .from('notes')
             .update({
                 is_pinned: isPinned,
-                pinned_until: pinnedUntil || null,
                 updated_at: new Date().toISOString(),
             })
             .eq('id', id)
@@ -131,7 +144,8 @@ export class NotesService {
             .select()
             .single();
 
-        if (error) throw error;
-        return note;
+        // PGRST116 means no rows returned (note not found)
+        if (error && error.code !== 'PGRST116') throw error;
+        return transformNote(note);
     }
 }

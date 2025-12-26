@@ -247,14 +247,14 @@ export default function Home() {
                         <div className="mt-2"><LocationWidget /></div>
                     </div>
                 ) : (
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col">
                         <div {...dragHandle?.titleProps}>
                             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Time</h2>
                             {dragHandle?.icon}
                         </div>
-                        <div className="text-center py-2">
+                        <div className="text-center py-2 flex-1 flex flex-col justify-center">
                             <ClockWidget compact />
-                            <div className="mt-2"><LocationWidget /></div>
+                            <div className="mt-2 pb-4"><LocationWidget /></div>
                         </div>
                     </div>
                 );
@@ -461,13 +461,15 @@ export default function Home() {
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <SortableContext items={widgetOrder} strategy={rectSortingStrategy}>
                         {/* Main Layout: Sidebar + Right Column using Grid for height matching */}
-                        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] gap-6">
-                            {/* Sidebar - 3 widgets stacked */}
-                            <aside className="space-y-6 flex flex-col">
-                                {sidebarWidgets.map((widgetId) => (
-                                    <SortableWidget key={widgetId} id={widgetId}>
-                                        {(dragHandle) => renderWidget(widgetId, false, dragHandle)}
-                                    </SortableWidget>
+                        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] gap-6 items-stretch">
+                            {/* Sidebar - 3 widgets stacked, stretch to full height */}
+                            <aside className="flex flex-col gap-6">
+                                {sidebarWidgets.map((widgetId, index) => (
+                                    <div key={widgetId} className={index === sidebarWidgets.length - 1 ? 'flex-1 flex flex-col' : ''}>
+                                        <SortableWidget id={widgetId}>
+                                            {(dragHandle) => renderWidget(widgetId, false, dragHandle)}
+                                        </SortableWidget>
+                                    </div>
                                 ))}
                             </aside>
 

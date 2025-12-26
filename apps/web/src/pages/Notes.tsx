@@ -18,6 +18,8 @@ export default function Notes() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
+    const [showSortMenu, setShowSortMenu] = useState(false);
     const { showToast } = useToast();
 
     // Delete confirmation state
@@ -48,6 +50,24 @@ export default function Notes() {
     useEffect(() => {
         fetchNotes();
     }, [fetchNotes]);
+
+    // Sort notes based on sortBy, but always keep pinned notes at top
+    const sortedNotes = [...notes].sort((a, b) => {
+        // Pinned notes always come first
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+
+        // Within the same pin status, apply the selected sort
+        switch (sortBy) {
+            case 'oldest':
+                return new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime();
+            case 'title':
+                return (a.title || '').localeCompare(b.title || '');
+            case 'newest':
+            default:
+                return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+        }
+    });
 
     const handleEdit = (note: Note) => {
         setEditingNote(note);
@@ -146,7 +166,7 @@ export default function Notes() {
         },
     ];
 
-    const selectedNote = notes[selectedIndex] || null;
+    const selectedNote = sortedNotes[selectedIndex] || null;
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return '';
@@ -208,9 +228,39 @@ export default function Notes() {
                     <div className="p-5 border-b border-border-light sticky top-0 bg-background-light z-10 flex flex-col gap-3">
                         <div className="flex justify-between items-center">
                             <h3 className="text-base font-bold text-text-primary">All Notes ({notes.length})</h3>
-                            <button className="text-text-secondary hover:text-text-primary transition-colors">
-                                <span className="material-icons-outlined text-[20px]">sort</span>
-                            </button>
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowSortMenu(!showSortMenu)}
+                                    className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded hover:bg-gray-100"
+                                >
+                                    <span className="material-icons-outlined text-[20px]">sort</span>
+                                </button>
+                                {showSortMenu && (
+                                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px]">
+                                        <button
+                                            onClick={() => { setSortBy('newest'); setShowSortMenu(false); }}
+                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'newest' ? 'text-primary font-medium' : 'text-text-primary'}`}
+                                        >
+                                            {sortBy === 'newest' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            <span className={sortBy === 'newest' ? '' : 'ml-6'}>Newest</span>
+                                        </button>
+                                        <button
+                                            onClick={() => { setSortBy('oldest'); setShowSortMenu(false); }}
+                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'oldest' ? 'text-primary font-medium' : 'text-text-primary'}`}
+                                        >
+                                            {sortBy === 'oldest' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            <span className={sortBy === 'oldest' ? '' : 'ml-6'}>Oldest</span>
+                                        </button>
+                                        <button
+                                            onClick={() => { setSortBy('title'); setShowSortMenu(false); }}
+                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'title' ? 'text-primary font-medium' : 'text-text-primary'}`}
+                                        >
+                                            {sortBy === 'title' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            <span className={sortBy === 'title' ? '' : 'ml-6'}>A-Z (Title)</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="relative">
                             <input
@@ -231,7 +281,7 @@ export default function Notes() {
                         ) : notes.length === 0 ? (
                             <EmptyState message="No notes yet" icon="note_add" />
                         ) : (
-                            notes.map((note, index) => (
+                            sortedNotes.map((note, index) => (
                                 <div
                                     key={note.id}
                                     onClick={() => setSelectedIndex(index)}

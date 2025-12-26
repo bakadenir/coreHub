@@ -291,16 +291,15 @@ export default function Login() {
                             </div>
                         </div>
                     </div>
-                    <p className="text-center text-xs text-gray-400 font-mono">
-                        Secure Access • coreHub Productivity System
+                    <p className="text-center text-xs text-gray-400">
+                        By continuing, you agree to our{' '}
+                        <Link to="/terms" className="underline hover:text-gray-600">Terms of Service</Link>
+                        {' '}and{' '}
+                        <Link to="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>.
                     </p>
                 </div>
             </main>
 
-            {/* Footer */}
-            <footer className="w-full text-center py-6 text-xs text-gray-400 border-t border-transparent relative z-10">
-                © 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a>
-            </footer>
         </div>
     );
 }

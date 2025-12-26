@@ -138,7 +138,7 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                     {/* Brief Description */}
                     <div className="space-y-2.5">
                         <div className="flex justify-between">
-                            <label className="block text-sm font-medium text-gray-500" htmlFor="link-description">Brief Description</label>
+                            <label className="block text-sm font-medium text-gray-500" htmlFor="link-description">Description</label>
                             <span className="text-xs text-gray-400">Optional</span>
                         </div>
                         <textarea

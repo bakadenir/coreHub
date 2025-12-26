@@ -61,6 +61,9 @@ export interface LinkItem {
     description: string;
     image: string;
     tags: string[];
+    isPinned?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface ScheduleEvent {

@@ -12,8 +12,5 @@
     "dev:all": "npm run dev --workspaces --if-present",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces"
-  },
-  "dependencies": {
-    "@esbuild/win32-x64": "^0.27.2"
   }
 }

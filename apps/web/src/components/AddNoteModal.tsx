@@ -11,8 +11,6 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
     const { showToast } = useToast();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [reminderDate, setReminderDate] = useState('');
-    const [reminderTime, setReminderTime] = useState('09:00');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Reset form when modal opens
@@ -20,8 +18,6 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
         if (isOpen) {
             setTitle('');
             setContent('');
-            setReminderDate('');
-            setReminderTime('09:00');
         }
     }, [isOpen]);
 
@@ -51,16 +47,9 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
 
         setIsSubmitting(true);
         try {
-            // Combine date and time for reminder
-            let reminderAt: string | undefined;
-            if (reminderDate && reminderTime) {
-                reminderAt = `${reminderDate}T${reminderTime}:00`;
-            }
-
             const result = await notesApi.create({
                 title: title.trim(),
                 content: content.trim() || undefined,
-                reminderAt,
             });
 
             if (result.success) {
@@ -127,29 +116,6 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                         ></textarea>
-                    </div>
-
-                    {/* Set Reminder */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Set Reminder (Optional)</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="date"
-                                    value={reminderDate}
-                                    onChange={(e) => setReminderDate(e.target.value)}
-                                />
-                            </div>
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="time"
-                                    value={reminderTime}
-                                    onChange={(e) => setReminderTime(e.target.value)}
-                                />
-                            </div>
-                        </div>
                     </div>
                 </div>
 

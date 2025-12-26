@@ -88,4 +88,19 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+// PATCH /api/links/:id/pin - Pin/unpin link
+router.patch('/:id/pin', async (req, res) => {
+    try {
+        const { isPinned } = req.body;
+        const link = await linksService.setPin(req.params.id, req.user!.id, isPinned);
+        if (!link) {
+            return notFoundResponse(res, 'Link');
+        }
+        return successResponse(res, link);
+    } catch (error) {
+        console.error('Error pinning link:', error);
+        return serverErrorResponse(res);
+    }
+});
+
 export default router;

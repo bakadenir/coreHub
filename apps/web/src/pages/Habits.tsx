@@ -231,8 +231,8 @@ export default function Habits() {
                         ) : habits.length === 0 ? (
                             <EmptyState message="No habits yet. Create your first habit!" icon="self_improvement" />
                         ) : (
-                            <div className="bg-white rounded-xl border border-border-light overflow-hidden shadow-sm">
-                                <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-border-light bg-gray-50 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                            <div className="bg-white rounded-xl border border-border-light shadow-sm">
+                                <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-border-light bg-gray-50 text-xs font-semibold text-text-secondary uppercase tracking-wider rounded-t-xl">
                                     <div className="col-span-5 pl-2">Habit Name</div>
                                     <div className="col-span-2 text-center">Frequency</div>
                                     <div className="col-span-2 text-center">Streak</div>

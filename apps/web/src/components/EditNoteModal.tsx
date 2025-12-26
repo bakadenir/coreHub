@@ -13,9 +13,6 @@ export default function EditNoteModal({ isOpen, onClose, note }: EditNoteModalPr
     const { showToast } = useToast();
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [tag, setTag] = useState('');
-    const [reminderDate, setReminderDate] = useState('');
-    const [reminderTime, setReminderTime] = useState('09:00');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Load note data when modal opens
@@ -23,17 +20,6 @@ export default function EditNoteModal({ isOpen, onClose, note }: EditNoteModalPr
         if (isOpen && note) {
             setTitle(note.title || '');
             setContent(note.content || '');
-            setTag(note.tag || '');
-
-            // Parse reminder if exists
-            if (note.reminderAt) {
-                const date = new Date(note.reminderAt);
-                setReminderDate(date.toISOString().split('T')[0]);
-                setReminderTime(date.toTimeString().slice(0, 5));
-            } else {
-                setReminderDate('');
-                setReminderTime('09:00');
-            }
         }
     }, [isOpen, note]);
 
@@ -63,17 +49,9 @@ export default function EditNoteModal({ isOpen, onClose, note }: EditNoteModalPr
 
         setIsSubmitting(true);
         try {
-            // Combine date and time for reminder
-            let reminderAt: string | undefined;
-            if (reminderDate && reminderTime) {
-                reminderAt = `${reminderDate}T${reminderTime}:00`;
-            }
-
             const result = await notesApi.update(String(note.id), {
                 title: title.trim(),
                 content: content.trim() || undefined,
-                tag: tag.trim() || undefined,
-                reminderAt,
             });
 
             if (result.success) {
@@ -138,41 +116,6 @@ export default function EditNoteModal({ isOpen, onClose, note }: EditNoteModalPr
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                         ></textarea>
-                    </div>
-
-                    {/* Tag */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Tag</label>
-                        <input
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
-                            placeholder="e.g. Work, Personal, Ideas"
-                            type="text"
-                            value={tag}
-                            onChange={(e) => setTag(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Set Reminder */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Set Reminder (Optional)</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="date"
-                                    value={reminderDate}
-                                    onChange={(e) => setReminderDate(e.target.value)}
-                                />
-                            </div>
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="time"
-                                    value={reminderTime}
-                                    onChange={(e) => setReminderTime(e.target.value)}
-                                />
-                            </div>
-                        </div>
                     </div>
                 </div>
 

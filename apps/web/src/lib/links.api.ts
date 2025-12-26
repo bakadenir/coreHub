@@ -42,4 +42,7 @@ export const linksApi = {
         api.patch<LinkItem>(`/api/links/${id}`, data),
 
     delete: (id: string) => api.delete(`/api/links/${id}`),
+
+    pin: (id: string, isPinned: boolean) =>
+        api.patch<LinkItem>(`/api/links/${id}/pin`, { isPinned }),
 };

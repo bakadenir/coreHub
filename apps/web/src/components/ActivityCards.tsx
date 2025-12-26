@@ -175,7 +175,7 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
             }
 
             if (linksRes.success && linksRes.data) {
-                setLinks(linksRes.data.slice(0, 3));
+                setLinks(linksRes.data.slice(0, 2));
             }
         } catch (error) {
             console.error('Failed to fetch activity data:', error);

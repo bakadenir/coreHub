@@ -524,7 +524,7 @@ export default function Settings() {
 
                     {/* Delete Account Section */}
                     <section>
-                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-red-600">Danger Zone</h2>
+                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-red-600">Account Actions</h2>
 
                         <div className="bg-white border border-red-200 rounded-xl p-8 shadow-sm">
                             <div className="flex items-start justify-between">

@@ -14,7 +14,6 @@ export default function EditLinkModal({ isOpen, onClose, link }: EditLinkModalPr
     const [url, setUrl] = useState('');
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [tags, setTags] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Load link data when modal opens
@@ -23,7 +22,6 @@ export default function EditLinkModal({ isOpen, onClose, link }: EditLinkModalPr
             setUrl(link.url || '');
             setTitle(link.title || '');
             setDescription(link.description || '');
-            setTags(link.tags?.join(', ') || '');
         }
     }, [isOpen, link]);
 
@@ -61,16 +59,10 @@ export default function EditLinkModal({ isOpen, onClose, link }: EditLinkModalPr
 
         setIsSubmitting(true);
         try {
-            const tagsArray = tags
-                .split(',')
-                .map(t => t.trim())
-                .filter(t => t.length > 0);
-
             const result = await linksApi.update(String(link.id), {
                 url: url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`,
                 title: title.trim() || undefined,
                 description: description.trim() || undefined,
-                tags: tagsArray.length > 0 ? tagsArray : undefined,
             });
 
             if (result.success) {
@@ -150,19 +142,6 @@ export default function EditLinkModal({ isOpen, onClose, link }: EditLinkModalPr
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                         ></textarea>
-                    </div>
-
-                    {/* Tags */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Tags</label>
-                        <input
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
-                            placeholder="design, inspiration, tools (comma separated)"
-                            type="text"
-                            value={tags}
-                            onChange={(e) => setTags(e.target.value)}
-                        />
-                        <p className="text-xs text-gray-400">Separate tags with commas</p>
                     </div>
                 </div>
 

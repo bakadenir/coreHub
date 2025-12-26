@@ -48,7 +48,14 @@ export class LinksService {
         }
 
         return filtered.map(link => ({
-            ...link,
+            id: link.id,
+            url: link.url,
+            title: link.title,
+            description: link.description,
+            image: link.image,
+            isPinned: link.is_pinned,
+            createdAt: link.created_at,
+            updatedAt: link.updated_at,
             tags: (link.link_tags || []).map((t: any) => t.tag),
         }));
     }
@@ -161,5 +168,33 @@ export class LinksService {
         } catch {
             return { title: url, description: '', image: '' };
         }
+    }
+
+    async setPin(id: string, userId: string, isPinned: boolean) {
+        const { data: link, error } = await supabase
+            .from('links')
+            .update({
+                is_pinned: isPinned,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', id)
+            .eq('user_id', userId)
+            .select('*, link_tags(*)')
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        if (!link) return null;
+
+        return {
+            id: link.id,
+            url: link.url,
+            title: link.title,
+            description: link.description,
+            image: link.image,
+            isPinned: link.is_pinned,
+            createdAt: link.created_at,
+            updatedAt: link.updated_at,
+            tags: (link.link_tags || []).map((t: any) => t.tag),
+        };
     }
 }

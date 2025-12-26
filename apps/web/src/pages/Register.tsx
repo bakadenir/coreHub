@@ -174,7 +174,7 @@ export default function Register() {
                 <div className="w-full max-w-md space-y-8">
                     <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-lg shadow-gray-200/50">
                         <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Create your coreHub account</h2>
+                            <h2 className="text-2xl font-bold tracking-tight text-gray-900">Get started</h2>
                             <p className="mt-2 text-sm text-gray-500">Join coreHub to unlock your productivity.</p>
                         </div>
                         <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-3" noValidate>
@@ -235,12 +235,6 @@ export default function Register() {
                                 )}
                             </div>
 
-                            <div className="flex justify-end pt-0 pb-0">
-                                <Link className="text-sm font-medium text-black hover:underline decoration-1 underline-offset-2" to="/login">
-                                    Already have an account? Login
-                                </Link>
-                            </div>
-
                             <div className="pt-0">
                                 <button
                                     className="flex w-full justify-center items-center gap-2 rounded-lg bg-black px-3 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
@@ -259,6 +253,12 @@ export default function Register() {
                                         'Register'
                                     )}
                                 </button>
+                            </div>
+
+                            <div className="flex justify-center pt-2">
+                                <Link className="text-sm font-medium text-black hover:underline decoration-1 underline-offset-2" to="/login">
+                                    Already have an account? Login
+                                </Link>
                             </div>
                         </form>
                         <div className="mt-8">
@@ -297,16 +297,15 @@ export default function Register() {
                             </div>
                         </div>
                     </div>
-                    <p className="text-center text-xs text-gray-400 font-mono">
-                        Secure Access • coreHub Productivity System
+                    <p className="text-center text-xs text-gray-400">
+                        By continuing, you agree to our{' '}
+                        <Link to="/terms" className="underline hover:text-gray-600">Terms of Service</Link>
+                        {' '}and{' '}
+                        <Link to="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>.
                     </p>
                 </div>
             </main>
 
-            {/* Footer */}
-            <footer className="w-full text-center py-6 text-xs text-gray-400 border-t border-transparent relative z-10">
-                © 2025 coreHub. All rights reserved. Code with <a href="https://github.com/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a>
-            </footer>
         </div>
     );
 }

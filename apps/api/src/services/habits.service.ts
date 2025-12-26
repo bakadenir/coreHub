@@ -42,7 +42,9 @@ export class HabitsService {
         if (filters.category) {
             query = query.eq('category', filters.category);
         }
-        if (!filters.archived) {
+        if (filters.archived) {
+            query = query.eq('is_archived', true);
+        } else {
             query = query.eq('is_archived', false);
         }
 
@@ -64,7 +66,10 @@ export class HabitsService {
             createdAt: habit.created_at,
             updatedAt: habit.updated_at,
             completions: habit.habit_completions || [],
-            completed: (habit.habit_completions || []).some((c: any) => c.date === (filters.date || today)),
+            completed: (habit.habit_completions || []).some((c: any) => {
+                const completedDate = c.completed_at ? c.completed_at.split('T')[0] : null;
+                return completedDate === (filters.date || today);
+            }),
             completionRate: this.calculateCompletionRate(habit.habit_completions || []),
         }));
     }
@@ -142,21 +147,23 @@ export class HabitsService {
 
         const dateStr = date.toISOString().split('T')[0];
 
-        // Check if already completed
-        const { data: existing } = await supabase
+        // Check if already completed today - use completed_at with date extraction
+        const { data: existing, error: existingError } = await supabase
             .from('habit_completions')
             .select('*')
             .eq('habit_id', habitId)
-            .eq('date', dateStr)
-            .single();
+            .gte('completed_at', `${dateStr}T00:00:00.000Z`)
+            .lt('completed_at', `${dateStr}T23:59:59.999Z`)
+            .maybeSingle();
 
+        if (existingError) throw existingError;
         if (existing) return existing;
 
         const { data: completion, error } = await supabase
             .from('habit_completions')
             .insert({
                 habit_id: habitId,
-                date: dateStr,
+                user_id: userId,
                 completed_at: new Date().toISOString(),
             })
             .select()
@@ -180,7 +187,8 @@ export class HabitsService {
             .from('habit_completions')
             .delete()
             .eq('habit_id', habitId)
-            .eq('date', dateStr);
+            .gte('completed_at', `${dateStr}T00:00:00.000Z`)
+            .lt('completed_at', `${dateStr}T23:59:59.999Z`);
 
         if (error) throw error;
 
@@ -216,9 +224,9 @@ export class HabitsService {
     private async updateStreak(habitId: string) {
         const { data: completions } = await supabase
             .from('habit_completions')
-            .select('date')
+            .select('completed_at')
             .eq('habit_id', habitId)
-            .order('date', { ascending: false })
+            .order('completed_at', { ascending: false })
             .limit(365);
 
         let streak = 0;
@@ -230,7 +238,7 @@ export class HabitsService {
             expectedDate.setDate(expectedDate.getDate() - i);
             const dateStr = expectedDate.toISOString().split('T')[0];
 
-            if (completions?.some(c => c.date === dateStr)) {
+            if (completions?.some(c => c.completed_at?.split('T')[0] === dateStr)) {
                 streak++;
             } else {
                 break;
