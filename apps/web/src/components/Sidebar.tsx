@@ -213,9 +213,9 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
                 </h2>
                 <nav className="space-y-2">
                     {[
-                        { icon: 'add', label: 'Add Habit' },
-                        { icon: 'event', label: 'Add Schedule' },
-                        { icon: 'edit_note', label: 'Add Notes' },
+                        { icon: 'check_circle', label: 'Add Habit' },
+                        { icon: 'calendar_today', label: 'Add Schedule' },
+                        { icon: 'description', label: 'Add Notes' },
                         { icon: 'link', label: 'Add Link' },
                     ].map((action) => (
                         <button
@@ -229,7 +229,7 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
                             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all border border-transparent hover:border-gray-200 group"
                         >
                             <span className="flex items-center justify-center w-6 h-6 rounded bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary transition-colors shadow-sm">
-                                <span className="material-icons-outlined text-sm">{action.icon}</span>
+                                <span className="material-icons-outlined text-base">{action.icon}</span>
                             </span>
                             {action.label}
                         </button>

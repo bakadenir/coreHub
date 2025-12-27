@@ -77,31 +77,31 @@ export default function NavigationSidebar() {
             `}>
                 <Link className={linkClass('/home')} to="/home">
                     <span className={iconClass('/home')}>
-                        <span className="material-icons-outlined text-sm">dashboard</span>
+                        <span className="material-icons-outlined text-base">dashboard</span>
                     </span>
                     <span className={textClass}>Home</span>
                 </Link>
                 <Link className={linkClass('/habits')} to="/habits">
                     <span className={iconClass('/habits')}>
-                        <span className="material-icons-outlined text-sm">check_circle</span>
+                        <span className="material-icons-outlined text-base">check_circle</span>
                     </span>
                     <span className={textClass}>Habits</span>
                 </Link>
                 <Link className={linkClass('/schedule')} to="/schedule">
                     <span className={iconClass('/schedule')}>
-                        <span className="material-icons-outlined text-sm">calendar_today</span>
+                        <span className="material-icons-outlined text-base">calendar_today</span>
                     </span>
                     <span className={textClass}>Schedule</span>
                 </Link>
                 <Link className={linkClass('/notes')} to="/notes">
                     <span className={iconClass('/notes')}>
-                        <span className="material-icons-outlined text-sm">description</span>
+                        <span className="material-icons-outlined text-base">description</span>
                     </span>
                     <span className={textClass}>Notes</span>
                 </Link>
                 <Link className={linkClass('/links')} to="/links">
                     <span className={iconClass('/links')}>
-                        <span className="material-icons-outlined text-sm">link</span>
+                        <span className="material-icons-outlined text-base">link</span>
                     </span>
                     <span className={textClass}>Links</span>
                 </Link>

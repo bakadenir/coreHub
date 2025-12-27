@@ -173,7 +173,8 @@ export class DonationsService {
 
             if (error) throw error;
 
-            if (status === 'success' && updated?.user_id) {
+            // Only send notification if status is success, user exists, and notification hasn't been sent yet
+            if (status === 'success' && updated?.user_id && !updated?.notification_sent) {
                 const { createNotification } = await import('./notifications.service');
                 await createNotification(
                     updated.user_id,
@@ -181,6 +182,11 @@ export class DonationsService {
                     'Thank you for your donation! 🎉',
                     `Your donation of Rp ${updated.amount.toLocaleString('id-ID')} has been received.`
                 );
+                // Mark notification as sent to prevent duplicates
+                await supabase
+                    .from('donations')
+                    .update({ notification_sent: true })
+                    .eq('id', updated.id);
             }
 
             return updated;
@@ -201,7 +207,8 @@ export class DonationsService {
         if (error) throw error;
         if (!updated) return null;
 
-        if (updated.user_id) {
+        // Only send notification if user exists and notification hasn't been sent yet
+        if (updated.user_id && !updated.notification_sent) {
             try {
                 const { createNotification } = await import('./notifications.service');
                 await createNotification(
@@ -210,6 +217,11 @@ export class DonationsService {
                     'Thank you for your donation! 🎉',
                     `Your donation of Rp ${updated.amount.toLocaleString('id-ID')} has been received.`
                 );
+                // Mark notification as sent to prevent duplicates
+                await supabase
+                    .from('donations')
+                    .update({ notification_sent: true })
+                    .eq('id', updated.id);
             } catch (e) {
                 console.error('Error creating notification:', e);
             }

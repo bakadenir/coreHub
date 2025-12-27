@@ -151,19 +151,19 @@ export default function Profile() {
                         </div>
 
                         {/* Change Profile Button */}
-                        <div className="flex justify-center">
+                        <div className="flex justify-end">
                             <Link
                                 to="/settings"
                                 className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium bg-black text-white rounded-xl hover:bg-gray-800 transition-colors shadow-lg shadow-black/5"
                             >
-                                Change Profile
+                                Edit Profile
                             </Link>
                         </div>
                     </div>
                 </div>
             </main>
 
-            <footer className="w-full border-t border-border-light py-5 text-center text-sm text-gray-500 font-mono bg-white">
+            <footer className="w-full border-t border-border-light py-5 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50/50 relative z-10">
                 <p>© 2025 coreHub. All rights reserved. Code with <a href="https://linkedin.com/in/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
             </footer>
         </div>

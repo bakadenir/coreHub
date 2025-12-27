@@ -292,8 +292,15 @@ export default function Donate() {
                         onError: () => {
                             showToast('Pembayaran gagal', 'error');
                         },
-                        onClose: () => {
-                            showToast('Transaksi pending. Akan dibatalkan otomatis jika membuat donasi baru.', 'info');
+                        onClose: async () => {
+                            // Auto-cancel the pending donation when popup is closed without payment
+                            try {
+                                await donationsApi.cancel(result.data!.donation.orderId);
+                                showToast('Transaksi dibatalkan.', 'info');
+                            } catch (e) {
+                                console.error('Error cancelling donation:', e);
+                                showToast('Transaksi dibatalkan.', 'info');
+                            }
                         },
                     });
                 } else {
@@ -873,8 +880,8 @@ export default function Donate() {
                                                     <div
                                                         className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold text-white uppercase shrink-0"
                                                         style={{
-                                                            background: 'linear-gradient(135deg, #f59e0b 0%, #ea580c 100%)',
-                                                            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.35)'
+                                                            background: 'linear-gradient(135deg, #1f1f1f 0%, #000000 100%)',
+                                                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.35)'
                                                         }}
                                                     >
                                                         {review.name?.[0] || '?'}

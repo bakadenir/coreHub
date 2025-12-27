@@ -174,7 +174,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                         </div>
                     ) : (
                         <div className="flex-1 overflow-y-auto space-y-3">
-                            {schedules.map((schedule) => (
+                            {schedules.slice(0, 3).map((schedule) => (
                                 <div
                                     key={schedule.id}
                                     className="bg-gray-50 border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors"
@@ -208,6 +208,11 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                                     </div>
                                 </div>
                             ))}
+                            {schedules.length > 3 && (
+                                <p className="text-center text-sm text-gray-400">
+                                    +{schedules.length - 3} more schedule(s)
+                                </p>
+                            )}
                         </div>
                     )}
                 </section>

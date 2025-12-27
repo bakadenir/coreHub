@@ -84,14 +84,14 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
             <header className="w-full border-b border-gray-200 bg-background-light/80 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
+                        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                             <div className="flex items-center justify-center rounded-lg bg-black text-white size-8">
                                 <span className="material-icons-outlined text-[20px]">hub</span>
                             </div>
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">
                                 coreHub
                             </h1>
-                        </div>
+                        </Link>
                         <div className="h-6 w-px bg-gray-300 mx-2 hidden sm:block"></div>
                         <span className="text-sm text-gray-500 font-medium hidden sm:block">
                             {subtitle}

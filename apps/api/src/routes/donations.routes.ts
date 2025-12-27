@@ -133,31 +133,27 @@ router.get('/:orderId', async (req, res) => {
 });
 
 // POST /api/donations/:orderId/verify - Manually verify transaction status with Midtrans
-// Falls back to marking as success if Midtrans API is unreachable
 router.post('/:orderId/verify', async (req, res) => {
     try {
-        // First try to verify with Midtrans API
         const donation = await donationsService.verifyTransaction(req.params.orderId);
         if (!donation) {
             return errorResponse(res, 'Not Found', 'Donation not found');
         }
         return successResponse(res, transformDonation(donation));
-    } catch (error) {
-        console.error('Error verifying with Midtrans API:', error);
-
-        // Fallback: Mark as success directly if called from onSuccess callback
-        // The Snap onSuccess callback is reliable - if it fires, payment was successful
-        try {
-            console.log('Falling back to direct mark-success for:', req.params.orderId);
-            const donation = await donationsService.markAsSuccess(req.params.orderId);
-            if (!donation) {
-                return errorResponse(res, 'Not Found', 'Donation not found');
+    } catch (error: any) {
+        // If Midtrans returns 404 "Transaction doesn't exist", the transaction was never completed
+        // Do NOT fallback to marking as success - this would send false notifications
+        if (error?.response?.data?.status_code === '404') {
+            console.log('Transaction does not exist in Midtrans (not completed):', req.params.orderId);
+            // Return the current donation status without modifying it
+            const donation = await donationsService.findByOrderId(req.params.orderId);
+            if (donation) {
+                return successResponse(res, { ...transformDonation(donation), status: donation.status, notCompleted: true });
             }
-            return successResponse(res, { ...transformDonation(donation), fallback: true });
-        } catch (fallbackError) {
-            console.error('Fallback also failed:', fallbackError);
-            return serverErrorResponse(res);
+            return errorResponse(res, 'Not Found', 'Donation not found');
         }
+        console.error('Error verifying with Midtrans API:', error);
+        return serverErrorResponse(res);
     }
 });
 
