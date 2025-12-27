@@ -51,7 +51,7 @@ router.patch('/users/:id/role', async (req, res) => {
         // Log activity
         await adminService.logActivity(req.user!.id, `Changed role to ${role}`, {
             targetUserId: req.params.id,
-            targetUserName: targetUser.name,
+            targetUserName: targetUser.user_metadata?.name || targetUser.email || 'Unknown',
             newRole: role,
         });
         return successResponse(res, targetUser);
@@ -73,7 +73,7 @@ router.patch('/users/:id/status', async (req, res) => {
         const action = banned ? 'Banned user' : 'Unbanned user';
         await adminService.logActivity(req.user!.id, action, {
             targetUserId: req.params.id,
-            targetUserName: targetUser.name,
+            targetUserName: targetUser.user_metadata?.name || targetUser.email || 'Unknown',
         });
         return successResponse(res, targetUser);
     } catch (error) {

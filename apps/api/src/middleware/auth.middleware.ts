@@ -17,13 +17,20 @@ declare global {
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
-        // Get token from Authorization header
+        // Get token from Authorization header or query parameter (for SSE)
+        let token: string | undefined;
+
         const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'Unauthorized', message: 'No valid token provided' });
+        if (authHeader?.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
+        } else if (req.query.token && typeof req.query.token === 'string') {
+            // Support token in query parameter for SSE (EventSource doesn't support headers)
+            token = req.query.token;
         }
 
-        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'Unauthorized', message: 'No valid token provided' });
+        }
 
         // Verify token with Supabase
         const { data: { user }, error } = await supabase.auth.getUser(token);

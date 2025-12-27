@@ -59,36 +59,65 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
         let eventSource: EventSource | null = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 3;
+        let isMounted = true;
 
-        const connectSSE = () => {
-            eventSource = new EventSource(`${apiUrl}/api/sse/notifications`, {
-                withCredentials: true,
-            });
+        const connectSSE = async () => {
+            // Don't attempt to connect if component unmounted or max attempts reached
+            if (!isMounted || reconnectAttempts >= maxReconnectAttempts) return;
 
-            eventSource.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'unread_count') {
-                        setUnreadCount(data.count);
-                    } else if (data.type === 'new_notification') {
-                        setNotifications(prev => [data.notification, ...prev]);
-                        setUnreadCount(prev => prev + 1);
-                    }
-                } catch (e) {
-                    console.error('Error parsing SSE message:', e);
+            try {
+                // Get fresh token from Supabase
+                const { supabase } = await import('../lib/supabaseClient');
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (!session?.access_token) {
+                    console.log('No session for SSE, skipping connection');
+                    return;
                 }
-            };
 
-            eventSource.onerror = () => {
-                // Reconnect after a delay
-                eventSource?.close();
-                setTimeout(connectSSE, 5000);
-            };
+                // Pass token as query parameter since EventSource doesn't support headers
+                const url = `${apiUrl}/api/sse/notifications?token=${session.access_token}`;
+                eventSource = new EventSource(url);
+
+                eventSource.onopen = () => {
+                    reconnectAttempts = 0; // Reset on successful connection
+                };
+
+                eventSource.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'unread_count') {
+                            setUnreadCount(data.count);
+                        } else if (data.type === 'new_notification') {
+                            setNotifications(prev => [data.notification, ...prev]);
+                            setUnreadCount(prev => prev + 1);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing SSE message:', e);
+                    }
+                };
+
+                eventSource.onerror = () => {
+                    eventSource?.close();
+                    reconnectAttempts++;
+
+                    // Only reconnect if mounted and not exceeded max attempts
+                    if (isMounted && reconnectAttempts < maxReconnectAttempts) {
+                        const delay = Math.min(5000 * reconnectAttempts, 30000);
+                        setTimeout(connectSSE, delay);
+                    }
+                };
+            } catch (e) {
+                console.error('SSE connection error:', e);
+            }
         };
 
         connectSSE();
 
         return () => {
+            isMounted = false;
             eventSource?.close();
         };
     }, [user]);

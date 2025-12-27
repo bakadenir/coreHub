@@ -5,8 +5,7 @@ const titles: Record<string, string> = {
     '/': 'Welcome - coreHub',
     '/home': 'Home - coreHub',
     '/admin': 'Admin Dashboard - coreHub',
-    '/register': 'Register - coreHub',
-    '/login': 'Login - coreHub',
+    '/auth': 'Login / Register - coreHub',
     '/forgot-password': 'Forgot Password - coreHub',
     '/schedule': 'Schedule - coreHub',
     '/notes': 'Notes - coreHub',
@@ -21,7 +20,7 @@ export const PageTitleUpdater = () => {
     const location = useLocation();
 
     useEffect(() => {
-        const title = titles[location.pathname] ?? 'coreHub Home';
+        const title = titles[location.pathname] ?? 'coreHub';
         document.title = title;
     }, [location]);
 

@@ -101,12 +101,12 @@ export default function ForgotPassword() {
             <header className="w-full border-b border-gray-200 bg-background-light/80 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 select-none cursor-default">
+                        <Link to="/" className="flex items-center gap-2 select-none hover:opacity-80 transition-opacity">
                             <div className="flex items-center justify-center rounded-xl bg-black text-white size-8 shadow-md">
                                 <span className="material-icons-outlined text-[20px]">hub</span>
                             </div>
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">coreHub</h1>
-                        </div>
+                        </Link>
                         <div className="h-6 w-px bg-gray-300 mx-2 hidden sm:block"></div>
                         <span className="text-sm text-gray-500 font-medium hidden sm:block">Reset Password</span>
                     </div>
@@ -135,7 +135,7 @@ export default function ForgotPassword() {
                                 </p>
                                 <div className="pt-4">
                                     <Link
-                                        to="/login"
+                                        to="/auth"
                                         className="inline-flex justify-center rounded-xl bg-black px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 transition-all"
                                     >
                                         Back to Login
@@ -186,19 +186,14 @@ export default function ForgotPassword() {
                                     </button>
                                 </div>
                                 <div className="text-center">
-                                    <Link className="text-sm font-medium text-gray-600 hover:text-black hover:underline transition-colors" to="/login">
+                                    <Link className="text-sm font-medium text-gray-600 hover:text-black hover:underline transition-colors" to="/auth">
                                         Back to Login
                                     </Link>
                                 </div>
                             </form>
                         )}
                     </div>
-                    <p className="text-center text-xs text-gray-400">
-                        By continuing, you agree to our{' '}
-                        <Link to="/terms" className="underline hover:text-gray-600">Terms of Service</Link>
-                        {' '}and{' '}
-                        <Link to="/privacy" className="underline hover:text-gray-600">Privacy Policy</Link>.
-                    </p>
+
                 </div>
             </main>
 

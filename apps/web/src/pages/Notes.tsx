@@ -9,7 +9,7 @@ import { useToast } from '../context/ToastContext';
 
 export default function Notes() {
     const [notes, setNotes] = useState<Note[]>([]);
-    const [selectedIndex, setSelectedIndex] = useState<number>(0);
+    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -20,9 +20,11 @@ export default function Notes() {
     // Editing state
     const [editingTitle, setEditingTitle] = useState('');
     const [editingContent, setEditingContent] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle');
     const titleInputRef = useRef<HTMLInputElement>(null);
+    const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastSavedRef = useRef<{ title: string; content: string }>({ title: '', content: '' });
+    const skipNextSyncRef = useRef(false); // Flag to skip sync after create
 
     // Delete confirmation state
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -42,8 +44,9 @@ export default function Notes() {
             const result = await notesApi.getAll(searchTerm ? { search: searchTerm } : {});
             if (result.success && result.data) {
                 setNotes(result.data);
-                if (result.data.length > 0 && selectedIndex >= result.data.length) {
-                    setSelectedIndex(0);
+                // Select first note if none selected and notes exist
+                if (result.data.length > 0 && !selectedNoteId) {
+                    setSelectedNoteId(String(result.data[0].id));
                 }
             } else {
                 setError(result.error || 'Failed to fetch notes');
@@ -53,11 +56,12 @@ export default function Notes() {
         } finally {
             setIsLoading(false);
         }
-    }, [searchTerm, selectedIndex]);
+    }, [searchTerm, selectedNoteId]);
 
     useEffect(() => {
         fetchNotes();
-    }, [fetchNotes]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm]); // Only re-fetch when search changes, not selectedNoteId
 
     // Sort notes based on sortBy, but always keep pinned notes at top
     const sortedNotes = [...notes].sort((a, b) => {
@@ -75,16 +79,28 @@ export default function Notes() {
         }
     });
 
-    const selectedNote = sortedNotes[selectedIndex] || null;
+    // Find the currently selected note object by ID
+    const selectedNote = notes.find(n => String(n.id) === selectedNoteId) || null;
 
     // Sync editing state with selected note
     useEffect(() => {
         if (selectedNote) {
-            setEditingTitle(selectedNote.title || '');
-            setEditingContent(selectedNote.content || '');
-            setHasUnsavedChanges(false);
+            // Skip sync if we just created a note (handled in handleCreateNote)
+            if (skipNextSyncRef.current) {
+                skipNextSyncRef.current = false;
+                console.log('[Sync] Skipped due to skipNextSyncRef');
+                return;
+            }
+
+            const title = selectedNote.title || '';
+            const content = selectedNote.content || '';
+            console.log('[Sync] Syncing note:', { id: selectedNote.id, title, contentLen: content.length });
+            setEditingTitle(title);
+            setEditingContent(content);
+            lastSavedRef.current = { title, content };
+            setAutoSaveStatus('idle');
         }
-    }, [selectedNote?.id]);
+    }, [selectedNote]); // Only re-run if note object changes
 
     // Handle creating a new note
     const handleCreateNote = async () => {
@@ -97,16 +113,25 @@ export default function Notes() {
 
             if (result.success && result.data) {
                 showToast('Note created', 'success');
-                await fetchNotes();
-                // Select the new note (it should be first if sorted by newest)
-                setSelectedIndex(0);
+                const newNote = result.data;
+
+                // IMPORTANT: Set skip flag BEFORE any state changes
+                skipNextSyncRef.current = true;
+
+                // Add the new note to local state directly (at the beginning)
+                setNotes(prevNotes => [newNote, ...prevNotes]);
+
+                // Set up editing state for the new note
                 setEditingTitle('Untitled');
                 setEditingContent('');
-                // Focus the title input
+                lastSavedRef.current = { title: 'Untitled', content: '' };
+
+                // Select the new note AFTER state is updated
                 setTimeout(() => {
+                    setSelectedNoteId(String(newNote.id));
                     titleInputRef.current?.focus();
                     titleInputRef.current?.select();
-                }, 100);
+                }, 50);
             } else {
                 showToast(result.error || 'Failed to create note', 'error');
             }
@@ -117,44 +142,91 @@ export default function Notes() {
         }
     };
 
-    // Handle saving note
-    const handleSave = async () => {
-        if (!selectedNote) return;
-        if (!editingTitle.trim()) {
-            showToast('Title cannot be empty', 'error');
+    // Auto-save function
+    const performAutoSave = useCallback(async (title: string, content: string, noteId: string) => {
+        if (!noteId) {
+            console.log('[AutoSave] Skipped: No noteId');
+            return;
+        }
+        if (!title.trim()) {
+            console.log('[AutoSave] Skipped: Empty title');
             return;
         }
 
-        setIsSaving(true);
+        // Check if there are actual changes
+        if (title === lastSavedRef.current.title && content === lastSavedRef.current.content) {
+            console.log('[AutoSave] Skipped: No changes detected');
+            return;
+        }
+
+        console.log('[AutoSave] Saving...', { noteId, titleLength: title.length, contentLength: content.length });
+        setAutoSaveStatus('saving');
+
         try {
-            const result = await notesApi.update(String(selectedNote.id), {
-                title: editingTitle.trim(),
-                content: editingContent,
+            const result = await notesApi.update(noteId, {
+                title: title.trim(),
+                content: content,
             });
 
             if (result.success) {
-                showToast('Note saved', 'success');
-                setHasUnsavedChanges(false);
-                fetchNotes();
-            } else {
-                showToast(result.error || 'Failed to save note', 'error');
-            }
-        } catch {
-            showToast('Network error', 'error');
-        } finally {
-            setIsSaving(false);
-        }
-    };
+                console.log('[AutoSave] Success!');
+                lastSavedRef.current = { title: title.trim(), content };
+                setAutoSaveStatus('saved');
 
-    // Track unsaved changes
+                // Update notes list locally without refetching
+                setNotes(prevNotes => prevNotes.map(note =>
+                    String(note.id) === noteId
+                        ? { ...note, title: title.trim(), content, updatedAt: new Date().toISOString() }
+                        : note
+                ));
+
+                // Reset status after 2 seconds
+                setTimeout(() => setAutoSaveStatus('idle'), 2000);
+            } else {
+                console.log('[AutoSave] Failed:', result.error);
+                if (result.error !== 'Unauthorized') {
+                    showToast(result.error || 'Failed to auto-save', 'error');
+                }
+                setAutoSaveStatus('idle');
+            }
+        } catch (e) {
+            console.error('[AutoSave] Error:', e);
+            setAutoSaveStatus('idle');
+        }
+    }, [showToast]);
+
+    // Debounced auto-save effect
+    useEffect(() => {
+        if (autoSaveTimerRef.current) {
+            clearTimeout(autoSaveTimerRef.current);
+        }
+
+        if (!selectedNoteId) return;
+
+        // Skip if content matches what's already saved
+        if (editingTitle === lastSavedRef.current.title && editingContent === lastSavedRef.current.content) {
+            return;
+        }
+
+        // Set new timer for auto-save (1 second debounce)
+        const noteId = String(selectedNoteId);
+        autoSaveTimerRef.current = setTimeout(() => {
+            performAutoSave(editingTitle, editingContent, noteId);
+        }, 1000);
+
+        return () => {
+            if (autoSaveTimerRef.current) {
+                clearTimeout(autoSaveTimerRef.current);
+            }
+        };
+    }, [editingTitle, editingContent, selectedNoteId, performAutoSave]);
+
     const handleTitleChange = (value: string) => {
         setEditingTitle(value);
-        setHasUnsavedChanges(true);
     };
 
     const handleContentChange = (value: string) => {
         setEditingContent(value);
-        setHasUnsavedChanges(true);
     };
 
     const handleDeleteClick = (note: Note) => {
@@ -170,8 +242,18 @@ export default function Notes() {
             const result = await notesApi.delete(String(noteToDelete.id));
             if (result.success) {
                 showToast('Note deleted successfully', 'success');
-                fetchNotes();
-                setSelectedIndex(0);
+                // Remove from local state
+                const remainingNotes = notes.filter(n => String(n.id) !== String(noteToDelete.id));
+                setNotes(remainingNotes);
+                // Select first note if available
+                if (remainingNotes.length > 0) {
+                    // If we deleted the selected note, select another one
+                    if (String(noteToDelete.id) === selectedNoteId) {
+                        setSelectedNoteId(String(remainingNotes[0].id));
+                    }
+                } else {
+                    setSelectedNoteId(null);
+                }
             } else {
                 showToast(result.error || 'Failed to delete note', 'error');
             }
@@ -190,7 +272,10 @@ export default function Notes() {
             const result = await notesApi.pin(String(note.id), newPinned);
             if (result.success) {
                 showToast(newPinned ? 'Note pinned' : 'Note unpinned', 'success');
-                fetchNotes();
+                // Update local state instead of fetchNotes to preserve selection/editing
+                setNotes(prevNotes => prevNotes.map(n =>
+                    String(n.id) === String(note.id) ? { ...n, isPinned: newPinned } : n
+                ));
             } else {
                 showToast('Failed to update note', 'error');
             }
@@ -199,42 +284,11 @@ export default function Notes() {
         }
     };
 
-    // Export to Markdown
     const handleExportMarkdown = (note: Note) => {
-        // Simple HTML to Markdown conversion
         let markdown = note.content || '';
-
-        // Convert HTML to basic markdown
-        markdown = markdown
-            .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n')
-            .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n')
-            .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n')
-            .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
-            .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
-            .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
-            .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
-            .replace(/<s[^>]*>(.*?)<\/s>/gi, '~~$1~~')
-            .replace(/<strike[^>]*>(.*?)<\/strike>/gi, '~~$1~~')
-            .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
-            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
-            .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, '> $1\n')
-            .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
-            .replace(/<ul[^>]*>|<\/ul>/gi, '\n')
-            .replace(/<ol[^>]*>|<\/ol>/gi, '\n')
-            .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<hr\s*\/?>/gi, '\n---\n')
-            .replace(/<[^>]+>/g, '') // Remove remaining HTML tags
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&')
-            .trim();
-
-        // Add title
+        // Basic conversion logic
+        markdown = markdown.replace(/<[^>]+>/g, '').trim();
         const fullContent = `# ${note.title}\n\n${markdown}`;
-
-        // Create and download file
         const blob = new Blob([fullContent], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -244,7 +298,6 @@ export default function Notes() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-
         showToast('Exported to Markdown', 'success');
     };
 
@@ -267,17 +320,18 @@ export default function Notes() {
         },
     ];
 
-    // Handle publish/unpublish
     const handleTogglePublish = async () => {
         if (!selectedNote) return;
-
         setIsPublishing(true);
         try {
             if (selectedNote.isPublic) {
                 const result = await notesApi.unpublish(String(selectedNote.id));
                 if (result.success) {
                     showToast('Note is now private', 'success');
-                    fetchNotes();
+                    // Update local state
+                    setNotes(prevNotes => prevNotes.map(n =>
+                        String(n.id) === String(selectedNote.id) ? result.data! : n
+                    ));
                 } else {
                     showToast('Failed to unpublish', 'error');
                 }
@@ -285,12 +339,14 @@ export default function Notes() {
                 const result = await notesApi.publish(String(selectedNote.id));
                 if (result.success) {
                     showToast('Note published! Link copied.', 'success');
-                    // Copy link to clipboard
                     if (result.data?.publicSlug) {
                         const url = `${window.location.origin}/note/${result.data.publicSlug}`;
                         navigator.clipboard.writeText(url);
                     }
-                    fetchNotes();
+                    // Update local state
+                    setNotes(prevNotes => prevNotes.map(n =>
+                        String(n.id) === String(selectedNote.id) ? result.data! : n
+                    ));
                 } else {
                     showToast('Failed to publish', 'error');
                 }
@@ -313,37 +369,20 @@ export default function Notes() {
     const formatDate = (dateString?: string) => {
         if (!dateString) return '';
         const date = new Date(dateString);
-        const now = new Date();
-        const diffMs = now.getTime() - date.getTime();
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} min ago`;
-        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-        if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
-    // Keyboard shortcut for save
+    // Keyboard shortcut
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
-                if (hasUnsavedChanges && selectedNote) {
-                    handleSave();
-                }
+                showToast('Auto-save is enabled', 'info');
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [hasUnsavedChanges, selectedNote, editingTitle, editingContent]);
+    }, [showToast]);
 
     return (
         <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-white">
@@ -376,54 +415,34 @@ export default function Notes() {
             <div className="flex flex-1 overflow-hidden">
                 {/* Notes List Sidebar */}
                 <aside className="w-[320px] shrink-0 flex flex-col border-r border-border-light bg-background-light overflow-y-auto">
+                    {/* Simplified Sidebar Header */}
                     <div className="p-5 border-b border-border-light sticky top-0 bg-background-light z-10 flex flex-col gap-3">
                         <div className="flex justify-between items-center">
                             <h3 className="text-base font-bold text-text-primary">All Notes ({notes.length})</h3>
                             <div className="relative">
-                                <button
-                                    onClick={() => setShowSortMenu(!showSortMenu)}
-                                    className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded hover:bg-gray-100"
-                                >
-                                    <span className="material-icons-outlined text-[20px]">sort</span>
+                                <button onClick={() => setShowSortMenu(!showSortMenu)} className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded hover:bg-gray-100">
+                                    <span className="material-icons-outlined">sort</span>
                                 </button>
                                 {showSortMenu && (
                                     <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[140px]">
-                                        <button
-                                            onClick={() => { setSortBy('newest'); setShowSortMenu(false); }}
-                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'newest' ? 'text-primary font-medium' : 'text-text-primary'}`}
-                                        >
-                                            {sortBy === 'newest' && <span className="material-icons-outlined text-[16px]">check</span>}
-                                            <span className={sortBy === 'newest' ? '' : 'ml-6'}>Newest</span>
-                                        </button>
-                                        <button
-                                            onClick={() => { setSortBy('oldest'); setShowSortMenu(false); }}
-                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'oldest' ? 'text-primary font-medium' : 'text-text-primary'}`}
-                                        >
-                                            {sortBy === 'oldest' && <span className="material-icons-outlined text-[16px]">check</span>}
-                                            <span className={sortBy === 'oldest' ? '' : 'ml-6'}>Oldest</span>
-                                        </button>
-                                        <button
-                                            onClick={() => { setSortBy('title'); setShowSortMenu(false); }}
-                                            className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'title' ? 'text-primary font-medium' : 'text-text-primary'}`}
-                                        >
-                                            {sortBy === 'title' && <span className="material-icons-outlined text-[16px]">check</span>}
-                                            <span className={sortBy === 'title' ? '' : 'ml-6'}>A-Z (Title)</span>
-                                        </button>
+                                        <button onClick={() => { setSortBy('newest'); setShowSortMenu(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">Newest</button>
+                                        <button onClick={() => { setSortBy('oldest'); setShowSortMenu(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">Oldest</button>
+                                        <button onClick={() => { setSortBy('title'); setShowSortMenu(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">A-Z</button>
                                     </div>
                                 )}
                             </div>
                         </div>
                         <div className="relative">
                             <input
-                                className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 border border-border-light focus:border-text-primary focus:ring-0 text-text-primary text-sm placeholder-gray-400"
+                                className="w-full pl-10 pr-4 py-2 rounded-xl bg-gray-100 border-none text-sm focus:ring-1 focus:ring-primary"
                                 placeholder="Filter notes..."
-                                type="text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
-                            <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
+                            <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
                         </div>
                     </div>
+
                     <div className="flex flex-col p-4 gap-2">
                         {isLoading ? (
                             <LoadingSpinner message="Loading notes..." />
@@ -432,36 +451,24 @@ export default function Notes() {
                         ) : notes.length === 0 ? (
                             <EmptyState message="No notes yet" icon="note_add" />
                         ) : (
-                            sortedNotes.map((note, index) => (
+                            sortedNotes.map((note) => (
                                 <div
                                     key={note.id}
-                                    onClick={() => {
-                                        // Warn about unsaved changes
-                                        if (hasUnsavedChanges && selectedIndex !== index) {
-                                            if (!confirm('You have unsaved changes. Discard?')) return;
-                                        }
-                                        setSelectedIndex(index);
-                                    }}
-                                    className={`group flex flex-col p-3 rounded-xl border transition-all cursor-pointer ${selectedIndex === index
-                                        ? 'bg-white border-border-light shadow-sm'
-                                        : 'bg-background-light border-transparent hover:bg-gray-100'
-                                        }`}
+                                    onClick={() => setSelectedNoteId(String(note.id))}
+                                    className={`group flex flex-col p-3 rounded-xl border transition-all cursor-pointer ${selectedNoteId === String(note.id) ? 'bg-white border-border-light shadow-sm' : 'hover:bg-gray-100 border-transparent bg-background-light'}`}
                                 >
                                     <div className="flex justify-between items-start mb-1">
-                                        <h4 className={`text-sm font-bold line-clamp-1 ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{note.title}</h4>
+                                        <h4 className={`text-sm font-bold line-clamp-1 ${selectedNoteId === String(note.id) ? 'text-black' : 'text-text-primary'}`}>{note.title || 'Untitled'}</h4>
                                         <ActionMenu
                                             items={getActionMenuItems(note)}
                                             trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
                                             className="opacity-0 group-hover:opacity-100"
                                         />
                                     </div>
-                                    <p className="text-xs text-text-secondary mb-2 line-clamp-2">{note.content?.replace(/<[^>]*>/g, '') || ''}</p>
-                                    <div className="flex items-center justify-between text-xs text-gray-500">
+                                    <p className="text-xs text-text-secondary mb-2 line-clamp-2">{note.content?.replace(/<[^>]+>/g, '') || 'No content'}</p>
+                                    <div className="flex items-center justify-between text-xs text-gray-400">
                                         <span>{formatDate(note.updatedAt || note.createdAt)}</span>
-                                        <div className="flex items-center gap-2">
-                                            {note.tag && <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs">{note.tag}</span>}
-                                            {note.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
-                                        </div>
+                                        {note.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
                                     </div>
                                 </div>
                             ))
@@ -469,83 +476,56 @@ export default function Notes() {
                     </div>
                 </aside>
 
-                {/* Notes Editor Area */}
-                <div className="flex-1 flex flex-col overflow-hidden bg-white">
+                {/* Editor Area */}
+                <div className="flex-1 flex flex-col bg-white overflow-hidden">
                     {selectedNote ? (
                         <>
-                            {/* Editor Header */}
                             <div className="flex items-center justify-between p-4 border-b border-border-light shrink-0">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-1">
                                     <input
                                         ref={titleInputRef}
-                                        type="text"
                                         value={editingTitle}
                                         onChange={(e) => handleTitleChange(e.target.value)}
-                                        className="text-2xl font-bold text-text-primary bg-transparent border-none outline-none focus:ring-0 w-full max-w-md"
+                                        className="text-2xl font-bold bg-transparent outline-none w-full max-w-md text-text-primary placeholder-gray-300"
                                         placeholder="Note title..."
                                     />
-                                    {hasUnsavedChanges && (
-                                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">Unsaved</span>
-                                    )}
+
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {/* Publish Toggle */}
-                                    <div className="flex items-center gap-2 mr-2">
-                                        <button
-                                            onClick={handleTogglePublish}
-                                            disabled={isPublishing}
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors ${selectedNote.isPublic
-                                                ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                } ${isPublishing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        >
-                                            <span className="material-icons-outlined text-base">
-                                                {selectedNote.isPublic ? 'public' : 'lock'}
-                                            </span>
-                                            {isPublishing ? 'Processing...' : selectedNote.isPublic ? 'Public' : 'Private'}
-                                        </button>
-                                        {selectedNote.isPublic && selectedNote.publicSlug && (
-                                            <button
-                                                onClick={handleCopyPublicLink}
-                                                className="flex items-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm text-gray-600 transition-colors"
-                                                title="Copy public link"
-                                            >
-                                                <span className="material-icons-outlined text-base">link</span>
-                                            </button>
-                                        )}
-                                    </div>
                                     <button
-                                        onClick={handleSave}
-                                        disabled={isSaving || !hasUnsavedChanges}
-                                        className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        onClick={handleTogglePublish}
+                                        disabled={isPublishing}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors ${selectedNote.isPublic ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                     >
-                                        <span className="material-icons-outlined text-lg">save</span>
-                                        {isSaving ? 'Saving...' : 'Save'}
+                                        <span className="material-icons-outlined text-base">{selectedNote.isPublic ? 'public' : 'lock'}</span>
+                                        {isPublishing ? '...' : selectedNote.isPublic ? 'Public' : 'Private'}
                                     </button>
+                                    {selectedNote.isPublic && (
+                                        <button onClick={handleCopyPublicLink} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-xl text-gray-500 border border-transparent hover:border-gray-200 transition-colors" title="Copy Link">
+                                            <span className="material-icons-outlined text-[18px]">link</span>
+                                        </button>
+                                    )}
+                                    {autoSaveStatus === 'saving' && (
+                                        <span className="text-xs text-gray-500 flex items-center gap-1 mr-2">
+                                            <span className="material-icons-outlined text-sm animate-spin">sync</span>
+                                            Saving...
+                                        </span>
+                                    )}
+                                    {autoSaveStatus === 'saved' && (
+                                        <span className="text-xs text-green-600 flex items-center gap-1 mr-2">
+                                            <span className="material-icons-outlined text-sm">check_circle</span>
+                                            Saved
+                                        </span>
+                                    )}
                                     <ActionMenu items={getActionMenuItems(selectedNote)} />
                                 </div>
                             </div>
-
-                            {/* Date info */}
-                            <div className="flex items-center gap-2 text-sm text-text-secondary px-4 py-2 border-b border-border-light shrink-0">
-                                <span className="material-icons-outlined text-base">event</span>
-                                <span>Last edited: {formatDate(selectedNote.updatedAt || selectedNote.createdAt)}</span>
-                                {selectedNote.tag && (
-                                    <>
-                                        <span className="mx-2 text-gray-300">|</span>
-                                        <span className="px-2 py-0.5 bg-gray-100 rounded text-xs">{selectedNote.tag}</span>
-                                    </>
-                                )}
-                            </div>
-
-                            {/* Rich Text Editor */}
                             <div className="flex-1 overflow-y-auto p-6">
                                 <div className="max-w-3xl mx-auto">
                                     <RichTextEditor
                                         content={editingContent}
                                         onChange={handleContentChange}
                                         placeholder="Start writing your note..."
-                                        autoFocus={false}
                                     />
                                 </div>
                             </div>

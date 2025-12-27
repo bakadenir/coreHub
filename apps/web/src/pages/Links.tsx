@@ -9,6 +9,38 @@ import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 
 export default function Links() {
+    // Custom Favicon Component
+    const LinkFavicon = ({ link, size = 20, className }: { link: LinkItem, size?: number, className?: string }) => {
+        const [imageError, setImageError] = useState(false);
+
+        // Extract domain safely
+        const getDomain = (url: string) => {
+            try {
+                return url.replace('https://', '').replace('http://', '').split('/')[0];
+            } catch {
+                return '?';
+            }
+        };
+
+        const domain = getDomain(link.url);
+
+        if (imageError) {
+            return (
+                <div className={`${className} bg-gray-100 flex items-center justify-center text-gray-500 border border-gray-200 shrink-0 font-bold uppercase select-none`} style={{ fontSize: size * 0.8 }}>
+                    {domain.charAt(0)}
+                </div>
+            );
+        }
+
+        return (
+            <img
+                alt={`Icon for ${link.title}`}
+                className={`${className} object-cover bg-white shrink-0`}
+                src={link.image || `https://icons.duckduckgo.com/ip3/${domain}.ico`}
+                onError={() => setImageError(true)}
+            />
+        );
+    };
     const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
     const [isEditLinkOpen, setIsEditLinkOpen] = useState(false);
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
@@ -249,12 +281,12 @@ export default function Links() {
                                 >
                                     <div className="flex justify-between items-start mb-1">
                                         <div className="flex items-center gap-2 flex-1 overflow-hidden">
-                                            <img
-                                                alt={`Favicon for ${link.title}`}
-                                                className="size-4 shrink-0 rounded grayscale"
-                                                src={link.image || `https://www.google.com/s2/favicons?domain=${link.url}&sz=32`}
+                                            <LinkFavicon
+                                                link={link}
+                                                size={16}
+                                                className="size-8 rounded-lg"
                                             />
-                                            <h4 className={`text-sm font-bold line-clamp-1 ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{link.title || 'Untitled'}</h4>
+                                            <h4 className={`text-sm font-bold line-clamp-1 capitalize ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{link.title || 'Untitled'}</h4>
                                         </div>
                                         <ActionMenu
                                             items={getActionMenuItems(link)}
@@ -262,7 +294,7 @@ export default function Links() {
                                             className="opacity-0 group-hover:opacity-100"
                                         />
                                     </div>
-                                    <p className="text-xs text-text-secondary mb-2 line-clamp-1 pl-6">{link.url.replace('https://', '').replace('http://', '')}</p>
+
                                     <div className="flex items-center justify-end text-xs text-gray-500">
                                         {link.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
                                     </div>
@@ -283,12 +315,12 @@ export default function Links() {
                             <div className="bg-white rounded-xl p-6 shadow-sm border border-border-light flex flex-col gap-6">
 
                                 <div className="flex items-center gap-3">
-                                    <img
-                                        alt={`Favicon for ${selectedLink.title}`}
-                                        className="size-6 shrink-0 rounded grayscale"
-                                        src={selectedLink.image || `https://www.google.com/s2/favicons?domain=${selectedLink.url}&sz=32`}
+                                    <LinkFavicon
+                                        link={selectedLink}
+                                        size={24}
+                                        className="size-10 rounded-xl shadow-sm border border-gray-100"
                                     />
-                                    <a className="text-xl font-bold text-text-primary hover:underline truncate" href={selectedLink.url} target="_blank" rel="noreferrer">
+                                    <a className="text-xl font-bold text-text-primary hover:underline truncate capitalize" href={selectedLink.url} target="_blank" rel="noreferrer">
                                         {selectedLink.title || 'Untitled'}
                                     </a>
                                 </div>

@@ -174,7 +174,7 @@ router.post('/:orderId/mark-success', async (req, res) => {
 
 // GET /api/donations/admin/all - Get all donations (including pending) for admin
 // NOTE: Temporarily without auth for localhost debugging
-router.get('/admin/all', async (req, res) => {
+router.get('/admin/all', async (_req, res) => {
     try {
         const donations = await donationsService.findAll();
         return successResponse(res, donations);
@@ -186,7 +186,7 @@ router.get('/admin/all', async (req, res) => {
 
 // POST /api/donations/admin/verify-pending - Verify all pending donations with Midtrans
 // NOTE: Temporarily without auth for localhost debugging
-router.post('/admin/verify-pending', async (req, res) => {
+router.post('/admin/verify-pending', async (_req, res) => {
     try {
         const results = await donationsService.verifyAllPending();
         return successResponse(res, results);

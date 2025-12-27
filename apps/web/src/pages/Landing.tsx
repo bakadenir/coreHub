@@ -63,11 +63,12 @@ export default function Landing() {
                     </div>
                     {/* Desktop Navigation */}
                     <div className="flex items-center gap-4 md:gap-6">
-                        <Link className="text-sm font-medium hover:text-primary transition-colors text-text-primary" to="/login">
+                        <Link className="text-sm font-medium hover:text-primary transition-colors text-text-primary" to="/auth">
                             Login
                         </Link>
                         <Link
-                            to="/register"
+                            to="/auth"
+                            state={{ isSignUp: true }}
                             className="flex items-center justify-center rounded-lg h-9 px-4 bg-black hover:bg-gray-800 transition-all text-white text-sm font-bold shadow-md hover:shadow-lg hover:translate-y-[-1px]"
                         >
                             Register
@@ -91,13 +92,14 @@ export default function Landing() {
 
                             <div className="flex flex-wrap gap-4 mt-4">
                                 <Link
-                                    to="/register"
+                                    to="/auth"
+                                    state={{ isSignUp: true }}
                                     className="flex items-center justify-center rounded-xl h-14 px-8 bg-black hover:bg-gray-800 text-white text-lg font-bold shadow-xl shadow-black/10 transition-all hover:scale-105 active:scale-95"
                                 >
                                     Get Started Free
                                 </Link>
                                 <Link
-                                    to="/login"
+                                    to="/auth"
                                     className="flex items-center justify-center rounded-xl h-14 px-8 bg-white border border-gray-200 hover:bg-gray-50 text-text-primary text-lg font-bold transition-all hover:scale-105 active:scale-95 shadow-sm"
                                 >
                                     Login

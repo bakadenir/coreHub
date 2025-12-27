@@ -49,7 +49,7 @@ export default function ActionMenu({ items, trigger, className = '' }: ActionMen
                     e.stopPropagation();
                     setIsOpen(!isOpen);
                 }}
-                className="p-1 rounded-md text-text-secondary hover:text-text-primary hover:bg-gray-100 transition-colors"
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-gray-100 transition-colors"
             >
                 {trigger || (
                     <span className="material-icons-outlined text-[20px]">more_vert</span>
