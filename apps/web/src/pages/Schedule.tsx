@@ -7,6 +7,7 @@ import { schedulesApi } from '../lib';
 import type { ScheduleEvent } from '../types';
 import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
+import { ChevronLeft, ChevronRight, Plus, MoreVertical, CalendarX, MapPin, CheckCircle } from 'lucide-react';
 
 export default function Schedule() {
     const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
@@ -235,7 +236,7 @@ export default function Schedule() {
                 variant="danger"
                 isLoading={isDeleting}
             />
-            <header className="flex flex-col gap-4 p-6 border-b border-border-light bg-white shrink-0">
+            <header className="flex flex-col gap-4 p-6 border-b border-border-light bg-[#fdfdfd] shrink-0">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex flex-col gap-1">
                         <h2 className="text-text-primary text-3xl font-extrabold tracking-tight flex items-center gap-3">
@@ -245,13 +246,13 @@ export default function Schedule() {
                                     onClick={() => view === 'month' ? navigateMonth(-1) : view === 'week' ? navigateWeek(-1) : navigateDay(-1)}
                                     className="p-1 rounded-full hover:bg-gray-100 text-text-secondary transition-colors"
                                 >
-                                    <span className="material-icons-outlined text-xl">chevron_left</span>
+                                    <ChevronLeft size={20} />
                                 </button>
                                 <button
                                     onClick={() => view === 'month' ? navigateMonth(1) : view === 'week' ? navigateWeek(1) : navigateDay(1)}
                                     className="p-1 rounded-full hover:bg-gray-100 text-text-secondary transition-colors"
                                 >
-                                    <span className="material-icons-outlined text-xl">chevron_right</span>
+                                    <ChevronRight size={20} />
                                 </button>
                             </div>
                         </h2>
@@ -262,13 +263,13 @@ export default function Schedule() {
                             onClick={() => setIsAddScheduleOpen(true)}
                             className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50"
                         >
-                            <span className="material-icons-outlined text-[20px]">add</span>
+                            <Plus size={20} />
                             <span className="whitespace-nowrap">Add Schedule</span>
                         </button>
                     </div>
                 </div>
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                    <div className="flex h-10 items-center justify-center rounded-xl bg-gray-100 p-1 border border-transparent self-start">
+                    <div className="flex h-10 items-center justify-center rounded-2xl bg-gray-100 p-1 border border-transparent self-start">
                         {(['month', 'week', 'day'] as const).map((v) => (
                             <label key={v} className="cursor-pointer">
                                 <input
@@ -279,7 +280,7 @@ export default function Schedule() {
                                     checked={view === v}
                                     onChange={() => setView(v)}
                                 />
-                                <div className="h-full px-4 py-2 rounded-[4px] flex items-center justify-center peer-checked:bg-white peer-checked:shadow-sm peer-checked:text-black text-text-secondary text-xs font-semibold transition-all capitalize">
+                                <div className="h-full px-4 py-2 rounded-xl flex items-center justify-center peer-checked:bg-[#fdfdfd] peer-checked:shadow-sm peer-checked:text-black text-text-secondary text-xs font-semibold transition-all capitalize">
                                     {v === 'day' ? 'Today' : v}
                                 </div>
                             </label>
@@ -288,7 +289,7 @@ export default function Schedule() {
                 </div>
             </header>
             <div className="flex flex-1 overflow-hidden">
-                <div className="flex-1 flex flex-col overflow-y-auto bg-white">
+                <div className="flex-1 flex flex-col overflow-y-auto bg-[#fdfdfd]">
                     {isLoading ? (
                         <div className="flex-1 flex items-center justify-center">
                             <LoadingSpinner message="Loading events..." />
@@ -321,7 +322,7 @@ export default function Schedule() {
                                             const dayEvents = getEventsForDay(day);
                                             const isToday = isCurrentMonth && day === todayDay;
                                             return (
-                                                <div key={day} className="bg-white p-2 flex flex-col gap-1 min-h-[120px] group hover:bg-gray-50 transition-colors relative">
+                                                <div key={day} className="bg-[#fdfdfd] p-2 flex flex-col gap-1 min-h-[120px] group hover:bg-gray-50 transition-colors relative">
                                                     <span className={`text-text-primary font-mono text-sm font-medium p-1 ${isToday ? 'flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white shadow-md shadow-gray-500/30' : ''}`}>
                                                         {day}
                                                     </span>
@@ -336,7 +337,7 @@ export default function Schedule() {
                                                             <div className="opacity-0 group-hover/event:opacity-100" onClick={(e) => e.stopPropagation()}>
                                                                 <ActionMenu
                                                                     items={getActionMenuItems(event)}
-                                                                    trigger={<span className="material-icons-outlined text-[12px]">more_vert</span>}
+                                                                    trigger={<MoreVertical size={12} />}
                                                                 />
                                                             </div>
                                                         </div>
@@ -378,7 +379,7 @@ export default function Schedule() {
                                             const dayEvents = getEventsForDate(date);
                                             const isToday = date.toDateString() === today.toDateString();
                                             return (
-                                                <div key={i} className={`bg-white p-2 flex flex-col gap-1 ${isToday ? 'bg-primary/5' : ''}`}>
+                                                <div key={i} className={`bg-[#fdfdfd] p-2 flex flex-col gap-1 ${isToday ? 'bg-primary/5' : ''}`}>
                                                     {dayEvents.length === 0 ? (
                                                         <div className="text-xs text-text-secondary text-center py-4">No events</div>
                                                     ) : (
@@ -405,7 +406,7 @@ export default function Schedule() {
                                 <div className="flex-1 p-4 overflow-y-auto">
                                     {getEventsForDate(currentDate).length === 0 ? (
                                         <div className="flex flex-col items-center justify-center h-full text-text-secondary">
-                                            <span className="material-icons-outlined text-5xl mb-3">event_busy</span>
+                                            <CalendarX size={48} className="mb-3" />
                                             <p className="text-base font-medium">No events for this day</p>
                                             <button
                                                 onClick={() => setIsAddScheduleOpen(true)}
@@ -420,7 +421,7 @@ export default function Schedule() {
                                                 <div
                                                     key={event.id}
                                                     onClick={() => handleEdit(event)}
-                                                    className={`bg-white border border-border-light rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all border-l-4 ${getEventColor(idx).replace('border-l-', 'border-l-')}`}
+                                                    className={`bg-[#fdfdfd] border border-border-light rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all border-l-4 ${getEventColor(idx).replace('border-l-', 'border-l-')}`}
                                                 >
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
@@ -433,7 +434,7 @@ export default function Schedule() {
                                                             <h4 className="text-lg font-bold text-text-primary mb-1">{event.title}</h4>
                                                             {event.location && (
                                                                 <div className="flex items-center gap-1.5 text-text-secondary text-sm mt-2">
-                                                                    <span className="material-icons-outlined text-[16px]">location_on</span>
+                                                                    <MapPin size={16} />
                                                                     <span>{event.location}</span>
                                                                 </div>
                                                             )}
@@ -444,7 +445,7 @@ export default function Schedule() {
                                                         <div onClick={(e) => e.stopPropagation()}>
                                                             <ActionMenu
                                                                 items={getActionMenuItems(event)}
-                                                                trigger={<span className="material-icons-outlined text-[20px] text-gray-400 hover:text-gray-600">more_vert</span>}
+                                                                trigger={<MoreVertical size={20} className="text-gray-400 hover:text-gray-600" />}
                                                             />
                                                         </div>
                                                     </div>
@@ -475,19 +476,19 @@ export default function Schedule() {
                                 <p className="text-xs text-text-secondary py-2">No events today</p>
                             ) : (
                                 getTodayEvents().map(event => (
-                                    <div key={event.id} className="group flex flex-col p-3 rounded-xl bg-white border border-border-light shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-pointer">
+                                    <div key={event.id} className="group flex flex-col p-3 rounded-xl bg-[#fdfdfd] border border-border-light shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-pointer">
                                         <div className="flex justify-between items-start mb-2">
                                             <span className="font-mono text-xs font-medium text-gray-700 bg-gray-50 px-1.5 py-0.5 rounded">{formatTime(event.startTime)}</span>
                                             <ActionMenu
                                                 items={getActionMenuItems(event)}
-                                                trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                                trigger={<MoreVertical size={16} />}
                                                 className="opacity-0 group-hover:opacity-100"
                                             />
                                         </div>
                                         <h4 className="text-sm font-bold text-text-primary mb-1">{event.title}</h4>
                                         {event.location && (
                                             <div className="flex items-center gap-1.5 text-text-secondary text-xs">
-                                                <span className="material-icons-outlined text-[14px]">location_on</span>
+                                                <MapPin size={14} />
                                                 <span className="truncate">{event.location}</span>
                                             </div>
                                         )}
@@ -504,14 +505,14 @@ export default function Schedule() {
                                     <div className="h-px flex-1 bg-border-light"></div>
                                 </div>
                                 {getUpcomingEvents().map(event => (
-                                    <div key={event.id} className="group flex flex-col p-3 rounded-xl bg-white border border-border-light shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-pointer">
+                                    <div key={event.id} className="group flex flex-col p-3 rounded-xl bg-[#fdfdfd] border border-border-light shadow-sm hover:shadow-md hover:border-gray-300 transition-all cursor-pointer">
                                         <div className="flex justify-between items-start mb-2">
                                             <span className="font-mono text-xs font-medium text-gray-700 bg-gray-50 px-1.5 py-0.5 rounded">
                                                 {formatAgendaDate(new Date(event.startTime))} {formatTime(event.startTime)}
                                             </span>
                                             <ActionMenu
                                                 items={getActionMenuItems(event)}
-                                                trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                                trigger={<MoreVertical size={16} />}
                                                 className="opacity-0 group-hover:opacity-100"
                                             />
                                         </div>
@@ -528,7 +529,7 @@ export default function Schedule() {
                     </div>
                     <div className="mt-auto p-4 border-t border-border-light">
                         <div className="flex items-center gap-3 text-text-secondary text-xs">
-                            <span className="material-icons-outlined text-sm">check_circle</span>
+                            <CheckCircle size={14} />
                             <p>Connected to database</p>
                         </div>
                     </div>

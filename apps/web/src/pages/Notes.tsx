@@ -6,8 +6,11 @@ import { notesApi } from '../lib';
 import type { Note } from '../types';
 import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
+import { useLocation } from 'react-router-dom';
+import { Plus, ArrowUpDown, Search, MoreHorizontal, Pin, Globe, Lock, Link } from 'lucide-react';
 
 export default function Notes() {
+    const location = useLocation();
     const [notes, setNotes] = useState<Note[]>([]);
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -17,13 +20,22 @@ export default function Notes() {
     const [showSortMenu, setShowSortMenu] = useState(false);
     const { showToast } = useToast();
 
+    // Handle navigation from other pages (e.g. ActivityCards)
+    useEffect(() => {
+        if (location.state?.noteId) {
+            setSelectedNoteId(String(location.state.noteId));
+            // Optional: Clear state so refresh doesn't keep selecting it, or keep it.
+            // keeping it is fine.
+        }
+    }, [location.state]);
+
     // Editing state
     const [editingTitle, setEditingTitle] = useState('');
     const [editingContent, setEditingContent] = useState('');
-    const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'idle'>('idle');
     const titleInputRef = useRef<HTMLInputElement>(null);
     const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const lastSavedRef = useRef<{ title: string; content: string }>({ title: '', content: '' });
+    const editingDataRef = useRef({ title: '', content: '', noteId: '' });
     const skipNextSyncRef = useRef(false); // Flag to skip sync after create
 
     // Delete confirmation state
@@ -44,10 +56,6 @@ export default function Notes() {
             const result = await notesApi.getAll(searchTerm ? { search: searchTerm } : {});
             if (result.success && result.data) {
                 setNotes(result.data);
-                // Select first note if none selected and notes exist
-                if (result.data.length > 0 && !selectedNoteId) {
-                    setSelectedNoteId(String(result.data[0].id));
-                }
             } else {
                 setError(result.error || 'Failed to fetch notes');
             }
@@ -56,7 +64,25 @@ export default function Notes() {
         } finally {
             setIsLoading(false);
         }
-    }, [searchTerm, selectedNoteId]);
+    }, [searchTerm]);
+
+    // Handle initial selection logic
+    useEffect(() => {
+        if (!isLoading && notes.length > 0) {
+            // If we have a location state with a noteId, prioritize it
+            if (location.state?.noteId) {
+                const targetId = String(location.state.noteId);
+                // Only switch if we're not already there (though valid to force it if needed)
+                if (selectedNoteId !== targetId) {
+                    setSelectedNoteId(targetId);
+                }
+            }
+            // Otherwise, if nothing is selected, select the first note
+            else if (!selectedNoteId) {
+                setSelectedNoteId(String(notes[0].id));
+            }
+        }
+    }, [notes, isLoading, location.state, selectedNoteId]);
 
     useEffect(() => {
         fetchNotes();
@@ -82,6 +108,72 @@ export default function Notes() {
     // Find the currently selected note object by ID
     const selectedNote = notes.find(n => String(n.id) === selectedNoteId) || null;
 
+    // Track latest editing data for event listeners
+    useEffect(() => {
+        if (selectedNoteId) {
+            editingDataRef.current = {
+                title: editingTitle,
+                content: editingContent,
+                noteId: String(selectedNoteId)
+            };
+        }
+    }, [editingTitle, editingContent, selectedNoteId]);
+
+    // Auto-save function
+    const performAutoSave = useCallback(async (title: string, content: string, noteId: string) => {
+        if (!noteId) {
+            console.log('[AutoSave] Skipped: No noteId');
+            return;
+        }
+        if (!title.trim()) {
+            console.log('[AutoSave] Skipped: Empty title');
+            return;
+        }
+
+        // Check if there are actual changes
+        if (title === lastSavedRef.current.title && content === lastSavedRef.current.content) {
+            console.log('[AutoSave] Skipped: No changes detected');
+            return;
+        }
+
+        console.log('[AutoSave] Saving...', { noteId, titleLength: title.length, contentLength: content.length });
+
+        try {
+            const result = await notesApi.update(noteId, {
+                title: title.trim(),
+                content: content,
+            });
+
+            if (result.success) {
+                console.log('[AutoSave] Success!');
+                lastSavedRef.current = { title: title.trim(), content };
+
+                // Update notes list locally without refetching
+                setNotes(prevNotes => prevNotes.map(note =>
+                    String(note.id) === noteId
+                        ? { ...note, title: title.trim(), content, updatedAt: new Date().toISOString() }
+                        : note
+                ));
+            } else {
+                console.log('[AutoSave] Failed:', result.error);
+                if (result.error !== 'Unauthorized') {
+                    showToast(result.error || 'Failed to auto-save', 'error');
+                }
+            }
+        } catch (e) {
+            console.error('[AutoSave] Error:', e);
+        }
+    }, [showToast]);
+
+    // Force save current data immediately
+    const saveImmediately = useCallback(async () => {
+        const { title, content, noteId } = editingDataRef.current;
+        if (!noteId || noteId === 'null') return;
+
+        // Let performAutoSave handle the diff checking logic
+        await performAutoSave(title, content, noteId);
+    }, [performAutoSave]);
+
     // Sync editing state with selected note
     useEffect(() => {
         if (selectedNote) {
@@ -98,7 +190,8 @@ export default function Notes() {
             setEditingTitle(title);
             setEditingContent(content);
             lastSavedRef.current = { title, content };
-            setAutoSaveStatus('idle');
+            // Update ref immediately too
+            editingDataRef.current = { title, content, noteId: String(selectedNote.id) };
         }
     }, [selectedNote]); // Only re-run if note object changes
 
@@ -142,60 +235,7 @@ export default function Notes() {
         }
     };
 
-    // Auto-save function
-    const performAutoSave = useCallback(async (title: string, content: string, noteId: string) => {
-        if (!noteId) {
-            console.log('[AutoSave] Skipped: No noteId');
-            return;
-        }
-        if (!title.trim()) {
-            console.log('[AutoSave] Skipped: Empty title');
-            return;
-        }
-
-        // Check if there are actual changes
-        if (title === lastSavedRef.current.title && content === lastSavedRef.current.content) {
-            console.log('[AutoSave] Skipped: No changes detected');
-            return;
-        }
-
-        console.log('[AutoSave] Saving...', { noteId, titleLength: title.length, contentLength: content.length });
-        setAutoSaveStatus('saving');
-
-        try {
-            const result = await notesApi.update(noteId, {
-                title: title.trim(),
-                content: content,
-            });
-
-            if (result.success) {
-                console.log('[AutoSave] Success!');
-                lastSavedRef.current = { title: title.trim(), content };
-                setAutoSaveStatus('saved');
-
-                // Update notes list locally without refetching
-                setNotes(prevNotes => prevNotes.map(note =>
-                    String(note.id) === noteId
-                        ? { ...note, title: title.trim(), content, updatedAt: new Date().toISOString() }
-                        : note
-                ));
-
-                // Reset status after 2 seconds
-                setTimeout(() => setAutoSaveStatus('idle'), 2000);
-            } else {
-                console.log('[AutoSave] Failed:', result.error);
-                if (result.error !== 'Unauthorized') {
-                    showToast(result.error || 'Failed to auto-save', 'error');
-                }
-                setAutoSaveStatus('idle');
-            }
-        } catch (e) {
-            console.error('[AutoSave] Error:', e);
-            setAutoSaveStatus('idle');
-        }
-    }, [showToast]);
-
-    // Debounced auto-save effect
+    // Debounced auto-save effect (30 seconds)
     useEffect(() => {
         if (autoSaveTimerRef.current) {
             clearTimeout(autoSaveTimerRef.current);
@@ -208,11 +248,11 @@ export default function Notes() {
             return;
         }
 
-        // Set new timer for auto-save (1 second debounce)
+        // Set 30s timer for auto-save
         const noteId = String(selectedNoteId);
         autoSaveTimerRef.current = setTimeout(() => {
             performAutoSave(editingTitle, editingContent, noteId);
-        }, 1000);
+        }, 30000); // 30 seconds delay
 
         return () => {
             if (autoSaveTimerRef.current) {
@@ -220,6 +260,35 @@ export default function Notes() {
             }
         };
     }, [editingTitle, editingContent, selectedNoteId, performAutoSave]);
+
+    // Setup global listeners to flush save on visibility change / unload
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                saveImmediately();
+            }
+        };
+
+        const handleBeforeUnload = () => {
+            saveImmediately();
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        // Also flush on unmount
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            saveImmediately();
+        };
+    }, [saveImmediately]);
+
+    const handleNoteSelect = async (newId: string) => {
+        // Flush changes for OLD note before switching
+        await saveImmediately();
+        setSelectedNoteId(newId);
+    };
 
     const handleTitleChange = (value: string) => {
         setEditingTitle(value);
@@ -385,7 +454,7 @@ export default function Notes() {
     }, [showToast]);
 
     return (
-        <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-white">
+        <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-[#fdfdfd]">
             <ConfirmDialog
                 isOpen={deleteConfirmOpen}
                 onClose={() => { setDeleteConfirmOpen(false); setNoteToDelete(null); }}
@@ -396,7 +465,7 @@ export default function Notes() {
                 variant="danger"
                 isLoading={isDeleting}
             />
-            <header className="flex items-center justify-between p-6 border-b border-border-light bg-white shrink-0">
+            <header className="flex items-center justify-between p-6 border-b border-border-light bg-[#fdfdfd] shrink-0">
                 <div className="flex flex-col gap-1">
                     <h2 className="text-text-primary text-3xl font-extrabold tracking-tight">Notes</h2>
                     <p className="text-text-secondary text-base font-normal">Organize your thoughts and ideas.</p>
@@ -407,7 +476,7 @@ export default function Notes() {
                         disabled={isCreating}
                         className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50 disabled:opacity-50"
                     >
-                        <span className="material-icons-outlined text-[20px]">add</span>
+                        <Plus size={20} />
                         <span className="whitespace-nowrap">{isCreating ? 'Creating...' : 'Add Notes'}</span>
                     </button>
                 </div>
@@ -421,10 +490,10 @@ export default function Notes() {
                             <h3 className="text-base font-bold text-text-primary">All Notes ({notes.length})</h3>
                             <div className="relative">
                                 <button onClick={() => setShowSortMenu(!showSortMenu)} className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded hover:bg-gray-100">
-                                    <span className="material-icons-outlined">sort</span>
+                                    <ArrowUpDown size={20} />
                                 </button>
                                 {showSortMenu && (
-                                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[140px]">
+                                    <div className="absolute right-0 top-full mt-1 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[140px]">
                                         <button onClick={() => { setSortBy('newest'); setShowSortMenu(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">Newest</button>
                                         <button onClick={() => { setSortBy('oldest'); setShowSortMenu(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">Oldest</button>
                                         <button onClick={() => { setSortBy('title'); setShowSortMenu(false); }} className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2">A-Z</button>
@@ -439,7 +508,7 @@ export default function Notes() {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
-                            <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                            <Search size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         </div>
                     </div>
 
@@ -454,21 +523,21 @@ export default function Notes() {
                             sortedNotes.map((note) => (
                                 <div
                                     key={note.id}
-                                    onClick={() => setSelectedNoteId(String(note.id))}
-                                    className={`group flex flex-col p-3 rounded-xl border transition-all cursor-pointer ${selectedNoteId === String(note.id) ? 'bg-white border-border-light shadow-sm' : 'hover:bg-gray-100 border-transparent bg-background-light'}`}
+                                    onClick={() => handleNoteSelect(String(note.id))}
+                                    className={`group flex flex-col p-3 rounded-xl border transition-all cursor-pointer ${selectedNoteId === String(note.id) ? 'bg-[#fdfdfd] border-border-light shadow-sm' : 'hover:bg-gray-100 border-transparent bg-background-light'}`}
                                 >
                                     <div className="flex justify-between items-start mb-1">
                                         <h4 className={`text-sm font-bold line-clamp-1 ${selectedNoteId === String(note.id) ? 'text-black' : 'text-text-primary'}`}>{note.title || 'Untitled'}</h4>
                                         <ActionMenu
                                             items={getActionMenuItems(note)}
-                                            trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                            trigger={<MoreHorizontal size={16} />}
                                             className="opacity-0 group-hover:opacity-100"
                                         />
                                     </div>
                                     <p className="text-xs text-text-secondary mb-2 line-clamp-2">{note.content?.replace(/<[^>]+>/g, '') || 'No content'}</p>
                                     <div className="flex items-center justify-between text-xs text-gray-400">
                                         <span>{formatDate(note.updatedAt || note.createdAt)}</span>
-                                        {note.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
+                                        {note.isPinned && <Pin size={14} className="text-primary" />}
                                     </div>
                                 </div>
                             ))
@@ -477,7 +546,7 @@ export default function Notes() {
                 </aside>
 
                 {/* Editor Area */}
-                <div className="flex-1 flex flex-col bg-white overflow-hidden">
+                <div className="flex-1 flex flex-col bg-[#fdfdfd] overflow-hidden">
                     {selectedNote ? (
                         <>
                             <div className="flex items-center justify-between p-4 border-b border-border-light shrink-0">
@@ -497,26 +566,15 @@ export default function Notes() {
                                         disabled={isPublishing}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors ${selectedNote.isPublic ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                     >
-                                        <span className="material-icons-outlined text-base">{selectedNote.isPublic ? 'public' : 'lock'}</span>
+                                        {selectedNote.isPublic ? <Globe size={16} /> : <Lock size={16} />}
                                         {isPublishing ? '...' : selectedNote.isPublic ? 'Public' : 'Private'}
                                     </button>
                                     {selectedNote.isPublic && (
                                         <button onClick={handleCopyPublicLink} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-xl text-gray-500 border border-transparent hover:border-gray-200 transition-colors" title="Copy Link">
-                                            <span className="material-icons-outlined text-[18px]">link</span>
+                                            <Link size={18} />
                                         </button>
                                     )}
-                                    {autoSaveStatus === 'saving' && (
-                                        <span className="text-xs text-gray-500 flex items-center gap-1 mr-2">
-                                            <span className="material-icons-outlined text-sm animate-spin">sync</span>
-                                            Saving...
-                                        </span>
-                                    )}
-                                    {autoSaveStatus === 'saved' && (
-                                        <span className="text-xs text-green-600 flex items-center gap-1 mr-2">
-                                            <span className="material-icons-outlined text-sm">check_circle</span>
-                                            Saved
-                                        </span>
-                                    )}
+
                                     <ActionMenu items={getActionMenuItems(selectedNote)} />
                                 </div>
                             </div>

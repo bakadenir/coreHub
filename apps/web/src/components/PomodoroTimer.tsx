@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Timer, Bell } from 'lucide-react';
 
 type TimerMode = 'focus' | 'shortBreak' | 'longBreak';
 
@@ -248,8 +249,8 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
         ? 'py-2.5 px-6 text-base'
         : 'py-2 px-4 text-sm';
     const modeButtonClasses = isMain
-        ? 'py-1.5 text-sm'
-        : 'py-1 text-xs';
+        ? 'py-2 px-4 text-sm'
+        : 'py-1 px-3 text-xs';
 
     const content = (
         <>
@@ -271,14 +272,14 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
             </div>
 
             {/* Mode Selector */}
-            <div className={`flex ${isMain ? 'gap-3 max-w-md mx-auto mb-6' : 'gap-2 mb-6'}`}>
+            <div className={`flex ${isMain ? 'gap-3 max-w-lg mx-auto mb-6' : 'gap-2 mb-6'}`}>
                 {modeButtons.map(({ mode: m, label }) => (
                     <button
                         key={m}
                         onClick={() => switchMode(m)}
-                        className={`flex-1 ${modeButtonClasses} font-medium rounded transition-colors ${mode === m
-                            ? 'bg-gray-100 text-gray-900 border border-gray-200'
-                            : 'hover:bg-gray-50 text-gray-500'
+                        className={`flex-1 ${modeButtonClasses} font-medium rounded-lg transition-colors whitespace-nowrap ${mode === m
+                            ? 'bg-gray-100 text-gray-900'
+                            : 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
                             }`}
                     >
                         {label}
@@ -307,11 +308,11 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
 
             {/* Status */}
             <div className={`${isMain ? 'mt-8 text-sm' : 'mt-5 text-xs'} flex items-center gap-2 justify-center text-gray-400`}>
-                <span className="material-icons-outlined text-[14px]">
-                    {isRunning ? 'timer' : 'notifications'}
-                </span>
+                {isRunning ? <Timer size={14} /> : <Bell size={14} />}
                 {isRunning
-                    ? `${mode === 'focus' ? 'Focus time' : 'Break time'} - stay focused!`
+                    ? mode === 'focus'
+                        ? 'Focus time - stay focused!'
+                        : 'Break time - take it easy!'
                     : 'Alarm when finished'
                 }
             </div>
@@ -325,7 +326,7 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
 
     // Sidebar version with container
     return (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm">
             {content}
         </div>
     );

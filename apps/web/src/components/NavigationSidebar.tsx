@@ -1,6 +1,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, CheckCircle, Calendar, FileText, Link as LinkIcon } from 'lucide-react';
 
 export default function NavigationSidebar() {
     const location = useLocation();
@@ -62,7 +63,7 @@ export default function NavigationSidebar() {
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className={`
-                flex flex-col border-r border-border-light bg-white shrink-0 overflow-hidden
+                flex flex-col border-r border-border-light bg-[#fdfdfd] shrink-0 overflow-hidden
                 transition-all duration-300 ease-in-out relative
                 ${isMainPage
                     ? isExpanded ? 'w-64' : 'w-14'
@@ -77,31 +78,31 @@ export default function NavigationSidebar() {
             `}>
                 <Link className={linkClass('/home')} to="/home">
                     <span className={iconClass('/home')}>
-                        <span className="material-icons-outlined text-base">dashboard</span>
+                        <LayoutDashboard size={16} />
                     </span>
                     <span className={textClass}>Home</span>
                 </Link>
                 <Link className={linkClass('/habits')} to="/habits">
                     <span className={iconClass('/habits')}>
-                        <span className="material-icons-outlined text-base">check_circle</span>
+                        <CheckCircle size={16} />
                     </span>
                     <span className={textClass}>Habits</span>
                 </Link>
                 <Link className={linkClass('/schedule')} to="/schedule">
                     <span className={iconClass('/schedule')}>
-                        <span className="material-icons-outlined text-base">calendar_today</span>
+                        <Calendar size={16} />
                     </span>
                     <span className={textClass}>Schedule</span>
                 </Link>
                 <Link className={linkClass('/notes')} to="/notes">
                     <span className={iconClass('/notes')}>
-                        <span className="material-icons-outlined text-base">description</span>
+                        <FileText size={16} />
                     </span>
                     <span className={textClass}>Notes</span>
                 </Link>
                 <Link className={linkClass('/links')} to="/links">
                     <span className={iconClass('/links')}>
-                        <span className="material-icons-outlined text-base">link</span>
+                        <LinkIcon size={16} />
                     </span>
                     <span className={textClass}>Links</span>
                 </Link>

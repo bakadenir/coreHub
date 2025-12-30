@@ -148,7 +148,7 @@ export default function Article() {
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center">
+            <div className="min-h-screen bg-[#fdfdfd] flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-black"></div>
             </div>
         );
@@ -156,13 +156,13 @@ export default function Article() {
 
     if (error || !article) {
         return (
-            <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+            <div className="min-h-screen bg-[#fdfdfd] flex flex-col items-center justify-center p-6">
                 <span className="material-icons-outlined text-6xl text-gray-300 mb-4">description</span>
                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Note Not Found</h1>
                 <p className="text-gray-500 mb-6">The note you're looking for doesn't exist or has been made private.</p>
                 <Link
                     to="/"
-                    className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-zinc-800 transition-colors"
                 >
                     <span className="material-icons-outlined text-lg">home</span>
                     Back to Home
@@ -172,13 +172,13 @@ export default function Article() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-[#fdfdfd]">
             {/* Header - matching CoreHub style */}
-            <header className="w-full border-b border-gray-200 bg-white/95 backdrop-blur-md sticky top-0 z-50">
+            <header className="w-full border-b border-gray-200 bg-[#fdfdfd]/95 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link to="/" className="flex items-center gap-2">
-                            <div className="flex items-center justify-center rounded-lg bg-black text-white size-8">
+                            <div className="flex items-center justify-center rounded-lg bg-zinc-900 text-white size-8">
                                 <span className="material-icons-outlined text-[20px]">hub</span>
                             </div>
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">
@@ -207,7 +207,7 @@ export default function Article() {
                                     className="fixed inset-0 z-10"
                                     onClick={() => setShowShareMenu(false)}
                                 />
-                                <div className="absolute right-0 top-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[180px]">
+                                <div className="absolute right-0 top-full mt-2 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[180px]">
                                     <button
                                         onClick={handleCopyLink}
                                         className="w-full px-4 py-2.5 text-left text-sm hover:bg-gray-50 flex items-center gap-3 text-gray-700"

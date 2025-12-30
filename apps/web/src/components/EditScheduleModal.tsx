@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { schedulesApi } from '../lib';
 import type { ScheduleEvent } from '../types';
+import { X, MapPin } from 'lucide-react';
 
 interface EditScheduleModalProps {
     isOpen: boolean;
@@ -64,6 +65,17 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
 
     if (!isOpen || !event) return null;
 
+    // Helper to capitalize first letter of each word
+    const toTitleCase = (str: string) => {
+        return str.replace(/\b\w/g, char => char.toUpperCase());
+    };
+
+    // Helper to capitalize only the first letter of the text
+    const toSentenceCase = (str: string) => {
+        if (!str) return str;
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    };
+
     const handleSave = async () => {
         if (!title.trim()) {
             showToast('Please enter an event title', 'error');
@@ -105,12 +117,12 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity"
+                className="absolute inset-0 bg-zinc-900/40 backdrop-blur-[2px] transition-opacity"
                 onClick={onClose}
             ></div>
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-[540px] flex flex-col bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
+            <div className="relative w-full max-w-[540px] flex flex-col bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h2 className="text-lg font-bold tracking-tight text-gray-900">Edit Schedule</h2>
@@ -118,9 +130,7 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                         onClick={onClose}
                         className="group p-1 rounded-md hover:bg-gray-100 transition-colors"
                     >
-                        <span className="material-icons-outlined text-gray-400 group-hover:text-black text-[20px]">
-                            close
-                        </span>
+                        <X size={20} className="text-gray-400 group-hover:text-black" />
                     </button>
                 </div>
 
@@ -130,11 +140,11 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                     <div className="space-y-2.5">
                         <label className="block text-sm font-medium text-gray-500">Event Title *</label>
                         <input
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                            className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             placeholder="e.g. Project Review Meeting"
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => setTitle(toTitleCase(e.target.value))}
                         />
                     </div>
 
@@ -145,10 +155,10 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                             <span className="text-xs text-gray-400">Optional</span>
                         </div>
                         <textarea
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
+                            className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
                             placeholder="Enter event details..."
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setDescription(toSentenceCase(e.target.value))}
                         ></textarea>
                     </div>
 
@@ -157,10 +167,10 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                         <label className="block text-sm font-medium text-gray-500">Location</label>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <span className="material-icons-outlined text-gray-400 text-[20px] group-focus-within:text-black transition-colors">location_on</span>
+                                <MapPin size={20} className="text-gray-400 group-focus-within:text-black transition-colors" />
                             </div>
                             <input
-                                className="w-full bg-white border border-gray-300 rounded-lg pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                 placeholder="e.g. Conference Room A or Zoom"
                                 type="text"
                                 value={location}
@@ -175,7 +185,7 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                         <div className="grid grid-cols-2 gap-2">
                             <div className="relative group">
                                 <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
@@ -183,7 +193,7 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                             </div>
                             <div className="relative group">
                                 <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="time"
                                     value={startTime}
                                     onChange={(e) => setStartTime(e.target.value)}
@@ -198,7 +208,7 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                         <div className="grid grid-cols-2 gap-2">
                             <div className="relative group">
                                 <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
@@ -206,7 +216,7 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                             </div>
                             <div className="relative group">
                                 <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="time"
                                     value={endTime}
                                     onChange={(e) => setEndTime(e.target.value)}
@@ -228,7 +238,7 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                     <button
                         onClick={handleSave}
                         disabled={isSubmitting}
-                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? 'Saving...' : 'Update Schedule'}
                     </button>

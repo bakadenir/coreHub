@@ -32,7 +32,7 @@ export function SkeletonCircle({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
 // Activity Card Skeleton
 export function ActivityCardSkeleton() {
     return (
-        <div className="bg-white border border-gray-200 rounded-xl p-5 min-h-[160px]">
+        <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 min-h-[160px]">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -75,7 +75,7 @@ export function ActivityCardsSkeleton() {
 // Widget Skeleton for sidebar
 export function WidgetSkeleton({ height = 'h-32' }: { height?: string }) {
     return (
-        <div className={`bg-white border border-gray-200 rounded-xl p-5 ${height}`}>
+        <div className={`bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 ${height}`}>
             <div className="flex items-center gap-2 mb-4">
                 <Skeleton className="w-20 h-4" />
             </div>
@@ -91,7 +91,7 @@ export function DashboardSkeleton() {
     return (
         <div className="flex flex-col h-full gap-6">
             {/* Main Widget Area */}
-            <div className="flex-1 bg-white border border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center">
+            <div className="flex-1 bg-[#fdfdfd] border border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center">
                 <Skeleton className="w-64 h-32 mb-4" />
                 <Skeleton className="w-48 h-6" />
             </div>

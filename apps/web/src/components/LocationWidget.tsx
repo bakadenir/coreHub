@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { MapPin, RefreshCw } from 'lucide-react';
 
 interface LocationData {
     city: string;
@@ -107,10 +108,8 @@ export default function LocationWidget() {
     };
 
     return (
-        <div className="flex items-center justify-center gap-2 text-gray-500 font-light">
-            <span className="material-icons-outlined text-lg">
-                {location.isLoading ? 'sync' : 'location_on'}
-            </span>
+        <div className="flex items-center justify-center gap-2 text-gray-500 text-xs">
+            {location.isLoading ? <RefreshCw size={18} className="animate-spin" /> : <MapPin size={18} />}
             <span className={location.isLoading ? 'animate-pulse' : ''}>
                 {formatLocation()}
             </span>

@@ -8,6 +8,9 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import Youtube from '@tiptap/extension-youtube';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { Highlight } from '@tiptap/extension-highlight';
 import { common, createLowlight } from 'lowlight';
 import { useEffect, useCallback, useState, useRef } from 'react';
 
@@ -29,8 +32,16 @@ export default function RichTextEditor({
     autoFocus = false,
 }: RichTextEditorProps) {
     const [showTableMenu, setShowTableMenu] = useState(false);
-    const [showInsertMenu, setShowInsertMenu] = useState(false);
     const [showBlockMenu, setShowBlockMenu] = useState(false);
+    const [showColorPicker, setShowColorPicker] = useState(false);
+    const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+    const [showLinkInput, setShowLinkInput] = useState(false);
+    const [showHeadingMenu, setShowHeadingMenu] = useState(false);
+    const [showListMenu, setShowListMenu] = useState(false);
+    const [showInsertFloating, setShowInsertFloating] = useState(false);
+    const [showYoutubeInput, setShowYoutubeInput] = useState(false);
+    const [youtubeUrl, setYoutubeUrl] = useState('');
+    const [linkUrl, setLinkUrl] = useState('');
 
     // Floating toolbar state
     const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
@@ -39,13 +50,44 @@ export default function RichTextEditor({
     // Block handle state
     const [blockHandlePos, setBlockHandlePos] = useState({ top: 0, visible: false });
 
+    // Table button position state
+    const [tableButtonPos, setTableButtonPos] = useState({ top: 0, left: 0, visible: false });
+
     const editorContainerRef = useRef<HTMLDivElement>(null);
     const editorWrapperRef = useRef<HTMLDivElement>(null);
+
+    // Preset colors for the color picker
+    const presetColors = [
+        { name: 'Default', color: '' },
+        { name: 'Red', color: '#ef4444' },
+        { name: 'Orange', color: '#f97316' },
+        { name: 'Yellow', color: '#eab308' },
+        { name: 'Green', color: '#22c55e' },
+        { name: 'Blue', color: '#3b82f6' },
+        { name: 'Purple', color: '#a855f7' },
+        { name: 'Pink', color: '#ec4899' },
+        { name: 'Gray', color: '#6b7280' },
+    ];
+
+    // Preset colors for highlight (background)
+    const highlightColors = [
+        { name: 'None', color: '' },
+        { name: 'Yellow', color: '#fef08a' },
+        { name: 'Green', color: '#bbf7d0' },
+        { name: 'Blue', color: '#bfdbfe' },
+        { name: 'Purple', color: '#e9d5ff' },
+        { name: 'Pink', color: '#fbcfe8' },
+        { name: 'Orange', color: '#fed7aa' },
+        { name: 'Red', color: '#fecaca' },
+        { name: 'Gray', color: '#e5e7eb' },
+    ];
 
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
                 codeBlock: false,
+                // @ts-ignore
+                link: false, // Ensure link is disabled in StarterKit if present
             }),
             Placeholder.configure({
                 placeholder,
@@ -69,6 +111,9 @@ export default function RichTextEditor({
             TableRow,
             TableHeader,
             TableCell,
+            TextStyle,
+            Color,
+            Highlight.configure({ multicolor: true }),
             Youtube.configure({
                 controls: true,
                 nocookie: true,
@@ -87,21 +132,52 @@ export default function RichTextEditor({
             const { from, to } = editor.state.selection;
             const hasSelection = from !== to;
 
+            // Reset all dropdown states when selection changes
+            setShowColorPicker(false);
+            setShowHighlightPicker(false);
+            setShowLinkInput(false);
+            setShowHeadingMenu(false);
+            setShowInsertFloating(false);
+
             if (hasSelection && editorContainerRef.current) {
                 const { view } = editor;
                 const start = view.coordsAtPos(from);
                 const end = view.coordsAtPos(to);
                 const containerRect = editorContainerRef.current.getBoundingClientRect();
                 const left = ((start.left + end.left) / 2) - containerRect.left;
-                const top = start.top - containerRect.top - 50;
+
+                // Calculate position - show above selection by default
+                let top = start.top - containerRect.top - 60;
+
+                // If not enough space above, show below the selection
+                if (top < 10) {
+                    top = end.bottom - containerRect.top + 10;
+                }
 
                 setFloatingToolbarPos({
-                    top: Math.max(10, top),
+                    top: top,
                     left: Math.max(10, Math.min(left, containerRect.width - 200))
                 });
                 setShowFloatingToolbar(true);
             } else {
                 setShowFloatingToolbar(false);
+            }
+
+            // Update table button position
+            if (editor.isActive('table') && editorWrapperRef.current) {
+                const tableNode = editorWrapperRef.current.querySelector('table');
+                if (tableNode) {
+                    const tableRect = tableNode.getBoundingClientRect();
+                    const wrapperRect = editorWrapperRef.current.getBoundingClientRect();
+                    setTableButtonPos({
+                        top: tableRect.top - wrapperRect.top,
+                        left: tableRect.right - wrapperRect.left + 16,
+                        visible: true
+                    });
+                }
+            } else {
+                setTableButtonPos(prev => ({ ...prev, visible: false }));
+                setShowTableMenu(false);
             }
 
             updateBlockHandlePosition();
@@ -121,16 +197,66 @@ export default function RichTextEditor({
         try {
             const { view, state } = editor;
             const { $from } = state.selection;
-
-            const depth = $from.depth > 0 ? $from.depth : 1;
-            const blockStart = $from.start(depth);
-            const coords = view.coordsAtPos(blockStart);
             const wrapperRect = editorWrapperRef.current.getBoundingClientRect();
 
-            setBlockHandlePos({
-                top: coords.top - wrapperRect.top,
-                visible: true,
-            });
+            // Check if selection is inside a table
+            let tableNode = null;
+            let tablePos = -1;
+
+            for (let d = $from.depth; d > 0; d--) {
+                const node = $from.node(d);
+                if (node.type.name === 'table') {
+                    tableNode = node;
+                    // Get position of the table node
+                    tablePos = $from.before(d);
+                    break;
+                }
+            }
+
+            if (tableNode && tablePos !== -1) {
+                // If in table, position handle at the top of the table
+                const nodeDOM = view.nodeDOM(tablePos) as HTMLElement;
+
+                if (nodeDOM && nodeDOM.getBoundingClientRect) {
+                    const rect = nodeDOM.getBoundingClientRect();
+                    setBlockHandlePos({
+                        top: rect.top - wrapperRect.top,
+                        visible: true,
+                    });
+                    return;
+                }
+            }
+
+            // Default behavior using DOM node position for better stability
+            const depth = $from.depth > 0 ? $from.depth : 1;
+            const nodePos = $from.before(depth);
+            const domNode = view.nodeDOM(nodePos) as HTMLElement;
+
+            if (domNode instanceof HTMLElement) {
+                const rect = domNode.getBoundingClientRect();
+                // wrapperRect is already defined above
+
+                // Base offset
+                let topOffset = 2; // Standard for paragraph
+
+                const nodeName = domNode.tagName.toLowerCase();
+                if (nodeName === 'h1') topOffset = 8;
+                else if (nodeName === 'h2') topOffset = 5;
+                else if (nodeName === 'h3') topOffset = 3;
+
+                setBlockHandlePos({
+                    top: rect.top - wrapperRect.top + topOffset,
+                    visible: true,
+                });
+            } else {
+                // Fallback to coords if DOM node not found
+                const blockStart = $from.start(depth);
+                const coords = view.coordsAtPos(blockStart);
+                setBlockHandlePos({
+                    top: coords.top - wrapperRect.top,
+                    visible: true,
+                });
+            }
         } catch {
             setBlockHandlePos({ top: 0, visible: false });
         }
@@ -139,7 +265,18 @@ export default function RichTextEditor({
     // Update content when prop changes
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
+            const { from, to } = editor.state.selection;
             editor.commands.setContent(content);
+
+            // Restore selection to prevent jumping to bottom
+            // Only restore if the new content size allows it
+            const docSize = editor.state.doc.content.size;
+            if (from <= docSize && to <= docSize) {
+                editor.commands.setTextSelection({ from, to });
+            } else {
+                // If positions are invalid, fallback to end
+                editor.commands.focus('end');
+            }
         }
     }, [content, editor]);
 
@@ -204,9 +341,18 @@ export default function RichTextEditor({
             const { state } = editor;
             const { $from } = state.selection;
 
-            // Get block boundaries
-            const blockStart = $from.start() - 1;
-            const blockEnd = $from.end() + 1;
+            let blockStart = $from.start() - 1;
+            let blockEnd = $from.end() + 1;
+
+            // Check if inside table and adjust block boundaries to include entire table
+            for (let d = $from.depth; d > 0; d--) {
+                const node = $from.node(d);
+                if (node.type.name === 'table') {
+                    blockStart = $from.before(d);
+                    blockEnd = $from.after(d);
+                    break;
+                }
+            }
 
             // Check if we can move up
             if (blockStart <= 0) return;
@@ -215,9 +361,16 @@ export default function RichTextEditor({
             const nodeToMove = state.doc.nodeAt(blockStart);
             if (!nodeToMove) return;
 
-            // Find previous block start
-            const $prev = state.doc.resolve(blockStart - 1);
-            const prevBlockStart = $prev.start() - 1;
+            // Use index-based logic to find previous sibling
+            const $pos = state.doc.resolve(blockStart);
+            const index = $pos.index();
+
+            if (index === 0) return; // First child, cannot move up
+
+            const prevSibling = $pos.parent.child(index - 1);
+            if (!prevSibling) return;
+
+            const targetPos = blockStart - prevSibling.nodeSize;
 
             // Copy node as JSON, delete, then insert at new position
             const nodeJSON = nodeToMove.toJSON();
@@ -225,8 +378,9 @@ export default function RichTextEditor({
             editor.chain()
                 .focus()
                 .deleteRange({ from: blockStart, to: blockEnd })
-                .insertContentAt(prevBlockStart, nodeJSON)
-                .setTextSelection(prevBlockStart + 1)
+                .insertContentAt(targetPos, nodeJSON)
+                .setTextSelection(targetPos + 1)
+                .scrollIntoView()
                 .run();
         } catch (e) {
             console.error('Move up failed:', e);
@@ -242,33 +396,45 @@ export default function RichTextEditor({
             const { state } = editor;
             const { $from } = state.selection;
 
-            // Get block boundaries  
-            const blockStart = $from.start() - 1;
-            const blockEnd = $from.end() + 1;
+            let blockStart = $from.start() - 1;
+            let blockEnd = $from.end() + 1;
 
-            // Check if we can move down
-            if (blockEnd >= state.doc.content.size) return;
+            // Check if inside table and adjust block boundaries to include entire table
+            for (let d = $from.depth; d > 0; d--) {
+                const node = $from.node(d);
+                if (node.type.name === 'table') {
+                    blockStart = $from.before(d);
+                    blockEnd = $from.after(d);
+                    break;
+                }
+            }
 
-            // Get the node to move
             const nodeToMove = state.doc.nodeAt(blockStart);
             if (!nodeToMove) return;
 
-            // Find next block end
-            const $next = state.doc.resolve(blockEnd + 1);
-            const nextBlockEnd = $next.end() + 1;
+            // Use index-based logic to find next sibling
+            const $pos = state.doc.resolve(blockStart);
+            const index = $pos.index();
+
+            if (index >= $pos.parent.childCount - 1) return; // Last child, cannot move down
+
+            const nextSibling = $pos.parent.child(index + 1);
+            if (!nextSibling) return;
+
+            // We want to move AFTER the next sibling.
+            // Target position calculation:
+            // Current End + Next Sibling Size - Moved Node Size (because we delete it first)
+            const targetPos = blockEnd + nextSibling.nodeSize - nodeToMove.nodeSize;
 
             // Copy node as JSON
             const nodeJSON = nodeToMove.toJSON();
 
-            // Delete current block first, then insert after next block
-            // After deleting, nextBlockEnd position shifts by the size of deleted content
-            const adjustedInsertPos = nextBlockEnd - (blockEnd - blockStart);
-
             editor.chain()
                 .focus()
                 .deleteRange({ from: blockStart, to: blockEnd })
-                .insertContentAt(adjustedInsertPos, nodeJSON)
-                .setTextSelection(adjustedInsertPos + 1)
+                .insertContentAt(targetPos, nodeJSON)
+                .setTextSelection(targetPos + 1)
+                .scrollIntoView()
                 .run();
         } catch (e) {
             console.error('Move down failed:', e);
@@ -282,9 +448,18 @@ export default function RichTextEditor({
         const { state } = editor;
         const { $from } = state.selection;
 
-        const depth = $from.depth > 0 ? $from.depth : 1;
-        const blockStart = $from.start(depth) - 1;
-        const blockEnd = $from.end(depth) + 1;
+        let blockStart = $from.start() - 1;
+        let blockEnd = $from.end() + 1;
+
+        // Check if inside table and detect table boundary
+        for (let d = $from.depth; d > 0; d--) {
+            const node = $from.node(d);
+            if (node.type.name === 'table') {
+                blockStart = $from.before(d);
+                blockEnd = $from.after(d);
+                break;
+            }
+        }
 
         editor.chain()
             .focus()
@@ -296,30 +471,55 @@ export default function RichTextEditor({
 
     const setLink = useCallback(() => {
         if (!editor) return;
-        const previousUrl = editor.getAttributes('link').href;
-        const url = window.prompt('URL', previousUrl);
+        const previousUrl = editor.getAttributes('link').href || '';
+        setLinkUrl(previousUrl);
+        // Close other pickers
+        setShowColorPicker(false);
+        setShowHighlightPicker(false);
+        setShowLinkInput(true);
+    }, [editor]);
 
-        if (url === null) return;
-        if (url === '') {
+    const applyLink = useCallback(() => {
+        if (!editor) return;
+        if (linkUrl === '') {
             editor.chain().focus().extendMarkRange('link').unsetLink().run();
-            return;
+        } else {
+            // Auto-add https:// if no protocol is specified
+            let finalUrl = linkUrl.trim();
+            if (finalUrl && !finalUrl.match(/^https?:\/\//i) && !finalUrl.startsWith('mailto:') && !finalUrl.startsWith('tel:')) {
+                finalUrl = 'https://' + finalUrl;
+            }
+            editor.chain().focus().extendMarkRange('link').setLink({ href: finalUrl }).run();
         }
-        editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+        setShowLinkInput(false);
+        setLinkUrl('');
+    }, [editor, linkUrl]);
+
+    const cancelLink = useCallback(() => {
+        setShowLinkInput(false);
+        setLinkUrl('');
+        editor?.chain().focus().run();
     }, [editor]);
 
     const addYoutubeVideo = useCallback(() => {
         if (!editor) return;
-        const url = window.prompt('YouTube URL');
-        if (url) {
-            editor.commands.setYoutubeVideo({ src: url });
-        }
-        setShowInsertMenu(false);
+        setYoutubeUrl('');
+        setShowYoutubeInput(true);
+        setShowInsertFloating(false);
     }, [editor]);
+
+    const insertYoutubeVideo = useCallback(() => {
+        if (!editor) return;
+        if (youtubeUrl) {
+            editor.commands.setYoutubeVideo({ src: youtubeUrl });
+            setYoutubeUrl('');
+            setShowYoutubeInput(false);
+        }
+    }, [editor, youtubeUrl]);
 
     const insertTable = useCallback(() => {
         if (!editor) return;
         editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-        setShowInsertMenu(false);
     }, [editor]);
 
     if (!editor) {
@@ -346,40 +546,20 @@ export default function RichTextEditor({
                 onClick();
             }}
             title={title}
-            className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${isActive ? 'bg-gray-700 text-white' : 'text-gray-200'}`}
+            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-colors ${isActive ? 'bg-[#fdfdfd]/20 text-white' : 'text-white/80 hover:text-white hover:bg-[#fdfdfd]/10'}`}
         >
             <span className="material-icons-outlined text-base">{icon}</span>
         </button>
     );
 
-    // Static toolbar button
-    const ToolbarButton = ({
-        onClick,
-        icon,
-        title,
-        isActive,
-    }: {
-        onClick: () => void;
-        icon: string;
-        title: string;
-        isActive?: boolean;
-    }) => (
-        <button
-            type="button"
-            onClick={onClick}
-            title={title}
-            className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${isActive ? 'bg-gray-200 text-black' : 'text-gray-500'}`}
-        >
-            <span className="material-icons-outlined text-lg">{icon}</span>
-        </button>
-    );
+
 
     return (
         <div className="rich-text-editor" ref={editorContainerRef}>
             {/* Floating Toolbar - appears when text is selected */}
             {editable && showFloatingToolbar && (
                 <div
-                    className="absolute z-50 flex items-center gap-0.5 bg-gray-900 rounded-xl shadow-2xl px-2 py-1.5 animate-fade-in"
+                    className="absolute z-50 flex items-center gap-0.5 bg-zinc-900 rounded-xl shadow-2xl px-2 py-1.5 animate-fade-in border border-zinc-50/10"
                     style={{
                         top: floatingToolbarPos.top,
                         left: floatingToolbarPos.left,
@@ -414,156 +594,473 @@ export default function RichTextEditor({
                     <div className="w-px h-4 bg-gray-600 mx-1" />
                     <FloatingButton
                         onClick={setLink}
-                        isActive={editor.isActive('link')}
+                        isActive={editor.isActive('link') || showLinkInput}
                         icon="link"
                         title="Link"
                     />
                     <div className="w-px h-4 bg-gray-600 mx-1" />
-                    <FloatingButton
-                        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                        isActive={editor.isActive('heading', { level: 1 })}
-                        icon="title"
-                        title="Heading 1"
-                    />
-                    <FloatingButton
-                        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                        isActive={editor.isActive('heading', { level: 2 })}
-                        icon="format_size"
-                        title="Heading 2"
-                    />
+                    {/* Heading Dropdown */}
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowColorPicker(false);
+                                setShowHighlightPicker(false);
+                                setShowLinkInput(false);
+                                setShowInsertFloating(false);
+                                setShowListMenu(false);
+                                setShowHeadingMenu(!showHeadingMenu);
+                            }}
+                            className={`h-7 px-2 flex items-center gap-1 rounded-lg transition-colors text-sm ${editor.isActive('heading') ? 'bg-[#fdfdfd]/20 text-white' : 'text-white/80 hover:text-white hover:bg-[#fdfdfd]/10'}`}
+                            title="Text Style"
+                        >
+                            <span className="font-medium">
+                                {editor.isActive('heading', { level: 1 }) ? 'H1' :
+                                    editor.isActive('heading', { level: 2 }) ? 'H2' :
+                                        editor.isActive('heading', { level: 3 }) ? 'H3' : 'T'}
+                            </span>
+                            <span className="material-icons-outlined text-xs">expand_more</span>
+                        </button>
+                        {showHeadingMenu && (
+                            <div
+                                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-zinc-900 rounded-xl shadow-2xl py-1 z-50 min-w-[140px] border border-zinc-50/10"
+                                onMouseDown={(e) => e.preventDefault()}
+                            >
+                                <button
+                                    onClick={() => { editor.chain().focus().setParagraph().run(); setShowHeadingMenu(false); }}
+                                    className={`w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 transition-colors ${editor.isActive('paragraph') && !editor.isActive('heading') ? 'bg-[#fdfdfd]/10 text-white' : 'text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white'}`}
+                                >
+                                    <span className="font-medium w-6">T</span>
+                                    Text
+                                </button>
+                                <button
+                                    onClick={() => { editor.chain().focus().toggleHeading({ level: 1 }).run(); setShowHeadingMenu(false); }}
+                                    className={`w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 transition-colors ${editor.isActive('heading', { level: 1 }) ? 'bg-[#fdfdfd]/10 text-white' : 'text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white'}`}
+                                >
+                                    <span className="font-bold w-6">H1</span>
+                                    Heading 1
+                                </button>
+                                <button
+                                    onClick={() => { editor.chain().focus().toggleHeading({ level: 2 }).run(); setShowHeadingMenu(false); }}
+                                    className={`w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 transition-colors ${editor.isActive('heading', { level: 2 }) ? 'bg-[#fdfdfd]/10 text-white' : 'text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white'}`}
+                                >
+                                    <span className="font-bold w-6">H2</span>
+                                    Heading 2
+                                </button>
+                                <button
+                                    onClick={() => { editor.chain().focus().toggleHeading({ level: 3 }).run(); setShowHeadingMenu(false); }}
+                                    className={`w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 transition-colors ${editor.isActive('heading', { level: 3 }) ? 'bg-[#fdfdfd]/10 text-white' : 'text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white'}`}
+                                >
+                                    <span className="font-bold w-6">H3</span>
+                                    Heading 3
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <div className="w-px h-4 bg-gray-600 mx-1" />
-                    <FloatingButton
-                        onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        isActive={editor.isActive('bulletList')}
-                        icon="format_list_bulleted"
-                        title="Bullet List"
-                    />
+                    {/* List Dropdown */}
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowHighlightPicker(false);
+                                setShowColorPicker(false);
+                                setShowLinkInput(false);
+                                setShowHeadingMenu(false);
+                                setShowInsertFloating(false);
+                                setShowListMenu(!showListMenu);
+                            }}
+                            className={`p-1.5 rounded-lg transition-colors flex items-center gap-1 ${editor.isActive('bulletList') || editor.isActive('orderedList') ? 'bg-[#fdfdfd]/20 text-white' : 'text-white/80 hover:text-white hover:bg-[#fdfdfd]/10'}`}
+                            title="List Options"
+                        >
+                            <span className="material-icons-outlined text-base">
+                                {editor.isActive('orderedList') ? 'format_list_numbered' : 'format_list_bulleted'}
+                            </span>
+                            <span className="material-icons-outlined text-[10px]">expand_more</span>
+                        </button>
+                        {showListMenu && (
+                            <div
+                                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-zinc-900 rounded-xl shadow-2xl p-1 z-50 min-w-[160px] border border-zinc-50/10 flex flex-col gap-1"
+                                onMouseDown={(e) => e.preventDefault()}
+                            >
+                                <button
+                                    onClick={() => { editor.chain().focus().toggleBulletList().run(); setShowListMenu(false); }}
+                                    className={`px-3 py-1.5 rounded-lg text-left text-sm flex items-center gap-2 ${editor.isActive('bulletList') ? 'bg-[#fdfdfd]/20 text-white' : 'text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white'}`}
+                                >
+                                    <span className="material-icons-outlined text-base">format_list_bulleted</span>
+                                    Bullet List
+                                </button>
+                                <button
+                                    onClick={() => { editor.chain().focus().toggleOrderedList().run(); setShowListMenu(false); }}
+                                    className={`px-3 py-1.5 rounded-lg text-left text-sm flex items-center gap-2 ${editor.isActive('orderedList') ? 'bg-[#fdfdfd]/20 text-white' : 'text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white'}`}
+                                >
+                                    <span className="material-icons-outlined text-base">format_list_numbered</span>
+                                    Numbered List
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <FloatingButton
                         onClick={() => editor.chain().focus().toggleBlockquote().run()}
                         isActive={editor.isActive('blockquote')}
                         icon="format_quote"
                         title="Quote"
                     />
-                </div>
-            )}
-
-            {/* Mini Toolbar */}
-            {editable && (
-                <div className="flex items-center gap-1 mb-2 pb-2 border-b border-gray-100">
+                    <div className="w-px h-4 bg-gray-600 mx-1" />
+                    {/* Color Picker */}
                     <div className="relative">
                         <button
                             type="button"
-                            onClick={() => setShowInsertMenu(!showInsertMenu)}
-                            className="flex items-center gap-1 px-2 py-1 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors text-sm"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowHighlightPicker(false);
+                                setShowLinkInput(false);
+                                setShowHeadingMenu(false);
+                                setShowInsertFloating(false);
+                                setShowListMenu(false);
+                                setShowColorPicker(!showColorPicker);
+                            }}
+                            className="p-1.5 rounded-lg transition-colors text-white/80 hover:text-white hover:bg-[#fdfdfd]/10 flex items-center gap-1"
+                            title="Text Color"
                         >
-                            <span className="material-icons-outlined text-lg">add</span>
-                            <span>Insert</span>
+                            <span className="material-icons-outlined text-base">format_color_text</span>
+                            <span
+                                className="w-3 h-1 rounded-sm"
+                                style={{ backgroundColor: editor.getAttributes('textStyle').color || '#ffffff' }}
+                            />
                         </button>
-                        {showInsertMenu && (
+                        {showColorPicker && (
+                            <div
+                                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-zinc-900 rounded-xl shadow-2xl p-2 z-50 min-w-[140px] border border-zinc-50/10"
+                                onMouseDown={(e) => e.preventDefault()}
+                            >
+                                <div className="grid grid-cols-3 gap-1">
+                                    {presetColors.map((preset) => (
+                                        <button
+                                            key={preset.name}
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (preset.color === '') {
+                                                    editor.chain().focus().unsetColor().run();
+                                                } else {
+                                                    editor.chain().focus().setColor(preset.color).run();
+                                                }
+                                                setShowColorPicker(false);
+                                            }}
+                                            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[#fdfdfd]/10 transition-all duration-150"
+                                            title={preset.name}
+                                        >
+                                            {preset.color === '' ? (
+                                                <span className="material-icons-outlined text-base text-white/60">format_color_reset</span>
+                                            ) : (
+                                                <span
+                                                    className="w-5 h-5 rounded-full border-2 border-zinc-50/20"
+                                                    style={{ backgroundColor: preset.color }}
+                                                />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    {/* Highlight/Background Color Picker */}
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowColorPicker(false);
+                                setShowLinkInput(false);
+                                setShowHeadingMenu(false);
+                                setShowInsertFloating(false);
+                                setShowListMenu(false);
+                                setShowHighlightPicker(!showHighlightPicker);
+                            }}
+                            className="p-1.5 rounded-lg transition-colors text-white/80 hover:text-white hover:bg-[#fdfdfd]/10 flex items-center gap-1"
+                            title="Highlight Color"
+                        >
+                            <span className="material-icons-outlined text-base">format_color_fill</span>
+                            <span
+                                className="w-3 h-1 rounded-sm"
+                                style={{ backgroundColor: editor.getAttributes('highlight').color || '#fef08a' }}
+                            />
+                        </button>
+                        {showHighlightPicker && (
+                            <div
+                                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-zinc-900 rounded-xl shadow-2xl p-2 z-50 min-w-[140px] border border-zinc-50/10"
+                                onMouseDown={(e) => e.preventDefault()}
+                            >
+                                <div className="grid grid-cols-3 gap-1">
+                                    {highlightColors.map((preset) => (
+                                        <button
+                                            key={preset.name}
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                if (preset.color === '') {
+                                                    editor.chain().focus().unsetHighlight().run();
+                                                } else {
+                                                    editor.chain().focus().setHighlight({ color: preset.color }).run();
+                                                }
+                                                setShowHighlightPicker(false);
+                                            }}
+                                            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-[#fdfdfd]/10 transition-all duration-150"
+                                            title={preset.name}
+                                        >
+                                            {preset.color === '' ? (
+                                                <span className="material-icons-outlined text-base text-white/60">format_color_reset</span>
+                                            ) : (
+                                                <span
+                                                    className="w-5 h-5 rounded-full border-2 border-zinc-50/20"
+                                                    style={{ backgroundColor: preset.color }}
+                                                />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div className="w-px h-4 bg-gray-600 mx-1" />
+                    {/* Insert Dropdown */}
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowColorPicker(false);
+                                setShowHighlightPicker(false);
+                                setShowLinkInput(false);
+                                setShowHeadingMenu(false);
+                                setShowInsertFloating(!showInsertFloating);
+                            }}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg transition-colors text-white/80 hover:text-white hover:bg-[#fdfdfd]/10"
+                            title="Insert"
+                        >
+                            <span className="material-icons-outlined text-base">add</span>
+                        </button>
+                        {showInsertFloating && (
+                            <div
+                                className="absolute top-full right-0 mt-1 bg-zinc-900 rounded-xl shadow-2xl py-1 z-50 min-w-[150px] border border-zinc-50/10"
+                                onMouseDown={(e) => e.preventDefault()}
+                            >
+                                <button
+                                    onClick={() => { editor.chain().focus().setHorizontalRule().run(); setShowInsertFloating(false); }}
+                                    className="w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white transition-colors"
+                                >
+                                    <span className="material-icons-outlined text-base">horizontal_rule</span>
+                                    Divider
+                                </button>
+                                <button
+                                    onClick={() => { insertTable(); setShowInsertFloating(false); }}
+                                    className="w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white transition-colors"
+                                >
+                                    <span className="material-icons-outlined text-base">table_chart</span>
+                                    Table
+                                </button>
+                                <button
+                                    onClick={() => { addYoutubeVideo(); setShowInsertFloating(false); }}
+                                    className="w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white transition-colors"
+                                >
+                                    <span className="material-icons-outlined text-base">smart_display</span>
+                                    YouTube
+                                </button>
+                                <button
+                                    onClick={() => { editor.chain().focus().toggleCodeBlock().run(); setShowInsertFloating(false); }}
+                                    className="w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 text-white/80 hover:bg-[#fdfdfd]/10 hover:text-white transition-colors"
+                                >
+                                    <span className="material-icons-outlined text-base">code</span>
+                                    Code Block
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Inline Link Input Form */}
+            {editable && showLinkInput && (
+                <div
+                    className="absolute z-50 bg-zinc-900 rounded-xl shadow-2xl px-2 py-1 animate-fade-in border border-zinc-50/10"
+                    style={{
+                        top: floatingToolbarPos.top + 45,
+                        left: floatingToolbarPos.left,
+                        transform: 'translateX(-50%)'
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                >
+                    <div className="flex items-center gap-1">
+                        <span className="material-icons-outlined text-white/60 text-base">link</span>
+                        <input
+                            type="url"
+                            value={linkUrl}
+                            onChange={(e) => setLinkUrl(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    applyLink();
+                                } else if (e.key === 'Escape') {
+                                    cancelLink();
+                                }
+                            }}
+                            placeholder="https://example.com"
+                            className="bg-[#fdfdfd]/10 border border-zinc-50/20 rounded-lg px-3 py-1.5 text-white text-sm placeholder-white/40 focus:outline-none focus:border-zinc-50/40 w-[240px]"
+                            autoFocus
+                        />
+                        <button
+                            type="button"
+                            onClick={applyLink}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#fdfdfd]/10 hover:bg-[#fdfdfd]/20 text-white transition-colors"
+                            title="Apply"
+                        >
+                            <span className="material-icons-outlined text-base">check</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={cancelLink}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#fdfdfd]/10 text-white/60 hover:text-white transition-colors"
+                            title="Cancel"
+                        >
+                            <span className="material-icons-outlined text-base">close</span>
+                        </button>
+                        {editor?.isActive('link') && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    editor?.chain().focus().extendMarkRange('link').unsetLink().run();
+                                    setShowLinkInput(false);
+                                    setLinkUrl('');
+                                }}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+                                title="Remove Link"
+                            >
+                                <span className="material-icons-outlined text-base">link_off</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* YouTube Link Input Form */}
+            {editable && showYoutubeInput && (
+                <div
+                    className="absolute z-50 bg-zinc-900 rounded-xl shadow-2xl px-2 py-1 animate-fade-in border border-zinc-50/10"
+                    style={{
+                        top: floatingToolbarPos.top + 45,
+                        left: floatingToolbarPos.left,
+                        transform: 'translateX(-50%)'
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                >
+                    <div className="flex items-center gap-1">
+                        <span className="material-icons-outlined text-white/60 text-base">smart_display</span>
+                        <input
+                            type="url"
+                            value={youtubeUrl}
+                            onChange={(e) => setYoutubeUrl(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    insertYoutubeVideo();
+                                } else if (e.key === 'Escape') {
+                                    setShowYoutubeInput(false);
+                                }
+                            }}
+                            placeholder="https://youtube.com/..."
+                            className="bg-[#fdfdfd]/10 border border-zinc-50/20 rounded-lg px-3 py-1.5 text-white text-sm placeholder-white/40 focus:outline-none focus:border-zinc-50/40 w-[240px]"
+                            autoFocus
+                        />
+                        <button
+                            type="button"
+                            onClick={insertYoutubeVideo}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#fdfdfd]/10 hover:bg-[#fdfdfd]/20 text-white transition-colors"
+                            title="Insert Video"
+                        >
+                            <span className="material-icons-outlined text-base">check</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowYoutubeInput(false)}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#fdfdfd]/10 text-white/60 hover:text-white transition-colors"
+                            title="Cancel"
+                        >
+                            <span className="material-icons-outlined text-base">close</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+
+            {/* Table Options Button - positioned at top right of table */}
+            {editable && tableButtonPos.visible && (
+                <div
+                    className="absolute z-20"
+                    style={{ top: tableButtonPos.top, left: tableButtonPos.left }}
+                >
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setShowTableMenu(!showTableMenu)}
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-[#fdfdfd] border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors text-gray-500 hover:text-gray-700"
+                            title="Table Options"
+                        >
+                            <span className="material-icons-outlined text-base">more_vert</span>
+                        </button>
+                        {showTableMenu && (
                             <>
-                                <div className="fixed inset-0 z-10" onClick={() => setShowInsertMenu(false)} />
-                                <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[180px]">
+                                <div className="fixed inset-0 z-10" onClick={() => setShowTableMenu(false)} />
+                                <div className="absolute right-0 top-full mt-1 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-lg py-1 z-20 w-[200px]">
                                     <button
-                                        onClick={() => { editor.chain().focus().setHorizontalRule().run(); setShowInsertMenu(false); }}
-                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                        onClick={() => { editor.chain().focus().addColumnAfter().run(); setShowTableMenu(false); }}
+                                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
                                     >
-                                        <span className="material-icons-outlined text-base text-gray-400">horizontal_rule</span>
-                                        Horizontal Line
+                                        <span className="material-icons-outlined text-base text-gray-400">view_column</span>
+                                        Add Column
                                     </button>
                                     <button
-                                        onClick={insertTable}
-                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                        onClick={() => { editor.chain().focus().addRowAfter().run(); setShowTableMenu(false); }}
+                                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
                                     >
-                                        <span className="material-icons-outlined text-base text-gray-400">table_chart</span>
-                                        Table
+                                        <span className="material-icons-outlined text-base text-gray-400">table_rows</span>
+                                        Add Row
+                                    </button>
+                                    <div className="border-t border-gray-100 my-1" />
+                                    <button
+                                        onClick={() => { editor.chain().focus().deleteColumn().run(); setShowTableMenu(false); }}
+                                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
+                                    >
+                                        <span className="material-icons-outlined text-base">remove</span>
+                                        Delete Column
                                     </button>
                                     <button
-                                        onClick={addYoutubeVideo}
-                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                        onClick={() => { editor.chain().focus().deleteRow().run(); setShowTableMenu(false); }}
+                                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
                                     >
-                                        <span className="material-icons-outlined text-base text-gray-400">smart_display</span>
-                                        YouTube Video
+                                        <span className="material-icons-outlined text-base">remove</span>
+                                        Delete Row
                                     </button>
                                     <button
-                                        onClick={() => { editor.chain().focus().toggleCodeBlock().run(); setShowInsertMenu(false); }}
-                                        className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                                        onClick={() => { editor.chain().focus().deleteTable().run(); setShowTableMenu(false); }}
+                                        className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
                                     >
-                                        <span className="material-icons-outlined text-base text-gray-400">data_object</span>
-                                        Code Block
+                                        <span className="material-icons-outlined text-base">delete</span>
+                                        Delete Table
                                     </button>
                                 </div>
                             </>
                         )}
                     </div>
-
-                    {editor.isActive('table') && (
-                        <div className="relative">
-                            <button
-                                type="button"
-                                onClick={() => setShowTableMenu(!showTableMenu)}
-                                className="flex items-center gap-1 px-2 py-1 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors text-sm"
-                            >
-                                <span className="material-icons-outlined text-lg">table_chart</span>
-                                <span>Table</span>
-                            </button>
-                            {showTableMenu && (
-                                <>
-                                    <div className="fixed inset-0 z-10" onClick={() => setShowTableMenu(false)} />
-                                    <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[160px]">
-                                        <button
-                                            onClick={() => { editor.chain().focus().addColumnAfter().run(); setShowTableMenu(false); }}
-                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
-                                        >
-                                            <span className="material-icons-outlined text-base text-gray-400">view_column</span>
-                                            Add Column
-                                        </button>
-                                        <button
-                                            onClick={() => { editor.chain().focus().addRowAfter().run(); setShowTableMenu(false); }}
-                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
-                                        >
-                                            <span className="material-icons-outlined text-base text-gray-400">table_rows</span>
-                                            Add Row
-                                        </button>
-                                        <div className="border-t border-gray-100 my-1" />
-                                        <button
-                                            onClick={() => { editor.chain().focus().deleteColumn().run(); setShowTableMenu(false); }}
-                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
-                                        >
-                                            <span className="material-icons-outlined text-base">remove</span>
-                                            Delete Column
-                                        </button>
-                                        <button
-                                            onClick={() => { editor.chain().focus().deleteRow().run(); setShowTableMenu(false); }}
-                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
-                                        >
-                                            <span className="material-icons-outlined text-base">remove</span>
-                                            Delete Row
-                                        </button>
-                                        <button
-                                            onClick={() => { editor.chain().focus().deleteTable().run(); setShowTableMenu(false); }}
-                                            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 text-red-600"
-                                        >
-                                            <span className="material-icons-outlined text-base">delete</span>
-                                            Delete Table
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    )}
-
-                    <div className="flex-1" />
-
-                    <ToolbarButton
-                        onClick={() => editor.chain().focus().undo().run()}
-                        icon="undo"
-                        title="Undo (Ctrl+Z)"
-                    />
-                    <ToolbarButton
-                        onClick={() => editor.chain().focus().redo().run()}
-                        icon="redo"
-                        title="Redo (Ctrl+Y)"
-                    />
                 </div>
             )}
 
@@ -572,7 +1069,7 @@ export default function RichTextEditor({
                 {/* Block Handles */}
                 {editable && blockHandlePos.visible && (
                     <div
-                        className="absolute left-1 z-10 flex items-center gap-0.5 block-handle"
+                        className="absolute -left-2 z-10 flex items-center gap-0.5 block-handle"
                         style={{ top: blockHandlePos.top }}
                         onMouseDown={(e) => e.preventDefault()}
                     >
@@ -609,7 +1106,7 @@ export default function RichTextEditor({
                             {showBlockMenu && (
                                 <>
                                     <div className="fixed inset-0 z-10" onClick={() => setShowBlockMenu(false)} />
-                                    <div className="absolute left-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[140px]">
+                                    <div className="absolute left-0 top-full mt-1 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[140px]">
                                         <button
                                             onClick={moveBlockUp}
                                             className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
@@ -641,7 +1138,7 @@ export default function RichTextEditor({
 
                 <EditorContent
                     editor={editor}
-                    className={`${editable ? 'bg-white rounded-xl editor-with-handles' : ''}`}
+                    className={`${editable ? 'bg-[#fdfdfd] rounded-xl editor-with-handles' : ''}`}
                 />
             </div>
 

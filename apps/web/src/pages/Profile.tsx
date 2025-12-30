@@ -98,12 +98,12 @@ export default function Profile() {
                 </div>
 
                 {/* Page Title */}
-                <h2 className="text-2xl font-bold tracking-tight mb-8 text-text-primary">My Profile</h2>
+                <h2 className="text-3xl font-extrabold tracking-tight mb-8 text-text-primary">My Profile</h2>
 
                 {/* Profile Card */}
                 <div className="relative w-full">
                     {/* Card container */}
-                    <div className="bg-white border border-border-light rounded-xl pt-20 pb-10 px-8 relative shadow-sm">
+                    <div className="bg-[#fdfdfd] border border-border-light rounded-xl pt-20 pb-10 px-8 relative shadow-sm">
                         {/* Avatar - Centered and overlapping top */}
                         <div className="absolute left-1/2 -translate-x-1/2 -top-16">
                             <div className="w-32 h-32 rounded-full shadow-2xl overflow-hidden">
@@ -154,7 +154,7 @@ export default function Profile() {
                         <div className="flex justify-end">
                             <Link
                                 to="/settings"
-                                className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium bg-black text-white rounded-xl hover:bg-gray-800 transition-colors shadow-lg shadow-black/5"
+                                className="inline-flex items-center justify-center px-6 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-colors shadow-lg shadow-black/5"
                             >
                                 Edit Profile
                             </Link>

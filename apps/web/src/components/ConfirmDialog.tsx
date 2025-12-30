@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Trash2, AlertTriangle, HelpCircle, RefreshCw } from 'lucide-react';
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -57,22 +58,22 @@ export default function ConfirmDialog({
 
     const variantStyles = {
         danger: {
-            icon: 'delete_forever',
+            icon: <Trash2 size={24} />,
             iconBg: 'bg-red-100',
             iconColor: 'text-red-600',
             buttonBg: 'bg-red-600 hover:bg-red-700',
         },
         warning: {
-            icon: 'warning',
+            icon: <AlertTriangle size={24} />,
             iconBg: 'bg-yellow-100',
             iconColor: 'text-yellow-600',
             buttonBg: 'bg-yellow-600 hover:bg-yellow-700',
         },
         default: {
-            icon: 'help_outline',
+            icon: <HelpCircle size={24} />,
             iconBg: 'bg-gray-100',
             iconColor: 'text-gray-600',
-            buttonBg: 'bg-primary hover:bg-gray-800',
+            buttonBg: 'bg-primary hover:bg-zinc-800',
         },
     };
 
@@ -85,20 +86,18 @@ export default function ConfirmDialog({
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-zinc-900/50 backdrop-blur-sm"
                 onClick={!isLoading ? onClose : undefined}
             />
 
             {/* Dialog */}
             <div
                 ref={dialogRef}
-                className="relative bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 animate-in zoom-in-95 fade-in duration-200"
+                className="relative bg-[#fdfdfd] rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 animate-in zoom-in-95 fade-in duration-200"
             >
                 {/* Icon */}
-                <div className={`w-12 h-12 rounded-full ${styles.iconBg} flex items-center justify-center mx-auto mb-4`}>
-                    <span className={`material-icons-outlined text-2xl ${styles.iconColor}`}>
-                        {styles.icon}
-                    </span>
+                <div className={`w-12 h-12 rounded-full ${styles.iconBg} flex items-center justify-center mx-auto mb-4 ${styles.iconColor}`}>
+                    {styles.icon}
                 </div>
 
                 {/* Content */}
@@ -141,7 +140,7 @@ export default function ConfirmDialog({
                         className={`flex-1 px-4 py-2.5 text-sm font-medium text-white ${styles.buttonBg} rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
                     >
                         {isLoading && (
-                            <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
+                            <RefreshCw size={16} className="animate-spin" />
                         )}
                         {confirmLabel}
                     </button>

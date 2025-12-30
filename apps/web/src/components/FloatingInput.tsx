@@ -22,7 +22,7 @@ export default function FloatingInput({ label, error, className = '', value, ...
                     block px-2.5 pb-2.5 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-xl border 
                     ${error
                         ? 'border-red-600 focus:border-red-600'
-                        : 'border-gray-300 focus:border-black'
+                        : 'border-gray-300 focus:border-zinc-900'
                     } 
                     appearance-none focus:outline-none focus:ring-0 peer transition-colors
                 `}
@@ -30,7 +30,7 @@ export default function FloatingInput({ label, error, className = '', value, ...
             <label
                 htmlFor={props.id}
                 className={`
-                    absolute text-[15px] duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-white px-2
+                    absolute text-[15px] duration-300 transform -translate-y-4 scale-90 top-2 z-10 origin-[0] bg-[#fdfdfd] px-2
                     peer-focus:px-2 
                     ${error ? 'text-red-600 peer-focus:text-red-600' : 'text-gray-500 peer-focus:text-black'}
                     peer-placeholder-shown:scale-100 

@@ -102,7 +102,7 @@ export default function ForgotPassword() {
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link to="/" className="flex items-center gap-2 select-none hover:opacity-80 transition-opacity">
-                            <div className="flex items-center justify-center rounded-xl bg-black text-white size-8 shadow-md">
+                            <div className="flex items-center justify-center rounded-xl bg-zinc-900 text-white size-8 shadow-md">
                                 <span className="material-icons-outlined text-[20px]">hub</span>
                             </div>
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">coreHub</h1>
@@ -116,7 +116,7 @@ export default function ForgotPassword() {
             {/* Main Content */}
             <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 animate-fade-in-up relative z-10">
                 <div className="w-full max-w-md space-y-8">
-                    <div className="bg-white border border-gray-200 rounded-xl p-8 shadow-lg shadow-gray-200/50">
+                    <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-8 shadow-lg shadow-gray-200/50">
                         <div className="text-center mb-8">
                             <h2 className="text-2xl font-bold tracking-tight text-gray-900">Reset Password</h2>
                             <p className="mt-2 text-sm text-gray-500">
@@ -136,7 +136,7 @@ export default function ForgotPassword() {
                                 <div className="pt-4">
                                     <Link
                                         to="/auth"
-                                        className="inline-flex justify-center rounded-xl bg-black px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 transition-all"
+                                        className="inline-flex justify-center rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-zinc-800 transition-all"
                                     >
                                         Back to Login
                                     </Link>
@@ -168,7 +168,7 @@ export default function ForgotPassword() {
 
                                 <div className="pt-2">
                                     <button
-                                        className="flex w-full justify-center items-center gap-2 rounded-xl bg-black px-3 py-2.5 text-sm font-bold text-white shadow-md hover:bg-gray-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+                                        className="flex w-full justify-center items-center gap-2 rounded-xl bg-zinc-900 px-3 py-2.5 text-sm font-bold text-white shadow-md hover:bg-zinc-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
                                         type="submit"
                                         disabled={isLoading}
                                     >

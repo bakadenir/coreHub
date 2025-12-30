@@ -6,7 +6,7 @@ export default function AdminSettings() {
 
     return (
         <div className="space-y-6 animate-fade-in-up">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 sm:p-8">
+            <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-sm p-6 sm:p-8">
                 <h3 className="text-xl font-bold text-gray-900 mb-6">System Configuration</h3>
 
                 <div className="space-y-6">
@@ -19,9 +19,9 @@ export default function AdminSettings() {
                         </div>
                         <button
                             onClick={() => setMaintenanceMode(!maintenanceMode)}
-                            className={`relative w-12 h-7 transition-colors rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black ${maintenanceMode ? 'bg-black' : 'bg-gray-200'}`}
+                            className={`relative w-12 h-7 transition-colors rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black ${maintenanceMode ? 'bg-zinc-900' : 'bg-gray-200'}`}
                         >
-                            <span className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform transform ${maintenanceMode ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                            <span className={`absolute left-1 top-1 w-5 h-5 bg-[#fdfdfd] rounded-full transition-transform transform ${maintenanceMode ? 'translate-x-5' : 'translate-x-0'}`}></span>
                         </button>
                     </div>
 
@@ -36,7 +36,7 @@ export default function AdminSettings() {
                             onClick={() => setRegistrationOpen(!registrationOpen)}
                             className={`relative w-12 h-7 transition-colors rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black ${registrationOpen ? 'bg-green-500' : 'bg-gray-200'}`}
                         >
-                            <span className={`absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform transform ${registrationOpen ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                            <span className={`absolute left-1 top-1 w-5 h-5 bg-[#fdfdfd] rounded-full transition-transform transform ${registrationOpen ? 'translate-x-5' : 'translate-x-0'}`}></span>
                         </button>
                     </div>
 
@@ -64,7 +64,7 @@ export default function AdminSettings() {
                 </div>
 
                 <div className="flex justify-end pt-6 mt-6 border-t border-gray-100">
-                    <button className="px-6 py-2 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors">
+                    <button className="px-6 py-2 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 transition-colors">
                         Save Changes
                     </button>
                 </div>

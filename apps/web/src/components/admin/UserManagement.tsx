@@ -218,12 +218,12 @@ export default function UserManagement() {
                         placeholder="Search users..."
                         value={searchTerm}
                         onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-zinc-900 transition-all"
                     />
                 </div>
                 <div className="flex gap-2">
                     <select
-                        className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-black bg-white"
+                        className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-zinc-900 bg-[#fdfdfd]"
                         value={filterRole}
                         onChange={(e) => { setFilterRole(e.target.value); setPage(1); }}
                     >
@@ -236,16 +236,16 @@ export default function UserManagement() {
                 </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Joined</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Joined</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -285,9 +285,9 @@ export default function UserManagement() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                                                        user.role === 'pro' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                            user.role === 'banned' ? 'bg-red-50 text-red-700 border-red-200' :
-                                                                'bg-gray-50 text-gray-700 border-gray-200'
+                                                    user.role === 'pro' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                        user.role === 'banned' ? 'bg-red-50 text-red-700 border-red-200' :
+                                                            'bg-gray-50 text-gray-700 border-gray-200'
                                                     }`}>
                                                     {user.role}
                                                 </span>
@@ -318,14 +318,14 @@ export default function UserManagement() {
                         <button
                             onClick={() => setPage(p => Math.max(1, p - 1))}
                             disabled={page === 1}
-                            className="px-3 py-1 border border-gray-200 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 border border-gray-200 rounded bg-[#fdfdfd] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Previous
                         </button>
                         <button
                             onClick={() => setPage(p => p + 1)}
                             disabled={!pagination.hasMore}
-                            className="px-3 py-1 border border-gray-200 rounded bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-3 py-1 border border-gray-200 rounded bg-[#fdfdfd] hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Next
                         </button>

@@ -43,8 +43,8 @@ export default function UserDetailsModal({ isOpen, onClose, userId }: UserDetail
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose}></div>
-            <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl z-10 overflow-hidden">
+            <div className="absolute inset-0 bg-zinc-900/40 backdrop-blur-[2px]" onClick={onClose}></div>
+            <div className="relative w-full max-w-md bg-[#fdfdfd] rounded-xl shadow-2xl z-10 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h2 className="text-lg font-bold text-gray-900">User Details</h2>

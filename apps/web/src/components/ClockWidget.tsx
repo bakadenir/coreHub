@@ -31,7 +31,7 @@ export default function ClockWidget({ showSeconds = false, className = '', compa
     };
 
     const timeClasses = compact
-        ? 'text-4xl sm:text-5xl md:text-6xl'
+        ? 'text-4xl sm:text-5xl'
         : 'text-[8rem] sm:text-[10rem] md:text-[12rem]';
 
     return (
@@ -40,8 +40,8 @@ export default function ClockWidget({ showSeconds = false, className = '', compa
                 {hours}:{minutes}
                 {showSeconds && <>:{seconds}</>}
             </h2>
-            <div className={compact ? 'mt-2' : 'mt-4 space-y-2'}>
-                <p className={compact ? 'text-sm font-medium text-gray-700' : 'text-xl md:text-2xl font-medium text-gray-900'}>
+            <div className={compact ? 'mt-3' : 'mt-4 space-y-2'}>
+                <p className={compact ? 'text-sm font-medium text-gray-600' : 'text-xl md:text-2xl font-medium text-gray-900'}>
                     {formatDate()}
                 </p>
             </div>

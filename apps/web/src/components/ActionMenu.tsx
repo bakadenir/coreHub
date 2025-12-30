@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import { renderIcon } from '../lib/iconMap';
+import { MoreVertical } from 'lucide-react';
 
 export interface ActionMenuItem {
     label: string;
@@ -51,14 +53,12 @@ export default function ActionMenu({ items, trigger, className = '' }: ActionMen
                 }}
                 className="w-8 h-8 rounded-xl flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-gray-100 transition-colors"
             >
-                {trigger || (
-                    <span className="material-icons-outlined text-[20px]">more_vert</span>
-                )}
+                {trigger || <MoreVertical size={20} />}
             </button>
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-border-light rounded-lg shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="absolute right-0 top-full mt-1 w-44 bg-[#fdfdfd] border border-border-light rounded-lg shadow-lg z-50 py-1 animate-in fade-in slide-in-from-top-2 duration-150">
                     {items.map((item, index) => (
                         <button
                             key={index}
@@ -72,7 +72,7 @@ export default function ActionMenu({ items, trigger, className = '' }: ActionMen
                                 ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                             `}
                         >
-                            <span className="material-icons-outlined text-[18px]">{item.icon}</span>
+                            {renderIcon(item.icon, { size: 18 })}
                             {item.label}
                         </button>
                     ))}
@@ -81,3 +81,4 @@ export default function ActionMenu({ items, trigger, className = '' }: ActionMen
         </div>
     );
 }
+

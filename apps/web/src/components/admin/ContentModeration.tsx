@@ -20,7 +20,7 @@ export default function ContentModeration() {
                 </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center">
                     <h3 className="font-bold text-gray-900">Flagged Content Queue</h3>
                     <div className="flex gap-2 text-sm">
@@ -32,11 +32,11 @@ export default function ContentModeration() {
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b border-gray-100">
                             <tr>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Reported User</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Reason</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Action</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reported User</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Reason</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">

@@ -91,7 +91,7 @@ function CodeBlock({ inline, className, children, node }: CodeBlockProps) {
             <div className="relative group my-3">
                 <button
                     onClick={handleCopy}
-                    className="absolute top-2 right-2 p-1 rounded bg-white/80 hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    className="absolute top-2 right-2 p-1 rounded bg-[#fdfdfd]/80 hover:bg-[#fdfdfd] opacity-0 group-hover:opacity-100 transition-opacity z-10"
                     title="Copy code"
                 >
                     <span className="material-icons-outlined text-xs text-gray-500">

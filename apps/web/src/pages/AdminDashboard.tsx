@@ -88,10 +88,10 @@ export default function AdminDashboard() {
     return (
         <div className="bg-background-light text-gray-900 font-sans antialiased min-h-screen flex transition-colors duration-300">
             {/* Sidebar */}
-            <aside className="w-64 bg-white border-r border-gray-200 hidden lg:flex flex-col fixed h-full z-20">
+            <aside className="w-64 bg-[#fdfdfd] border-r border-gray-200 hidden lg:flex flex-col fixed h-full z-20">
                 <div className="h-16 flex items-center px-6 border-b border-gray-100">
                     <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center rounded-lg bg-black text-white size-8">
+                        <div className="flex items-center justify-center rounded-lg bg-zinc-900 text-white size-8">
                             <span className="material-icons-outlined text-[20px]">admin_panel_settings</span>
                         </div>
                         <h1 className="text-lg font-bold tracking-tight text-gray-900">AdminPanel</h1>
@@ -118,7 +118,7 @@ export default function AdminDashboard() {
 
                 <div className="p-4 border-t border-gray-100">
                     <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 border border-gray-100">
-                        <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
+                        <div className="w-8 h-8 rounded-full bg-zinc-900 text-white flex items-center justify-center text-xs font-bold">
                             {user?.name?.charAt(0) || 'A'}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -135,14 +135,14 @@ export default function AdminDashboard() {
             {/* Main Content */}
             <main className="flex-1 lg:pl-64 flex flex-col min-h-screen">
                 {/* Header */}
-                <header className="h-16 border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-10 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                <header className="h-16 border-b border-gray-200 bg-[#fdfdfd]/80 backdrop-blur-md sticky top-0 z-10 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <h2 className="text-xl font-bold text-gray-900">{activeTab}</h2>
+                        <h2 className="text-2xl font-bold text-gray-900">{activeTab}</h2>
                     </div>
                     <div className="flex items-center gap-4">
                         <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
                             <span className="material-icons-outlined">notifications</span>
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-zinc-50"></span>
                         </button>
                         <Link to="/home" className="text-sm font-medium text-primary hover:underline">
                             Go to App
@@ -157,7 +157,7 @@ export default function AdminDashboard() {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                                 {isLoading ? (
                                     [...Array(4)].map((_, i) => (
-                                        <div key={i} className="bg-white p-6 rounded-xl border border-border-light shadow-sm animate-pulse">
+                                        <div key={i} className="bg-[#fdfdfd] p-6 rounded-xl border border-border-light shadow-sm animate-pulse">
                                             <div className="h-12 w-12 bg-gray-200 rounded-lg mb-4"></div>
                                             <div className="h-8 w-20 bg-gray-200 rounded mb-2"></div>
                                             <div className="h-4 w-24 bg-gray-100 rounded"></div>
@@ -165,7 +165,7 @@ export default function AdminDashboard() {
                                     ))
                                 ) : (
                                     stats.map((stat, index) => (
-                                        <div key={index} className="bg-white p-6 rounded-xl border border-border-light shadow-sm hover:shadow-md transition-all">
+                                        <div key={index} className="bg-[#fdfdfd] p-6 rounded-xl border border-border-light shadow-sm hover:shadow-md transition-all">
                                             <div className="flex items-center justify-between mb-4">
                                                 <div className={`p-3 rounded-lg ${stat.color} bg-opacity-10 text-white`}>
                                                     <span className={`material-icons-outlined text-2xl ${stat.color.replace('bg-', 'text-')}`}>{stat.icon}</span>
@@ -185,14 +185,14 @@ export default function AdminDashboard() {
 
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                 {/* User Management */}
-                                <div className="lg:col-span-2 bg-white rounded-xl border border-border-light shadow-sm overflow-hidden">
+                                <div className="lg:col-span-2 bg-[#fdfdfd] rounded-xl border border-border-light shadow-sm overflow-hidden">
                                     <div className="p-6 border-b border-border-light flex justify-between items-center bg-gray-50/50">
                                         <h3 className="text-lg font-bold text-gray-900">Recent Users</h3>
                                         <button onClick={() => setActiveTab('User Management')} className="text-primary text-sm font-semibold hover:underline">View All Users</button>
                                     </div>
                                     <div className="overflow-x-auto">
                                         <table className="w-full">
-                                            <thead className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                            <thead className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                                 <tr>
                                                     <th className="px-6 py-3">User</th>
                                                     <th className="px-6 py-3">Role</th>
@@ -255,7 +255,7 @@ export default function AdminDashboard() {
 
                                 {/* Activity Log */}
                                 <div className="lg:col-span-1 flex flex-col gap-8">
-                                    <div className="bg-white rounded-xl border border-border-light shadow-sm overflow-hidden flex flex-col h-full">
+                                    <div className="bg-[#fdfdfd] rounded-xl border border-border-light shadow-sm overflow-hidden flex flex-col h-full">
                                         <div className="p-6 border-b border-border-light bg-gray-50/50">
                                             <h3 className="text-lg font-bold text-gray-900">Recent Activity</h3>
                                         </div>

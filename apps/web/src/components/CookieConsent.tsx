@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Cookie } from 'lucide-react';
 
 const COOKIE_CONSENT_KEY = 'corehub_cookie_consent';
 
@@ -30,11 +31,11 @@ export default function CookieConsent() {
     return (
         <div className="fixed bottom-0 left-0 right-0 z-[100] p-4 animate-slideUp">
             <div className="max-w-4xl mx-auto">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl p-5 shadow-2xl shadow-black/10">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#fdfdfd]/95 backdrop-blur-md border border-gray-200 rounded-2xl p-5 shadow-2xl shadow-black/10">
                     {/* Cookie Icon & Text */}
                     <div className="flex items-start sm:items-center gap-4 text-left">
                         <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-amber-50 rounded-xl text-amber-500">
-                            <span className="material-icons-outlined text-[28px]">cookie</span>
+                            <Cookie size={28} />
                         </div>
                         <div className="flex flex-col gap-1">
                             <h3 className="text-base font-bold text-gray-900">We use cookies 🍪</h3>
@@ -55,7 +56,7 @@ export default function CookieConsent() {
                         </button>
                         <button
                             onClick={handleAccept}
-                            className="px-6 py-2.5 text-sm font-bold text-white bg-black hover:bg-gray-800 rounded-xl shadow-lg shadow-black/10 transition-all duration-200 hover:scale-105 active:scale-95"
+                            className="px-6 py-2.5 text-sm font-bold text-white bg-zinc-900 hover:bg-zinc-800 rounded-xl shadow-lg shadow-black/10 transition-all duration-200 hover:scale-105 active:scale-95"
                         >
                             Accept All
                         </button>

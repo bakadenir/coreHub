@@ -23,6 +23,7 @@ import AddLinkModal from './AddLinkModal';
 import PomodoroTimer from './PomodoroTimer';
 import ClockWidget from './ClockWidget';
 import LocationWidget from './LocationWidget';
+import { GripVertical, Maximize2, CheckCircle, Calendar, FileText, Link as LinkIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SidebarProps {
     onDataChange?: () => void;
@@ -61,15 +62,15 @@ function SortableWidget({ id, children, onPromote }: { id: string; children: Rea
                     {...listeners}
                     className="px-2 py-1 bg-gray-100 rounded-full cursor-grab active:cursor-grabbing shadow-sm"
                 >
-                    <span className="material-icons-outlined text-xs text-gray-400">drag_indicator</span>
+                    <GripVertical size={12} className="text-gray-400" />
                 </div>
                 {onPromote && (
                     <button
                         onClick={onPromote}
-                        className="px-2 py-1 bg-primary text-white rounded-full shadow-sm hover:bg-gray-800 transition-colors"
+                        className="px-2 py-1 bg-primary text-white rounded-full shadow-sm hover:bg-zinc-800 transition-colors"
                         title="Move to main area"
                     >
-                        <span className="material-icons-outlined text-xs">open_in_full</span>
+                        <Maximize2 size={12} />
                     </button>
                 )}
             </div>
@@ -194,52 +195,55 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
     // Widget components (compact versions for sidebar)
     const widgets: Record<WidgetId, React.ReactNode> = {
         time: (
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">
+            <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm">
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-2">
                     Time
                 </h2>
-                <div className="text-center py-2">
+                <div className="text-center">
                     <ClockWidget compact />
-                    <div className="mt-2">
+                    <div className="mt-3">
                         <LocationWidget />
                     </div>
                 </div>
             </div>
         ),
         quickAction: (
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+            <div className="bg-surface-light border border-gray-200 rounded-xl p-5 shadow-sm">
                 <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">
                     Quick Action
                 </h2>
                 <nav className="space-y-2">
                     {[
-                        { icon: 'check_circle', label: 'Add Habit' },
-                        { icon: 'calendar_today', label: 'Add Schedule' },
-                        { icon: 'description', label: 'Add Notes' },
-                        { icon: 'link', label: 'Add Link' },
-                    ].map((action) => (
-                        <button
-                            key={action.label}
-                            onClick={() => {
-                                if (action.label === 'Add Habit') setIsAddHabitOpen(true);
-                                if (action.label === 'Add Schedule') setIsAddScheduleOpen(true);
-                                if (action.label === 'Add Notes') setIsAddNoteOpen(true);
-                                if (action.label === 'Add Link') setIsAddLinkOpen(true);
-                            }}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all border border-transparent hover:border-gray-200 group"
-                        >
-                            <span className="flex items-center justify-center w-6 h-6 rounded bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary transition-colors shadow-sm">
-                                <span className="material-icons-outlined text-base">{action.icon}</span>
-                            </span>
-                            {action.label}
-                        </button>
-                    ))}
+                        { icon: CheckCircle, label: 'Add Habit' },
+                        { icon: Calendar, label: 'Add Schedule' },
+                        { icon: FileText, label: 'Add Notes' },
+                        { icon: LinkIcon, label: 'Add Link' },
+                    ].map((action) => {
+                        const IconComponent = action.icon;
+                        return (
+                            <button
+                                key={action.label}
+                                onClick={() => {
+                                    if (action.label === 'Add Habit') setIsAddHabitOpen(true);
+                                    if (action.label === 'Add Schedule') setIsAddScheduleOpen(true);
+                                    if (action.label === 'Add Notes') setIsAddNoteOpen(true);
+                                    if (action.label === 'Add Link') setIsAddLinkOpen(true);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all group"
+                            >
+                                <span className="flex items-center justify-center w-6 h-6 rounded bg-gray-100 text-gray-500 group-hover:bg-[#fdfdfd] group-hover:text-zinc-900 transition-colors">
+                                    <IconComponent size={16} />
+                                </span>
+                                {action.label}
+                            </button>
+                        );
+                    })}
                 </nav>
             </div>
         ),
         calendar: (
             <div
-                className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col"
+                className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col"
                 onMouseLeave={() => handleDayHover(null)}
             >
                 <div className="flex items-center justify-between mb-4">
@@ -251,7 +255,7 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
                             onClick={() => navigateMonth(-1)}
                             className="p-1 hover:bg-gray-100 rounded transition-colors"
                         >
-                            <span className="material-icons-outlined text-sm text-gray-500">chevron_left</span>
+                            <ChevronLeft size={14} className="text-gray-500" />
                         </button>
                         <span className="text-xs font-mono text-gray-500 min-w-[80px] text-center">
                             {formatMonth(currentDate)}
@@ -260,7 +264,7 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
                             onClick={() => navigateMonth(1)}
                             className="p-1 hover:bg-gray-100 rounded transition-colors"
                         >
-                            <span className="material-icons-outlined text-sm text-gray-500">chevron_right</span>
+                            <ChevronRight size={14} className="text-gray-500" />
                         </button>
                     </div>
                 </div>

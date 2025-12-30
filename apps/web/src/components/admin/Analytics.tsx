@@ -4,7 +4,7 @@ export default function Analytics() {
         <div className="space-y-6 animate-fade-in-up">
             {/* Top Level Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-[#fdfdfd] p-6 rounded-xl border border-gray-200 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-medium text-gray-500">Total API Requests</h3>
                         <span className="p-2 bg-blue-50 text-blue-600 rounded-lg material-icons-outlined text-sm">api</span>
@@ -15,7 +15,7 @@ export default function Analytics() {
                         +14.2% vs last month
                     </p>
                 </div>
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-[#fdfdfd] p-6 rounded-xl border border-gray-200 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-medium text-gray-500">Avg. Session Duration</h3>
                         <span className="p-2 bg-purple-50 text-purple-600 rounded-lg material-icons-outlined text-sm">timer</span>
@@ -26,7 +26,7 @@ export default function Analytics() {
                         +5.4% vs last month
                     </p>
                 </div>
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-[#fdfdfd] p-6 rounded-xl border border-gray-200 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="text-sm font-medium text-gray-500">Storage Used</h3>
                         <span className="p-2 bg-orange-50 text-orange-600 rounded-lg material-icons-outlined text-sm">storage</span>
@@ -40,7 +40,7 @@ export default function Analytics() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Feature Usage */}
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-[#fdfdfd] p-6 rounded-xl border border-gray-200 shadow-sm">
                     <h3 className="text-lg font-bold text-gray-900 mb-6">Feature Adoption</h3>
                     <div className="space-y-4">
                         {[
@@ -66,24 +66,24 @@ export default function Analytics() {
                 </div>
 
                 {/* Device Distribution */}
-                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                <div className="bg-[#fdfdfd] p-6 rounded-xl border border-gray-200 shadow-sm">
                     <h3 className="text-lg font-bold text-gray-900 mb-6">Device Distribution</h3>
                     <div className="flex items-end justify-center gap-8 h-48">
                         <div className="flex flex-col items-center gap-2">
                             <div className="w-16 bg-gray-900 rounded-t-lg relative group h-32">
-                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">58%</span>
+                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">58%</span>
                             </div>
                             <span className="text-sm font-medium text-gray-600">Desktop</span>
                         </div>
                         <div className="flex flex-col items-center gap-2">
                             <div className="w-16 bg-gray-400 rounded-t-lg relative group h-24">
-                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">35%</span>
+                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">35%</span>
                             </div>
                             <span className="text-sm font-medium text-gray-600">Mobile</span>
                         </div>
                         <div className="flex flex-col items-center gap-2">
                             <div className="w-16 bg-gray-200 rounded-t-lg relative group h-8">
-                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">7%</span>
+                                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">7%</span>
                             </div>
                             <span className="text-sm font-medium text-gray-600">Tablet</span>
                         </div>

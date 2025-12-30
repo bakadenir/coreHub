@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
 import { usersApi } from '../lib';
+import { Workflow, Search, ChevronDown, User, Settings, Heart, LogOut } from 'lucide-react';
 
 interface HeaderProps {
     subtitle?: string;
@@ -81,12 +82,12 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
         <>
             <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
-            <header className="w-full border-b border-gray-200 bg-background-light/80 backdrop-blur-md sticky top-0 z-50">
+            <header className="w-full border-b border-gray-200 bg-[#fdfdfd]/90 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                            <div className="flex items-center justify-center rounded-lg bg-black text-white size-8">
-                                <span className="material-icons-outlined text-[20px]">hub</span>
+                            <div className="flex items-center justify-center rounded-lg bg-zinc-900 text-white size-8">
+                                <Workflow size={20} />
                             </div>
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">
                                 coreHub
@@ -101,9 +102,9 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                         {/* Search Button */}
                         <button
                             onClick={() => setIsSearchOpen(true)}
-                            className="hidden md:flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 rounded-lg transition-colors text-sm text-gray-500 border border-gray-200 min-w-[200px]"
+                            className="hidden md:flex items-center gap-2 px-3 py-2 bg-[#fdfdfd] hover:bg-gray-50 rounded-lg transition-colors text-sm text-gray-500 border border-gray-200 min-w-[200px]"
                         >
-                            <span className="material-icons-outlined text-base opacity-70">search</span>
+                            <Search size={16} className="opacity-70" />
                             <span className="font-normal tracking-normal">Type <kbd className="px-1.5 py-0.5 bg-gray-100 rounded-md text-xs font-medium border border-gray-200 mx-1">/</kbd> to search</span>
                         </button>
 
@@ -112,7 +113,7 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                             onClick={() => setIsSearchOpen(true)}
                             className="md:hidden p-2 rounded-full hover:bg-gray-100 transition-colors"
                         >
-                            <span className="material-icons-outlined text-gray-500 text-2xl">search</span>
+                            <Search size={24} className="text-gray-500" />
                         </button>
 
                         {/* Notification Bell */}
@@ -132,29 +133,27 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                                 className="h-9 w-9 rounded-full border border-gray-200 object-cover bg-gray-100"
                                 src={displayAvatar}
                             />
-                            <span className="material-icons-outlined text-gray-500 group-hover:text-primary transition-colors">
-                                expand_more
-                            </span>
-                            <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
+                            <ChevronDown size={20} className="text-gray-500 group-hover:text-primary transition-colors" />
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-[#fdfdfd] border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
                                 <Link
                                     className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
                                     to="/profile"
                                 >
-                                    <span className="material-icons-outlined text-lg">person</span>
+                                    <User size={18} />
                                     Profile
                                 </Link>
                                 <Link
                                     className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                     to="/settings"
                                 >
-                                    <span className="material-icons-outlined text-lg">settings</span>
+                                    <Settings size={18} />
                                     Settings
                                 </Link>
                                 <Link
                                     className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                     to="/donate"
                                 >
-                                    <span className="material-icons-outlined text-lg">volunteer_activism</span>
+                                    <Heart size={18} />
                                     Donate
                                 </Link>
                                 <div className="h-px bg-gray-200 my-1"></div>
@@ -162,7 +161,7 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                                     className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg w-full text-left"
                                     onClick={handleLogout}
                                 >
-                                    <span className="material-icons-outlined text-lg">logout</span>
+                                    <LogOut size={18} />
                                     Logout
                                 </button>
                             </div>

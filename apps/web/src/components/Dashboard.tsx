@@ -4,6 +4,7 @@ import ClockWidget from './ClockWidget';
 import LocationWidget from './LocationWidget';
 import PomodoroTimer from './PomodoroTimer';
 import { schedulesApi } from '../lib';
+import { CalendarX, MapPin, Minimize2 } from 'lucide-react';
 
 interface DashboardProps {
     refreshTrigger?: number;
@@ -124,7 +125,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                         <p className="text-gray-500 mb-4">Quick actions are better used from the sidebar</p>
                         <button
                             onClick={onDemoteWidget}
-                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-gray-800"
+                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-zinc-800"
                         >
                             Move back to sidebar
                         </button>
@@ -136,7 +137,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                         <p className="text-gray-500 mb-4">Calendar is better used from the sidebar</p>
                         <button
                             onClick={onDemoteWidget}
-                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-gray-800"
+                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-zinc-800"
                         >
                             Move back to sidebar
                         </button>
@@ -151,7 +152,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
         <div className="lg:col-span-9 flex flex-col gap-6">
             {/* Schedule Preview - Only shows when hovering on calendar date */}
             {isShowingSchedule && (
-                <section className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm min-h-[300px] flex flex-col">
+                <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm min-h-[300px] flex flex-col">
                     <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">
                         Schedule
                     </h2>
@@ -168,7 +169,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                         </div>
                     ) : schedules.length === 0 ? (
                         <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                            <span className="material-icons-outlined text-5xl mb-3">event_busy</span>
+                            <CalendarX size={48} className="mb-3" />
                             <p className="text-base font-medium">No schedule for this day</p>
                             <p className="text-sm">Hover over another date or add a new schedule</p>
                         </div>
@@ -197,7 +198,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                                             <h4 className="font-bold text-gray-900 mb-1">{schedule.title}</h4>
                                             {schedule.location && (
                                                 <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                                                    <span className="material-icons-outlined text-[14px]">location_on</span>
+                                                    <MapPin size={14} />
                                                     {schedule.location}
                                                 </div>
                                             )}
@@ -220,7 +221,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
 
             {/* Featured Widget Display - Only shows when NOT hovering on calendar */}
             {!isShowingSchedule && (
-                <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group min-h-[250px]">
+                <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group min-h-[250px]">
                     {/* Header with demote button */}
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
@@ -231,7 +232,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                             className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Move to sidebar"
                         >
-                            <span className="material-icons-outlined text-lg">close_fullscreen</span>
+                            <Minimize2 size={18} />
                         </button>
                     </div>
 

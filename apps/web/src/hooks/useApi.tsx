@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ApiResponse } from '../lib/api';
+import { renderIcon } from '../lib/iconMap';
+import { AlertCircle } from 'lucide-react';
 
 interface UseApiState<T> {
     data: T | null;
@@ -55,7 +57,7 @@ export function LoadingSpinner({ message = 'Loading...' }: { message?: string })
 // Table skeleton for list views
 export function TableSkeleton({ rows = 5 }: { rows?: number }) {
     return (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+        <div className="bg-[#fdfdfd] rounded-xl border border-gray-200 overflow-hidden shadow-sm">
             {/* Header skeleton */}
             <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-gray-200 bg-gray-50">
                 {[1, 2, 3, 4, 5].map(i => (
@@ -97,7 +99,7 @@ export function CardGridSkeleton({ count = 6 }: { count?: number }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: count }).map((_, i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 min-h-[180px]">
+                <div key={i} className="bg-[#fdfdfd] rounded-xl border border-gray-200 p-5 min-h-[180px]">
                     <div className="flex items-center justify-between mb-4">
                         <div className="h-5 bg-gray-200 rounded animate-pulse w-32"></div>
                         <div className="h-5 w-5 bg-gray-100 rounded animate-pulse"></div>
@@ -121,7 +123,7 @@ export function CardGridSkeleton({ count = 6 }: { count?: number }) {
 export function EmptyState({ message, icon = 'inbox' }: { message: string; icon?: string }) {
     return (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-            <span className="material-icons-outlined text-6xl text-gray-300 mb-4">{icon}</span>
+            <span className="mb-4">{renderIcon(icon, { size: 64, className: 'text-gray-300' })}</span>
             <p className="text-gray-500">{message}</p>
         </div>
     );
@@ -131,12 +133,12 @@ export function EmptyState({ message, icon = 'inbox' }: { message: string; icon?
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
     return (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-            <span className="material-icons-outlined text-6xl text-red-300 mb-4">error_outline</span>
+            <AlertCircle size={64} className="text-red-300 mb-4" />
             <p className="text-red-600 mb-4">{message}</p>
             {onRetry && (
                 <button
                     onClick={onRetry}
-                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-zinc-800 transition-colors"
                 >
                     Try Again
                 </button>
@@ -144,3 +146,4 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
         </div>
     );
 }
+

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { linksApi } from '../lib';
+import { X, Link as LinkIcon } from 'lucide-react';
 
 interface AddLinkModalProps {
     isOpen: boolean;
@@ -41,6 +42,17 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
 
     if (!isOpen) return null;
 
+    // Helper to capitalize first letter of each word
+    const toTitleCase = (str: string) => {
+        return str.replace(/\b\w/g, char => char.toUpperCase());
+    };
+
+    // Helper to capitalize only the first letter of the text
+    const toSentenceCase = (str: string) => {
+        if (!str) return str;
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    };
+
     const handleSave = async () => {
         if (!url.trim()) {
             showToast('Please enter a URL', 'error');
@@ -80,12 +92,12 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity"
+                className="absolute inset-0 bg-zinc-900/40 backdrop-blur-[2px] transition-opacity"
                 onClick={onClose}
             ></div>
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-[540px] flex flex-col bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
+            <div className="relative w-full max-w-[540px] flex flex-col bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h2 className="text-lg font-bold tracking-tight text-gray-900">Add Link</h2>
@@ -93,9 +105,7 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                         onClick={onClose}
                         className="group p-1 rounded-md hover:bg-gray-100 transition-colors"
                     >
-                        <span className="material-icons-outlined text-gray-400 group-hover:text-black text-[20px]">
-                            close
-                        </span>
+                        <X size={20} className="text-gray-400 group-hover:text-black" />
                     </button>
                 </div>
 
@@ -106,10 +116,10 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                         <label className="block text-sm font-medium text-gray-500" htmlFor="link-url">Link URL *</label>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <span className="material-icons-outlined text-gray-400 text-[20px] group-focus-within:text-black transition-colors">link</span>
+                                <LinkIcon size={20} className="text-gray-400 group-focus-within:text-black transition-colors" />
                             </div>
                             <input
-                                className="w-full bg-white border border-gray-300 rounded-lg pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                 id="link-url"
                                 placeholder="e.g. https://example.com/awesome-article"
                                 type="url"
@@ -126,12 +136,12 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                             <span className="text-xs text-gray-400">Optional</span>
                         </div>
                         <input
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                            className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             id="link-title"
                             placeholder="e.g. My Favorite Article"
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => setTitle(toTitleCase(e.target.value))}
                         />
                     </div>
 
@@ -142,11 +152,11 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                             <span className="text-xs text-gray-400">Optional</span>
                         </div>
                         <textarea
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] min-h-[70px] resize-none shadow-sm outline-none"
+                            className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] min-h-[70px] resize-none shadow-sm outline-none"
                             id="link-description"
                             placeholder="A short summary or your thoughts..."
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setDescription(toSentenceCase(e.target.value))}
                         ></textarea>
                     </div>
                 </div>
@@ -163,7 +173,7 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                     <button
                         onClick={handleSave}
                         disabled={isSubmitting}
-                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? 'Saving...' : 'Save Link'}
                     </button>

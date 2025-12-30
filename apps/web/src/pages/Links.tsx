@@ -7,11 +7,13 @@ import { linksApi } from '../lib';
 import type { LinkItem } from '../types';
 import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
+import { Plus, ArrowUpDown, Search, Check, MoreHorizontal, Pin, Link as LinkLucide, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 
 export default function Links() {
-    // Custom Favicon Component
+    // Custom Favicon Component with multiple fallback sources
     const LinkFavicon = ({ link, size = 20, className }: { link: LinkItem, size?: number, className?: string }) => {
-        const [imageError, setImageError] = useState(false);
+        const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
+        const [allFailed, setAllFailed] = useState(false);
 
         // Extract domain safely
         const getDomain = (url: string) => {
@@ -24,9 +26,26 @@ export default function Links() {
 
         const domain = getDomain(link.url);
 
-        if (imageError) {
+        // Multiple favicon sources to try in order
+        const faviconSources = [
+            link.image, // User provided image first
+            `https://unavatar.io/${domain}`, // Unavatar (universal avatar service)
+            `https://www.google.com/s2/favicons?domain=${domain}&sz=64`, // Google Favicon
+            `https://icon.horse/icon/${domain}`, // Icon Horse service
+            `https://${domain}/favicon.ico`, // Direct favicon from domain
+        ].filter(Boolean); // Remove empty/null sources
+
+        const handleError = () => {
+            if (currentSourceIndex < faviconSources.length - 1) {
+                setCurrentSourceIndex(prev => prev + 1);
+            } else {
+                setAllFailed(true);
+            }
+        };
+
+        if (allFailed) {
             return (
-                <div className={`${className} bg-gray-100 flex items-center justify-center text-gray-500 border border-gray-200 shrink-0 font-bold uppercase select-none`} style={{ fontSize: size * 0.8 }}>
+                <div className={`${className} bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-600 border border-gray-200 shrink-0 font-bold uppercase select-none`} style={{ fontSize: size * 0.6 }}>
                     {domain.charAt(0)}
                 </div>
             );
@@ -35,9 +54,9 @@ export default function Links() {
         return (
             <img
                 alt={`Icon for ${link.title}`}
-                className={`${className} object-cover bg-white shrink-0`}
-                src={link.image || `https://icons.duckduckgo.com/ip3/${domain}.ico`}
-                onError={() => setImageError(true)}
+                className={`${className} object-contain bg-[#fdfdfd] shrink-0`}
+                src={faviconSources[currentSourceIndex]}
+                onError={handleError}
             />
         );
     };
@@ -196,7 +215,7 @@ export default function Links() {
                 variant="danger"
                 isLoading={isDeleting}
             />
-            <header className="flex items-center justify-between p-6 border-b border-border-light bg-white shrink-0">
+            <header className="flex items-center justify-between p-6 border-b border-border-light bg-[#fdfdfd] shrink-0">
                 <div className="flex flex-col gap-1">
                     <h2 className="text-text-primary text-3xl font-extrabold tracking-tight">Links</h2>
                     <p className="text-text-secondary text-base font-normal">Manage your curated web collection.</p>
@@ -206,7 +225,7 @@ export default function Links() {
                         onClick={() => setIsAddLinkOpen(true)}
                         className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50"
                     >
-                        <span className="material-icons-outlined text-[20px]">add</span>
+                        <Plus size={20} />
                         <span className="whitespace-nowrap">Add Links</span>
                     </button>
                 </div>
@@ -222,29 +241,29 @@ export default function Links() {
                                     onClick={() => setShowSortMenu(!showSortMenu)}
                                     className="text-text-secondary hover:text-text-primary transition-colors p-1 rounded hover:bg-gray-100"
                                 >
-                                    <span className="material-icons-outlined text-[20px]">sort</span>
+                                    <ArrowUpDown size={20} />
                                 </button>
                                 {showSortMenu && (
-                                    <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[140px]">
+                                    <div className="absolute right-0 top-full mt-1 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-lg py-1 z-20 min-w-[140px]">
                                         <button
                                             onClick={() => { setSortBy('newest'); setShowSortMenu(false); }}
                                             className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'newest' ? 'text-primary font-medium' : 'text-text-primary'}`}
                                         >
-                                            {sortBy === 'newest' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            {sortBy === 'newest' && <Check size={16} />}
                                             <span className={sortBy === 'newest' ? '' : 'ml-6'}>Newest</span>
                                         </button>
                                         <button
                                             onClick={() => { setSortBy('oldest'); setShowSortMenu(false); }}
                                             className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'oldest' ? 'text-primary font-medium' : 'text-text-primary'}`}
                                         >
-                                            {sortBy === 'oldest' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            {sortBy === 'oldest' && <Check size={16} />}
                                             <span className={sortBy === 'oldest' ? '' : 'ml-6'}>Oldest</span>
                                         </button>
                                         <button
                                             onClick={() => { setSortBy('title'); setShowSortMenu(false); }}
                                             className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${sortBy === 'title' ? 'text-primary font-medium' : 'text-text-primary'}`}
                                         >
-                                            {sortBy === 'title' && <span className="material-icons-outlined text-[16px]">check</span>}
+                                            {sortBy === 'title' && <Check size={16} />}
                                             <span className={sortBy === 'title' ? '' : 'ml-6'}>A-Z (Title)</span>
                                         </button>
                                     </div>
@@ -259,7 +278,7 @@ export default function Links() {
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
-                            <span className="material-icons-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
+                            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         </div>
                     </div>
                     <div className="flex flex-col p-4 gap-2">
@@ -275,7 +294,7 @@ export default function Links() {
                                     key={link.id}
                                     onClick={() => setSelectedIndex(index)}
                                     className={`group flex flex-col p-3 rounded-xl border transition-all cursor-pointer ${selectedIndex === index
-                                        ? 'bg-white border-border-light shadow-sm'
+                                        ? 'bg-[#fdfdfd] border-border-light shadow-sm'
                                         : 'bg-background-light border-transparent hover:bg-gray-100'
                                         }`}
                                 >
@@ -290,13 +309,13 @@ export default function Links() {
                                         </div>
                                         <ActionMenu
                                             items={getActionMenuItems(link)}
-                                            trigger={<span className="material-icons-outlined text-[16px]">more_horiz</span>}
+                                            trigger={<MoreHorizontal size={16} />}
                                             className="opacity-0 group-hover:opacity-100"
                                         />
                                     </div>
 
                                     <div className="flex items-center justify-end text-xs text-gray-500">
-                                        {link.isPinned && <span className="material-icons-outlined text-[14px] text-primary">push_pin</span>}
+                                        {link.isPinned && <Pin size={14} className="text-primary" />}
                                     </div>
                                 </div>
                             ))
@@ -312,7 +331,7 @@ export default function Links() {
                                 <h3 className="text-3xl font-bold text-text-primary tracking-tight">Link Preview</h3>
                                 <ActionMenu items={getActionMenuItems(selectedLink)} />
                             </div>
-                            <div className="bg-white rounded-xl p-6 shadow-sm border border-border-light flex flex-col gap-6">
+                            <div className="bg-[#fdfdfd] rounded-xl p-6 shadow-sm border border-border-light flex flex-col gap-6">
 
                                 <div className="flex items-center gap-3">
                                     <LinkFavicon
@@ -325,7 +344,7 @@ export default function Links() {
                                     </a>
                                 </div>
                                 <p className="text-sm text-text-secondary flex items-center gap-2">
-                                    <span className="material-icons-outlined text-base">link</span>
+                                    <LinkLucide size={16} />
                                     <span className="truncate">{selectedLink.url}</span>
                                 </p>
                                 <div className="flex flex-wrap gap-2">
@@ -345,21 +364,21 @@ export default function Links() {
                                         rel="noreferrer"
                                         className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-semibold shadow-sm transition-all shadow-gray-200/50"
                                     >
-                                        <span className="material-icons-outlined text-[20px]">open_in_new</span>
+                                        <ExternalLink size={20} />
                                         <span className="whitespace-nowrap">Open Link</span>
                                     </a>
                                     <button
                                         onClick={() => handleEdit(selectedLink)}
                                         className="flex items-center justify-center rounded-xl h-10 px-5 bg-gray-100 hover:bg-gray-200 text-text-primary gap-2 text-sm font-semibold shadow-sm transition-all"
                                     >
-                                        <span className="material-icons-outlined text-[20px]">edit</span>
+                                        <Pencil size={20} />
                                         <span className="whitespace-nowrap">Edit</span>
                                     </button>
                                     <button
                                         onClick={() => handleDeleteClick(selectedLink)}
                                         className="flex items-center justify-center rounded-xl h-10 px-5 bg-red-100 hover:bg-red-200 text-red-600 gap-2 text-sm font-semibold shadow-sm transition-all"
                                     >
-                                        <span className="material-icons-outlined text-[20px]">delete</span>
+                                        <Trash2 size={20} />
                                         <span className="whitespace-nowrap">Delete</span>
                                     </button>
                                 </div>

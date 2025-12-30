@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CookieConsent from '../components/CookieConsent';
+import { Workflow, CheckCircle, Calendar, FileEdit, Link as LinkIcon } from 'lucide-react';
 
 export default function Landing() {
     const navigate = useNavigate();
@@ -52,12 +53,12 @@ export default function Landing() {
             </div>
 
             {/* Navigation */}
-            <header className="w-full border-b border-gray-200/50 bg-white/50 backdrop-blur-md sticky top-0 z-50">
+            <header className="w-full border-b border-gray-200/50 bg-[#fdfdfd]/50 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-[1200px] mx-auto px-4 md:px-10 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {/* Logo Icon */}
-                        <div className="flex items-center justify-center rounded-lg bg-black text-white size-8 shadow-lg shadow-black/10">
-                            <span className="material-icons-outlined text-[20px]">hub</span>
+                        <div className="flex items-center justify-center rounded-lg bg-zinc-900 text-white size-8 shadow-lg shadow-black/10">
+                            <Workflow size={20} />
                         </div>
                         <h2 className="text-xl font-bold leading-tight tracking-tight text-text-primary">coreHub</h2>
                     </div>
@@ -69,7 +70,7 @@ export default function Landing() {
                         <Link
                             to="/auth"
                             state={{ isSignUp: true }}
-                            className="flex items-center justify-center rounded-lg h-9 px-4 bg-black hover:bg-gray-800 transition-all text-white text-sm font-bold shadow-md hover:shadow-lg hover:translate-y-[-1px]"
+                            className="flex items-center justify-center rounded-lg h-9 px-4 bg-zinc-900 hover:bg-zinc-800 transition-all text-white text-sm font-bold shadow-md hover:shadow-lg hover:translate-y-[-1px]"
                         >
                             Register
                         </Link>
@@ -94,13 +95,13 @@ export default function Landing() {
                                 <Link
                                     to="/auth"
                                     state={{ isSignUp: true }}
-                                    className="flex items-center justify-center rounded-xl h-14 px-8 bg-black hover:bg-gray-800 text-white text-lg font-bold shadow-xl shadow-black/10 transition-all hover:scale-105 active:scale-95"
+                                    className="flex items-center justify-center rounded-xl h-14 px-8 bg-zinc-900 hover:bg-zinc-800 text-white text-lg font-bold shadow-xl shadow-black/10 transition-all hover:scale-105 active:scale-95"
                                 >
                                     Get Started Free
                                 </Link>
                                 <Link
                                     to="/auth"
-                                    className="flex items-center justify-center rounded-xl h-14 px-8 bg-white border border-gray-200 hover:bg-gray-50 text-text-primary text-lg font-bold transition-all hover:scale-105 active:scale-95 shadow-sm"
+                                    className="flex items-center justify-center rounded-xl h-14 px-8 bg-[#fdfdfd] border border-gray-200 hover:bg-gray-50 text-text-primary text-lg font-bold transition-all hover:scale-105 active:scale-95 shadow-sm"
                                 >
                                     Login
                                 </Link>
@@ -111,7 +112,7 @@ export default function Landing() {
                         <div className="w-full md:w-1/2 mt-8 md:mt-0 relative group">
                             <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
                             <div
-                                className="relative w-full aspect-[16/10] bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
+                                className="relative w-full aspect-[16/10] bg-[#fdfdfd] rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
                             >
                                 <img
                                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuAF_rx-ZO13WaUeZASRotPg6N5hniRXV4USNvwq7bImKviX1iS-D5VG3B3XKLr6wbZsoW6KBCmDSEwexK3EF085qztjJNAKy_r-0zfk26Ooc0eGijUwxTOrkQGU0iT5zdgzLOVQnAAQwkQze9QLeH6G2nRUe_uTngLZLuUAzYl-POsfwgyUGFrU7STEXvCAxMGWWFkBYiXzOoEyH1r0eGFRSKa-mDbIYifPoEkizPIb3mex7cqnJ09bM9ZPPHdt7QxwfOk8HeYWImP"
@@ -124,7 +125,7 @@ export default function Landing() {
                 </section>
 
                 {/* Feature Section */}
-                <section className="py-24 bg-white/50 border-t border-gray-200/50 backdrop-blur-sm">
+                <section className="py-24 bg-[#fdfdfd]/50 border-t border-gray-200/50 backdrop-blur-sm">
                     <div className="w-full max-w-[1200px] mx-auto px-4 md:px-10 flex flex-col gap-16">
                         <div className="flex flex-col gap-4 text-center items-center">
                             <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-text-primary max-w-[800px]">
@@ -137,9 +138,9 @@ export default function Landing() {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {/* Feature 1 */}
-                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
-                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                                    <span className="material-icons-outlined text-[24px]">check_circle</span>
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-[#fdfdfd] p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-300">
+                                    <CheckCircle size={24} />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <h3 className="text-lg font-bold text-gray-900">Habit Tracker</h3>
@@ -147,9 +148,9 @@ export default function Landing() {
                                 </div>
                             </div>
                             {/* Feature 2 */}
-                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
-                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                                    <span className="material-icons-outlined text-[24px]">calendar_today</span>
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-[#fdfdfd] p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-300">
+                                    <Calendar size={24} />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <h3 className="text-lg font-bold text-gray-900">Smart Schedule</h3>
@@ -157,9 +158,9 @@ export default function Landing() {
                                 </div>
                             </div>
                             {/* Feature 3 */}
-                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
-                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                                    <span className="material-icons-outlined text-[24px]">edit_note</span>
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-[#fdfdfd] p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-300">
+                                    <FileEdit size={24} />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <h3 className="text-lg font-bold text-gray-900">Quick Notes</h3>
@@ -167,9 +168,9 @@ export default function Landing() {
                                 </div>
                             </div>
                             {/* Feature 4 */}
-                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-white p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
-                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                                    <span className="material-icons-outlined text-[24px]">link</span>
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-[#fdfdfd] p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-300">
+                                    <LinkIcon size={24} />
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <h3 className="text-lg font-bold text-gray-900">Link Vault</h3>
@@ -182,11 +183,11 @@ export default function Landing() {
             </main>
 
             {/* Footer */}
-            <footer className="py-10 bg-white border-t border-gray-200 relative z-10">
+            <footer className="py-10 bg-[#fdfdfd] border-t border-gray-200 relative z-10">
                 <div className="w-full max-w-[1200px] mx-auto px-4 md:px-10 flex flex-col gap-6 items-center text-center">
                     <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center rounded-md bg-black text-white size-6">
-                            <span className="material-icons-outlined text-[16px]">hub</span>
+                        <div className="flex items-center justify-center rounded-md bg-zinc-900 text-white size-6">
+                            <Workflow size={16} />
                         </div>
                         <span className="font-bold text-text-primary">coreHub</span>
                     </div>

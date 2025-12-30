@@ -441,7 +441,7 @@ export default function Donate() {
                         <p>
                             Thank you for using{' '}
                             <span className="inline-flex items-center gap-1.5">
-                                <span className="inline-flex items-center justify-center rounded bg-black text-white size-5">
+                                <span className="inline-flex items-center justify-center rounded bg-zinc-900 text-white size-5">
                                     <span className="material-icons-outlined text-sm">hub</span>
                                 </span>
                                 <strong className="text-text-primary font-semibold">coreHub</strong>
@@ -461,7 +461,7 @@ export default function Donate() {
 
                 {/* Donation Options */}
                 <section className="mb-16">
-                    <div className="bg-white border border-border-light rounded-xl p-6 shadow-sm">
+                    <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-6 shadow-sm">
                         {pendingDonation ? (
                             /* Pending Payment Panel */
                             <>
@@ -623,14 +623,14 @@ export default function Donate() {
                             {donationsList.length} DONATIONS
                         </div>
                     </div>
-                    <div className="overflow-x-auto rounded-xl border border-border-light bg-white shadow-sm">
+                    <div className="overflow-x-auto rounded-xl border border-border-light bg-[#fdfdfd] shadow-sm">
                         <table className="w-full text-left border-collapse">
                             <thead className="bg-gray-50 border-b border-border-light">
                                 <tr>
-                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500 w-36">Date</th>
-                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500 w-40">Donatur</th>
-                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500">Pesan</th>
-                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wider text-gray-500 text-right w-36">Amount</th>
+                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wide text-gray-500 w-36">Date</th>
+                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wide text-gray-500 w-40">Donatur</th>
+                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wide text-gray-500">Pesan</th>
+                                    <th className="py-3 px-6 text-xs font-mono uppercase tracking-wide text-gray-500 text-right w-36">Amount</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-light text-sm">
@@ -687,7 +687,7 @@ export default function Donate() {
                         </div>
                     </div>
 
-                    <div className="bg-white border border-border-light rounded-xl p-6 shadow-sm">
+                    <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-6 shadow-sm">
                         <p className="text-sm text-gray-600 mb-6">
                             Your feedback helps us improve coreHub. Share your experience and it may be featured as a review!
                         </p>
@@ -724,7 +724,7 @@ export default function Donate() {
                                 placeholder="Tell us about your experience with coreHub... What do you love? What could be improved?"
                                 value={comment}
                                 onChange={(e) => setComment(e.target.value)}
-                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-400 resize-none bg-gray-50 focus:bg-white transition-colors"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-400 resize-none bg-gray-50 focus:bg-[#fdfdfd] transition-colors"
                                 rows={4}
                             />
                         </div>
@@ -738,7 +738,7 @@ export default function Donate() {
                                     onChange={(e) => setIsAnonymous(e.target.checked)}
                                     className="sr-only peer"
                                 />
-                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-50 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-[#fdfdfd] after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
                             </label>
                             <span className="text-sm text-gray-600">
                                 Post as <span className="font-medium text-gray-900">{isAnonymous ? 'Anonymous' : (user?.name || 'Anonymous')}</span>
@@ -749,7 +749,7 @@ export default function Donate() {
                         <button
                             onClick={handleSubmit}
                             disabled={isSubmitting}
-                            className={`px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors flex items-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             {isSubmitting ? (
                                 <span className="material-icons-outlined text-base animate-spin">refresh</span>
@@ -764,7 +764,7 @@ export default function Donate() {
                     <div className="mt-10">
                         {/* Rating Summary Header */}
                         {!isLoadingReviews && reviews.length > 0 && (
-                            <div className="flex flex-col md:flex-row gap-8 mb-8 p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+                            <div className="flex flex-col md:flex-row gap-8 mb-8 p-6 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-sm">
                                 {/* Average Rating */}
                                 <div className="flex flex-col items-center justify-center md:border-r border-gray-200 md:pr-8">
                                     <span className="text-5xl font-bold text-amber-500">{averageRating}</span>
@@ -816,9 +816,9 @@ export default function Donate() {
                                         placeholder="Search reviews"
                                         value={searchQuery}
                                         onChange={(e) => handleSearchChange(e.target.value)}
-                                        className="w-full sm:w-64 pl-4 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-400 bg-white"
+                                        className="w-full sm:w-64 pl-4 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-400 bg-[#fdfdfd]"
                                     />
-                                    <button className="absolute right-0 top-0 h-full px-3 bg-primary text-white rounded-r-xl hover:bg-gray-800 transition-colors">
+                                    <button className="absolute right-0 top-0 h-full px-3 bg-primary text-white rounded-r-xl hover:bg-zinc-800 transition-colors">
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                         </svg>
@@ -828,7 +828,7 @@ export default function Donate() {
                                     <select
                                         value={filterRating === 'all' ? 'all' : filterRating}
                                         onChange={(e) => handleFilterChange(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                                        className="appearance-none px-4 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400 bg-white cursor-pointer"
+                                        className="appearance-none px-4 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-400 bg-[#fdfdfd] cursor-pointer"
                                     >
                                         <option value="all">All ratings</option>
                                         <option value="5">5 Stars</option>
@@ -850,7 +850,7 @@ export default function Donate() {
                                 <span className="material-icons-outlined text-3xl animate-spin text-gray-400">refresh</span>
                             </div>
                         ) : filteredReviews.length === 0 ? (
-                            <p className="text-sm text-gray-400 text-center py-12 bg-white border border-gray-200 rounded-xl">
+                            <p className="text-sm text-gray-400 text-center py-12 bg-[#fdfdfd] border border-gray-200 rounded-xl">
                                 {reviews.length === 0 ? 'No reviews yet. Be the first to share your feedback!' : 'No reviews match your search.'}
                             </p>
                         ) : (
@@ -860,7 +860,7 @@ export default function Donate() {
                                     return (
                                         <div
                                             key={review.id}
-                                            className={`rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow border ${isOwnReview ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200' : 'bg-white border-gray-200'}`}
+                                            className={`rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow border ${isOwnReview ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200' : 'bg-[#fdfdfd] border-gray-200'}`}
                                         >
                                             {isOwnReview && (
                                                 <div className="flex items-center gap-2 mb-3 text-amber-600">
@@ -916,7 +916,7 @@ export default function Donate() {
                                 <button
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                     disabled={currentPage === 1}
-                                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${currentPage === 1 ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                                    className={`px-3 py-2 rounded-xl border text-sm font-medium transition-colors ${currentPage === 1 ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed' : 'bg-[#fdfdfd] text-gray-700 border-gray-200 hover:bg-gray-50'}`}
                                 >
                                     ← Prev
                                 </button>
@@ -924,7 +924,7 @@ export default function Donate() {
                                     <button
                                         key={page}
                                         onClick={() => setCurrentPage(page)}
-                                        className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page ? 'bg-primary text-white' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
+                                        className={`w-10 h-10 rounded-xl text-sm font-medium transition-colors ${currentPage === page ? 'bg-primary text-white' : 'bg-[#fdfdfd] text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
                                     >
                                         {page}
                                     </button>
@@ -932,7 +932,7 @@ export default function Donate() {
                                 <button
                                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                                     disabled={currentPage === totalPages}
-                                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${currentPage === totalPages ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                                    className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${currentPage === totalPages ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed' : 'bg-[#fdfdfd] text-gray-700 border-gray-200 hover:bg-gray-50'}`}
                                 >
                                     Next →
                                 </button>

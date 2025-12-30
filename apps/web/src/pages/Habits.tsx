@@ -7,6 +7,8 @@ import { habitsApi } from '../lib';
 import type { Habit } from '../types';
 import { EmptyState, ErrorState } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
+import { CheckCircle, Clock, CalendarX, Circle, BarChart3, CalendarRange, Plus, Percent } from 'lucide-react';
+import { iconMap } from '../lib/iconMap';
 
 // Generate heatmap data for last 12 weeks
 function generateHeatmapData(completions: { completed_at: string }[] = []) {
@@ -130,60 +132,64 @@ function HabitCard({
     const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
     return (
-        <div className="bg-white border border-border-light rounded-xl p-5 shadow-sm hover:shadow-md transition-all group">
+        <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-4 shadow-sm hover:shadow-md transition-all group">
             {/* Header */}
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-lg shadow-inner">
-                        {habit.icon || '✓'}
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-lg shadow-inner shrink-0">
+                        {(() => {
+                            const IconComponent = iconMap[habit.icon || ''];
+                            if (IconComponent) return <IconComponent size={20} className="text-gray-700" />;
+                            return <span className="truncate max-w-full px-1">{habit.icon || '✓'}</span>;
+                        })()}
                     </div>
-                    <div>
-                        <h3 className="text-sm font-bold text-text-primary leading-tight">{habit.name}</h3>
-                        <p className="text-xs text-text-secondary capitalize">{habit.frequency}</p>
+                    <div className="min-w-0">
+                        <h3 className="text-sm font-bold text-text-primary leading-tight truncate">{habit.name}</h3>
+                        <p className="text-xs text-text-secondary capitalize truncate">{habit.frequency}</p>
                     </div>
                 </div>
                 <ActionMenu items={actionMenuItems} />
             </div>
 
             {/* Completed Today Status */}
-            <div className="mb-2">
+            <div className="mb-1.5">
                 {habit.completed ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
-                        <span className="material-icons-outlined text-sm">check_circle</span>
+                        <CheckCircle size={14} />
                         Completed Today
                     </span>
                 ) : habit.hasStarted === false ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-                        <span className="material-icons-outlined text-sm">schedule</span>
+                        <Clock size={14} />
                         Starts {new Date(habit.startDate!).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
                     </span>
                 ) : habit.isDueToday === false ? (
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-                        <span className="material-icons-outlined text-sm">event_busy</span>
+                        <CalendarX size={14} />
                         Not scheduled today
                     </span>
                 ) : (
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary">
-                        <span className="material-icons-outlined text-sm">radio_button_unchecked</span>
+                        <Circle size={14} />
                         Not completed yet
                     </span>
                 )}
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-2 text-xs text-text-secondary mb-2">
-                <span className="material-icons-outlined text-sm text-primary">bar_chart</span>
-                <span>This Month: <span className="font-semibold text-text-primary">{stats.monthCount}</span></span>
+            <div className="flex items-center gap-2 text-xs text-text-secondary mb-2.5">
+                <BarChart3 size={14} className="text-primary shrink-0" />
+                <span className="truncate">This Month: <span className="font-semibold text-text-primary">{stats.monthCount}</span></span>
             </div>
 
             {/* Date Range */}
-            <div className="flex items-center gap-2 mb-3 text-xs text-text-secondary">
-                <span className="material-icons-outlined text-sm">date_range</span>
-                <span className="font-mono">{dateRange}</span>
+            <div className="flex items-center gap-2 mb-4 text-xs text-text-secondary">
+                <CalendarRange size={14} className="shrink-0" />
+                <span className="font-mono truncate">{dateRange}</span>
             </div>
 
             {/* Heatmap Grid */}
-            <div className="mb-4 overflow-x-auto">
+            <div className="mb-4 overflow-x-auto p-1">
                 <div className="flex gap-[3px] min-w-max">
                     {/* Day Labels */}
                     <div className="flex flex-col gap-[3px] mr-1">
@@ -199,7 +205,7 @@ function HabitCard({
                             {week.map((day, dayIndex) => (
                                 <div
                                     key={dayIndex}
-                                    className={`w-[14px] h-[14px] rounded-[3px] transition-colors ${day.isFuture
+                                    className={`w-[14px] h-[14px] rounded-[3px] transition-colors relative group/day ${day.isFuture
                                         ? 'bg-gray-100'
                                         : day.isToday
                                             ? day.completed
@@ -209,8 +215,11 @@ function HabitCard({
                                                 ? 'bg-primary'
                                                 : 'bg-gray-200 hover:bg-gray-300'
                                         }`}
-                                    title={`${day.date}${day.completed ? ' ✓' : ''}`}
-                                />
+                                >
+                                    <span className={`invisible group-hover/day:visible absolute left-1/2 -translate-x-1/2 px-2 py-1 text-xs bg-zinc-900 text-white rounded whitespace-nowrap z-50 shadow-lg ${dayIndex < 2 ? 'top-full mt-1' : 'bottom-full mb-1'}`}>
+                                        {day.date}{day.completed ? ' ✓' : ''}
+                                    </span>
+                                </div>
                             ))}
                         </div>
                     ))}
@@ -259,7 +268,7 @@ function HabitCard({
 // Loading Skeleton
 function HabitCardSkeleton() {
     return (
-        <div className="bg-white border border-border-light rounded-xl p-5 animate-pulse">
+        <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-4 animate-pulse">
             <div className="flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 rounded-xl bg-gray-200" />
                 <div className="flex-1">
@@ -425,7 +434,7 @@ export default function Habits() {
             />
 
             {/* Header */}
-            <header className="flex items-center justify-between p-6 border-b border-border-light bg-white shrink-0">
+            <header className="flex items-center justify-between p-6 border-b border-border-light bg-[#fdfdfd] shrink-0">
                 <div className="flex flex-col gap-1">
                     <h2 className="text-text-primary text-3xl font-extrabold tracking-tight">Habits</h2>
                     <p className="text-text-secondary text-base font-normal">Track your daily habits and build consistency.</p>
@@ -435,22 +444,22 @@ export default function Habits() {
                         onClick={() => setIsAddHabitOpen(true)}
                         className="flex items-center justify-center rounded-xl h-10 px-5 bg-primary hover:bg-text-primary text-white gap-2 text-sm font-bold shadow-sm transition-all shadow-gray-200/50"
                     >
-                        <span className="material-icons-outlined text-[20px]">add</span>
+                        <Plus size={20} />
                         <span className="whitespace-nowrap">Add Habit</span>
                     </button>
                 </div>
             </header>
 
             {/* Stats Bar + Filter */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white border-b border-border-light">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-[#fdfdfd] border-b border-border-light">
                 {/* Filter Tabs */}
-                <div className="flex h-10 items-center justify-center rounded-xl bg-gray-100 p-1 border border-transparent">
+                <div className="flex h-10 items-center justify-center rounded-2xl bg-gray-100 p-1 border border-transparent">
                     {(['today', 'all', 'daily', 'weekly', 'archived'] as const).map((f) => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${filter === f
-                                ? 'bg-white text-text-primary shadow-sm'
+                                ? 'bg-[#fdfdfd] text-text-primary shadow-sm'
                                 : 'text-text-secondary hover:text-text-primary'
                                 }`}
                         >
@@ -463,7 +472,7 @@ export default function Habits() {
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                            <span className="material-icons-outlined text-green-600">check_circle</span>
+                            <CheckCircle className="text-green-600" size={24} />
                         </div>
                         <div>
                             <p className="text-xs text-text-secondary">Today</p>
@@ -473,7 +482,7 @@ export default function Habits() {
                     <div className="w-px h-10 bg-border-light" />
                     <div className="flex items-center gap-2">
                         <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                            <span className="material-icons-outlined text-blue-600">percent</span>
+                            <Percent className="text-blue-600" size={24} />
                         </div>
                         <div>
                             <p className="text-xs text-text-secondary">Completion</p>
@@ -496,7 +505,7 @@ export default function Habits() {
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
                 {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {Array.from({ length: 4 }).map((_, i) => (
                             <HabitCardSkeleton key={i} />
                         ))}
@@ -531,7 +540,7 @@ export default function Habits() {
                         )}
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {habits.map((habit) => (
                             <HabitCard
                                 key={habit.id}

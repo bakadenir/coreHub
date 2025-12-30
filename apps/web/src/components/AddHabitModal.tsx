@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { habitsApi } from '../lib';
+import { X } from 'lucide-react';
 
 interface AddHabitModalProps {
     isOpen: boolean;
@@ -54,6 +55,11 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
 
     const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
+    // Helper to capitalize first letter of each word
+    const toTitleCase = (str: string) => {
+        return str.replace(/\b\w/g, char => char.toUpperCase());
+    };
+
     const toggleDay = (index: number) => {
         setSelectedDays(prev =>
             prev.includes(index)
@@ -97,12 +103,12 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity"
+                className="absolute inset-0 bg-zinc-900/40 backdrop-blur-[2px] transition-opacity"
                 onClick={onClose}
             ></div>
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-[540px] flex flex-col bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
+            <div className="relative w-full max-w-[540px] flex flex-col bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h2 className="text-lg font-bold tracking-tight text-gray-900">Add Habit</h2>
@@ -110,9 +116,7 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                         onClick={onClose}
                         className="group p-1 rounded-md hover:bg-gray-100 transition-colors"
                     >
-                        <span className="material-icons-outlined text-gray-400 group-hover:text-black text-[20px]">
-                            close
-                        </span>
+                        <X size={20} className="text-gray-400 group-hover:text-black" />
                     </button>
                 </div>
 
@@ -128,7 +132,7 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                                     type="button"
                                     onClick={() => setIcon(emoji)}
                                     className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center transition-all ${icon === emoji
-                                        ? 'bg-black text-white shadow-md scale-110'
+                                        ? 'bg-zinc-900 text-white shadow-md scale-110'
                                         : 'bg-gray-100 hover:bg-gray-200'
                                         }`}
                                 >
@@ -142,11 +146,11 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                     <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-500">Habit Name *</label>
                         <input
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                            className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             placeholder="e.g., Meditate for 10 mins"
                             type="text"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e) => setName(toTitleCase(e.target.value))}
                         />
                     </div>
 
@@ -160,7 +164,7 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                                     type="button"
                                     onClick={() => setFrequency(option.value)}
                                     className={`flex items-center justify-center py-2 text-sm font-medium rounded-md transition-all ${frequency === option.value
-                                        ? 'bg-white text-black shadow-sm'
+                                        ? 'bg-[#fdfdfd] text-black shadow-sm'
                                         : 'text-gray-500 hover:text-black'
                                         }`}
                                 >
@@ -181,8 +185,8 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                                                 type="button"
                                                 onClick={() => toggleDay(index)}
                                                 className={`w-10 h-10 rounded-full text-xs font-mono font-bold flex items-center justify-center transition-all focus:outline-none ${isSelected
-                                                    ? 'bg-black text-white border border-black shadow-md'
-                                                    : 'border border-gray-200 bg-white text-gray-400 hover:border-gray-400 hover:text-black'
+                                                    ? 'bg-zinc-900 text-white border border-zinc-900 shadow-md'
+                                                    : 'border border-gray-200 bg-[#fdfdfd] text-gray-400 hover:border-gray-400 hover:text-black'
                                                     }`}
                                             >
                                                 {day}
@@ -201,7 +205,7 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                             <label className="block text-sm font-medium text-gray-500">Start Date</label>
                             <div className="relative group">
                                 <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
@@ -212,7 +216,7 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                             <label className="block text-sm font-medium text-gray-500">Reminder</label>
                             <div className="relative group">
                                 <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
                                     type="time"
                                     value={reminderTime}
                                     onChange={(e) => setReminderTime(e.target.value)}
@@ -234,7 +238,7 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                     <button
                         onClick={handleSave}
                         disabled={isSubmitting}
-                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? 'Saving...' : 'Save Habit'}
                     </button>

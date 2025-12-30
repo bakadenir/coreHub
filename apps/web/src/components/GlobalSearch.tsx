@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchApi, type SearchResult } from '../lib/search.api';
+import { renderIcon } from '../lib/iconMap';
+import { Search, RefreshCw, SearchX, LayoutDashboard, Settings, Sparkles, FileText, Link as LinkIcon, CalendarDays, CornerDownLeft } from 'lucide-react';
 
 interface GlobalSearchProps {
     isOpen: boolean;
@@ -207,15 +209,15 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
         >
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200"
+                className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm transition-opacity duration-200"
                 onClick={onClose}
             />
 
             {/* Search Modal */}
-            <div className={`relative w-full max-w-2xl mx-4 bg-white rounded-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4'}`}>
+            <div className={`relative w-full max-w-2xl mx-4 bg-[#fdfdfd] rounded-xl shadow-2xl overflow-hidden transition-all duration-200 ease-out ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-4'}`}>
                 {/* Search Input */}
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-                    <span className="material-icons-outlined text-gray-400 text-xl">search</span>
+                    <Search size={20} className="text-gray-400" />
                     <input
                         ref={inputRef}
                         type="text"
@@ -226,7 +228,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                         className="flex-1 text-lg text-text-primary placeholder-gray-400 outline-none bg-transparent"
                     />
                     {isLoading && (
-                        <span className="material-icons-outlined text-gray-400 text-xl animate-spin">refresh</span>
+                        <RefreshCw size={20} className="text-gray-400 animate-spin" />
                     )}
                     <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-400 bg-gray-100 rounded border border-gray-200">
                         ESC
@@ -237,7 +239,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 <div className="max-h-[400px] overflow-y-auto">
                     {query.length >= 2 && results.length === 0 && !isLoading && (
                         <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                            <span className="material-icons-outlined text-5xl mb-3">search_off</span>
+                            <SearchX size={48} className="mb-3" />
                             <p className="text-sm">No results found for "{query}"</p>
                         </div>
                     )}
@@ -247,27 +249,27 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                             <p className="text-sm text-gray-400 text-center">Type at least 2 characters to search</p>
                             <div className="mt-6 flex flex-wrap gap-2 justify-center">
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
-                                    <span className="material-icons-outlined text-[14px]">dashboard</span>
+                                    <LayoutDashboard size={14} />
                                     Pages
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
-                                    <span className="material-icons-outlined text-[14px]">settings</span>
+                                    <Settings size={14} />
                                     Settings
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
-                                    <span className="material-icons-outlined text-[14px]">self_improvement</span>
+                                    <Sparkles size={14} />
                                     Habits
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
-                                    <span className="material-icons-outlined text-[14px]">description</span>
+                                    <FileText size={14} />
                                     Notes
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
-                                    <span className="material-icons-outlined text-[14px]">link</span>
+                                    <LinkIcon size={14} />
                                     Links
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
-                                    <span className="material-icons-outlined text-[14px]">event</span>
+                                    <CalendarDays size={14} />
                                     Events
                                 </span>
                             </div>
@@ -286,9 +288,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                             }`}
                                     >
                                         <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-                                            <span className="material-icons-outlined text-gray-600 text-lg">
-                                                {result.icon}
-                                            </span>
+                                            {renderIcon(result.icon, { size: 18, className: 'text-gray-600' })}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-text-primary truncate">
@@ -304,9 +304,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                             {getTypeLabel(result.type)}
                                         </span>
                                         {index === selectedIndex && (
-                                            <span className="material-icons-outlined text-gray-400 text-base">
-                                                keyboard_return
-                                            </span>
+                                            <CornerDownLeft size={16} className="text-gray-400" />
                                         )}
                                     </button>
                                 </li>

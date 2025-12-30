@@ -26,6 +26,7 @@ import ClockWidget from '../components/ClockWidget';
 import LocationWidget from '../components/LocationWidget';
 import { schedulesApi } from '../lib';
 import { useToast } from '../context/ToastContext';
+import { GripVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Plus, CalendarDays, FileEdit, Link as LinkIcon, CalendarX, CalendarClock, MapPin } from 'lucide-react';
 
 const WIDGET_ORDER_KEY = 'corehub_widget_order_v4';
 const GREETING_SHOWN_KEY = 'corehub_greeting_shown';
@@ -84,13 +85,13 @@ function SortableWidget({
         // Just the drag indicator icon
         icon: (
             <span className="ml-2 opacity-0 group-hover/title:opacity-100 transition-opacity inline-flex items-center">
-                <span className="material-icons-outlined text-gray-400">drag_indicator</span>
+                <GripVertical size={20} className="text-gray-400" />
             </span>
         ),
     };
 
     return (
-        <div ref={setNodeRef} style={style} className={`relative group/widget ${isMain ? 'flex-1 flex flex-col' : ''}`}>
+        <div ref={setNodeRef} style={style} className={`relative group/widget ${isMain ? 'flex-1 flex flex-col' : 'h-full'}`}>
             {children(dragHandle)}
         </div>
     );
@@ -247,7 +248,7 @@ export default function Home() {
                         <div className="mt-2"><LocationWidget /></div>
                     </div>
                 ) : (
-                    <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col">
+                    <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col min-h-[180px]">
                         <div {...dragHandle?.titleProps}>
                             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Time</h2>
                             {dragHandle?.icon}
@@ -266,19 +267,19 @@ export default function Home() {
 
             case 'quickAction':
                 return (
-                    <div className={isMain ? "z-10 flex-1 flex items-center justify-center" : "bg-white border border-gray-200 rounded-xl p-5 shadow-sm"}>
+                    <div className={isMain ? "z-10 flex-1 flex items-center justify-center" : "bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col"}>
                         {!isMain && (
                             <div {...dragHandle?.titleProps}>
                                 <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Quick Action</h2>
                                 {dragHandle?.icon}
                             </div>
                         )}
-                        <nav className={isMain ? "grid grid-cols-2 gap-4 max-w-lg" : "space-y-2"}>
+                        <nav className={isMain ? "grid grid-cols-2 gap-4 max-w-lg" : "space-y-2 flex-1 flex flex-col justify-center"}>
                             {[
-                                { icon: 'add', label: 'Add Habit' },
-                                { icon: 'event', label: 'Add Schedule' },
-                                { icon: 'edit_note', label: 'Add Notes' },
-                                { icon: 'link', label: 'Add Link' },
+                                { icon: <Plus size={isMain ? 20 : 14} />, label: 'Add Habit' },
+                                { icon: <CalendarDays size={isMain ? 20 : 14} />, label: 'Add Schedule' },
+                                { icon: <FileEdit size={isMain ? 20 : 14} />, label: 'Add Notes' },
+                                { icon: <LinkIcon size={isMain ? 20 : 14} />, label: 'Add Link' },
                             ].map((action) => (
                                 <button
                                     key={action.label}
@@ -288,10 +289,10 @@ export default function Home() {
                                         if (action.label === 'Add Notes') setIsAddNoteOpen(true);
                                         if (action.label === 'Add Link') setIsAddLinkOpen(true);
                                     }}
-                                    className={`flex items-center gap-3 ${isMain ? 'px-6 py-4 text-base border border-gray-200 hover:border-gray-300' : 'w-full px-3 py-2.5 text-sm border border-transparent hover:border-gray-200'} font-medium text-gray-700 rounded-xl hover:bg-surface-light transition-all group`}
+                                    className={`flex items-center gap-3 ${isMain ? 'px-6 py-4 text-base border border-gray-200' : 'w-full px-3 py-2.5 text-sm'} font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all group`}
                                 >
-                                    <span className={`flex items-center justify-center ${isMain ? 'w-10 h-10' : 'w-6 h-6'} rounded bg-gray-100 text-gray-500 group-hover:bg-white group-hover:text-primary transition-colors shadow-sm`}>
-                                        <span className={`material-icons-outlined ${isMain ? 'text-xl' : 'text-sm'}`}>{action.icon}</span>
+                                    <span className={`flex items-center justify-center ${isMain ? 'w-10 h-10' : 'w-6 h-6'} rounded bg-gray-100 text-gray-500 group-hover:bg-[#fdfdfd] group-hover:text-zinc-900 transition-colors`}>
+                                        {action.icon}
                                     </span>
                                     {action.label}
                                 </button>
@@ -303,7 +304,7 @@ export default function Home() {
             case 'calendar':
                 return (
                     <div
-                        className={isMain ? "z-10 flex-1 flex flex-col" : "bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col"}
+                        className={isMain ? "z-10 flex-1 flex flex-col" : "bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col"}
                         onMouseLeave={() => handleDayHover(null)}
                     >
                         <div className={isMain ? "flex flex-col lg:flex-row lg:items-stretch flex-1" : ""}>
@@ -323,19 +324,19 @@ export default function Home() {
                                         {/* Main: Month navigation centered on its own row */}
                                         <div className="flex items-center justify-center gap-1 mb-4">
                                             <button onClick={() => navigateMonth(-12)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Previous year">
-                                                <span className="material-icons-outlined text-sm text-gray-400">keyboard_double_arrow_left</span>
+                                                <ChevronsLeft size={14} className="text-gray-400" />
                                             </button>
                                             <button onClick={() => navigateMonth(-1)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Previous month">
-                                                <span className="material-icons-outlined text-sm text-gray-500">chevron_left</span>
+                                                <ChevronLeft size={14} className="text-gray-500" />
                                             </button>
                                             <span className="text-xs font-mono text-gray-500 min-w-[120px] text-center">
                                                 {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}
                                             </span>
                                             <button onClick={() => navigateMonth(1)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Next month">
-                                                <span className="material-icons-outlined text-sm text-gray-500">chevron_right</span>
+                                                <ChevronRight size={14} className="text-gray-500" />
                                             </button>
                                             <button onClick={() => navigateMonth(12)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Next year">
-                                                <span className="material-icons-outlined text-sm text-gray-400">keyboard_double_arrow_right</span>
+                                                <ChevronsRight size={14} className="text-gray-400" />
                                             </button>
                                         </div>
                                     </>
@@ -351,13 +352,13 @@ export default function Home() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button onClick={() => navigateMonth(-1)} className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                <span className="material-icons-outlined text-sm text-gray-500">chevron_left</span>
+                                                <ChevronLeft size={14} className="text-gray-500" />
                                             </button>
                                             <span className="text-xs font-mono text-gray-500 min-w-[80px] text-center">
                                                 {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()}
                                             </span>
                                             <button onClick={() => navigateMonth(1)} className="p-1 hover:bg-gray-100 rounded transition-colors">
-                                                <span className="material-icons-outlined text-sm text-gray-500">chevron_right</span>
+                                                <ChevronRight size={14} className="text-gray-500" />
                                             </button>
                                         </div>
                                     </div>
@@ -405,7 +406,7 @@ export default function Home() {
                                                 </div>
                                             ) : schedules.length === 0 ? (
                                                 <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                                                    <span className="material-icons-outlined text-4xl mb-2">event_busy</span>
+                                                    <CalendarX size={36} className="mb-2" />
                                                     <p className="text-sm font-medium">No schedule for this day</p>
                                                 </div>
                                             ) : (
@@ -423,7 +424,7 @@ export default function Home() {
                                         </>
                                     ) : (
                                         <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                                            <span className="material-icons-outlined text-4xl mb-2">event_note</span>
+                                            <CalendarClock size={36} className="mb-2" />
                                             <p className="text-sm">Hover over a date to see schedule</p>
                                         </div>
                                     )}
@@ -463,9 +464,9 @@ export default function Home() {
                         {/* Main Layout: Sidebar + Right Column using Grid for height matching */}
                         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] gap-6 items-stretch">
                             {/* Sidebar - 3 widgets stacked, stretch to full height */}
-                            <aside className="flex flex-col gap-6">
+                            <aside className="flex flex-col gap-6 h-full">
                                 {sidebarWidgets.map((widgetId, index) => (
-                                    <div key={widgetId} className={index === sidebarWidgets.length - 1 ? 'flex-1 flex flex-col' : ''}>
+                                    <div key={widgetId} className={index === sidebarWidgets.length - 1 ? 'flex-1 flex flex-col [&>*]:h-full' : ''}>
                                         <SortableWidget id={widgetId}>
                                             {(dragHandle) => renderWidget(widgetId, false, dragHandle)}
                                         </SortableWidget>
@@ -477,7 +478,7 @@ export default function Home() {
                             <div className="flex flex-col gap-6">
                                 {/* Main Widget - stretches to fill space */}
                                 {isShowingSchedule ? (
-                                    <section className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col">
+                                    <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col">
                                         <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Schedule</h2>
                                         <div className="text-center mb-4">
                                             <p className="text-lg font-medium text-gray-900">{formatDateHeader(hoveredDate)}</p>
@@ -488,7 +489,7 @@ export default function Home() {
                                             </div>
                                         ) : schedules.length === 0 ? (
                                             <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-                                                <span className="material-icons-outlined text-5xl mb-3">event_busy</span>
+                                                <CalendarX size={48} className="mb-3" />
                                                 <p className="text-base font-medium">No schedule for this day</p>
                                             </div>
                                         ) : (
@@ -509,7 +510,7 @@ export default function Home() {
                                                                 <h4 className="font-bold text-gray-900 mb-1">{schedule.title}</h4>
                                                                 {schedule.location && (
                                                                     <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                                                                        <span className="material-icons-outlined text-[14px]">location_on</span>
+                                                                        <MapPin size={14} />
                                                                         {schedule.location}
                                                                     </div>
                                                                 )}
@@ -524,12 +525,12 @@ export default function Home() {
                                     <SortableWidget id={mainWidget} isMain>
                                         {(dragHandle) => mainWidget === 'calendar' ? (
                                             // Calendar has its own container
-                                            <div className="relative group flex-1 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                            <div className="relative group flex-1 bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm">
                                                 {renderWidget(mainWidget, true, dragHandle)}
                                             </div>
                                         ) : mainWidget === 'pomodoro' ? (
                                             // Pomodoro - use section container like other widgets
-                                            <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
+                                            <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
                                                 <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
                                                     <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
                                                         {widgetLabels[mainWidget]}
@@ -543,7 +544,7 @@ export default function Home() {
                                                 {renderWidget(mainWidget, true)}
                                             </section>
                                         ) : (
-                                            <section className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
+                                            <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
                                                 <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
                                                     <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
                                                         {widgetLabels[mainWidget]}

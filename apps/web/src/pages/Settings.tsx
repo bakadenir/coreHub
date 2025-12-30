@@ -6,6 +6,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { usersApi, notificationsApi } from '../lib';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { ArrowLeft, RefreshCw, ChevronDown, MapPin, Loader2 } from 'lucide-react';
 
 
 
@@ -26,6 +27,7 @@ export default function Settings() {
     const [isSavingPassword, setIsSavingPassword] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
     // Password form state
     const [currentPassword, setCurrentPassword] = useState('');
@@ -151,6 +153,51 @@ export default function Settings() {
 
     const handleAvatarChange = (base64: string) => {
         setAvatar(base64);
+    };
+
+    const handleDetectLocation = async () => {
+        if (!navigator.geolocation) {
+            showToast('Geolocation is not supported by your browser', 'error');
+            return;
+        }
+
+        setIsDetectingLocation(true);
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const { latitude, longitude } = position.coords;
+                    // Use OpenStreetMap Nominatim for reverse geocoding
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
+                    );
+                    const data = await response.json();
+
+                    if (data.address) {
+                        const state = data.address.state || data.address.city || data.address.county || '';
+                        const country = data.address.country || '';
+                        const formattedLocation = [state, country].filter(Boolean).join(', ');
+                        setLocation(formattedLocation);
+                        showToast('Location detected!', 'success');
+                    } else {
+                        showToast('Could not determine location', 'error');
+                    }
+                } catch {
+                    showToast('Failed to get location details', 'error');
+                } finally {
+                    setIsDetectingLocation(false);
+                }
+            },
+            (error) => {
+                setIsDetectingLocation(false);
+                if (error.code === error.PERMISSION_DENIED) {
+                    showToast('Location permission denied. Please enter manually.', 'error');
+                } else {
+                    showToast('Failed to detect location', 'error');
+                }
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     };
 
     const handleChangePassword = async () => {
@@ -283,7 +330,7 @@ export default function Settings() {
                         to="/home"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
-                        <span className="material-icons-outlined text-base">arrow_back</span>
+                        <ArrowLeft size={16} />
                         Back to Home
                     </Link>
                 </div>
@@ -291,9 +338,9 @@ export default function Settings() {
                 <div className="flex flex-col gap-12">
                     {/* Profile Settings Section */}
                     <section>
-                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-text-primary">Profile Settings</h2>
+                        <h2 className="text-3xl font-extrabold tracking-tight mb-8 text-text-primary">Profile Settings</h2>
 
-                        <div className="bg-white border border-border-light rounded-xl p-8 shadow-sm">
+                        <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-8 shadow-sm">
                             {/* Profile Header */}
                             <div className="flex items-center gap-6 mb-8">
                                 <AvatarUpload
@@ -316,7 +363,7 @@ export default function Settings() {
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                         placeholder="Enter your name"
-                                        className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                        className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     />
                                 </div>
 
@@ -327,18 +374,33 @@ export default function Settings() {
                                         onChange={(e) => setBio(e.target.value)}
                                         placeholder="Tell us about yourself..."
                                         rows={3}
-                                        className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none resize-none"
+                                        className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none resize-none"
                                     />
                                 </div>
 
                                 <div className="space-y-2.5">
-                                    <label className="block text-sm font-medium text-gray-500">Location</label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-sm font-medium text-gray-500">Location</label>
+                                        <button
+                                            type="button"
+                                            onClick={handleDetectLocation}
+                                            disabled={isDetectingLocation}
+                                            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors disabled:opacity-50"
+                                        >
+                                            {isDetectingLocation ? (
+                                                <Loader2 size={14} className="animate-spin" />
+                                            ) : (
+                                                <MapPin size={14} />
+                                            )}
+                                            {isDetectingLocation ? 'Detecting...' : 'Auto Detect'}
+                                        </button>
+                                    </div>
                                     <input
                                         type="text"
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}
                                         placeholder="e.g., Jakarta, Indonesia"
-                                        className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                        className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     />
                                 </div>
                             </div>
@@ -354,10 +416,10 @@ export default function Settings() {
                                 <button
                                     onClick={handleSaveProfile}
                                     disabled={isSavingProfile}
-                                    className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-xl hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 flex items-center gap-2"
+                                    className="px-6 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {isSavingProfile && (
-                                        <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
+                                        <RefreshCw size={16} className="animate-spin" />
                                     )}
                                     Save Changes
                                 </button>
@@ -367,9 +429,9 @@ export default function Settings() {
 
                     {/* Security Settings Section (Username) */}
                     <section>
-                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-text-primary">Security & Login</h2>
+                        <h2 className="text-3xl font-extrabold tracking-tight mb-8 text-text-primary">Security & Login</h2>
 
-                        <div className="bg-white border border-border-light rounded-xl p-8 shadow-sm">
+                        <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-8 shadow-sm">
                             <div className="space-y-6">
 
                                 <div className="space-y-2.5">
@@ -395,7 +457,7 @@ export default function Settings() {
                                                 type="password"
                                                 value={currentPassword}
                                                 onChange={(e) => setCurrentPassword(e.target.value)}
-                                                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                                className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                             />
                                         </div>
                                         <div className="space-y-6">
@@ -405,7 +467,7 @@ export default function Settings() {
                                                     type="password"
                                                     value={newPassword}
                                                     onChange={(e) => setNewPassword(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                                 />
                                             </div>
                                             <div className="space-y-2.5">
@@ -414,7 +476,7 @@ export default function Settings() {
                                                     type="password"
                                                     value={confirmPassword}
                                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                                    className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                                 />
                                             </div>
                                         </div>
@@ -423,10 +485,10 @@ export default function Settings() {
                                         <button
                                             onClick={handleChangePassword}
                                             disabled={isSavingPassword || !currentPassword || !newPassword || !confirmPassword}
-                                            className="px-5 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                                            className="px-5 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-xl hover:bg-zinc-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                                         >
                                             {isSavingPassword && (
-                                                <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
+                                                <RefreshCw size={16} className="animate-spin" />
                                             )}
                                             Change Password
                                         </button>
@@ -438,12 +500,12 @@ export default function Settings() {
 
                     {/* Notification Settings Section */}
                     <section>
-                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-text-primary">Notifications</h2>
+                        <h2 className="text-3xl font-extrabold tracking-tight mb-8 text-text-primary">Notifications</h2>
 
-                        <div className="bg-white border border-border-light rounded-xl p-8 shadow-sm">
+                        <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-8 shadow-sm">
                             {isLoadingNotifSettings ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <span className="material-icons-outlined text-2xl animate-spin text-gray-400">refresh</span>
+                                    <RefreshCw size={24} className="animate-spin text-gray-400" />
                                 </div>
                             ) : (
                                 <div className="space-y-6">
@@ -494,9 +556,9 @@ export default function Settings() {
                                         <button
                                             onClick={() => updateNotificationSetting('habitReminders', !habitReminders)}
                                             disabled={isSavingNotifSetting}
-                                            className={`w-12 h-7 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${habitReminders ? 'bg-black' : 'bg-gray-300'} ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className={`w-12 h-7 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${habitReminders ? 'bg-zinc-900' : 'bg-gray-300'} ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
-                                            <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-all ${habitReminders ? 'ml-auto' : 'ml-0'}`}></div>
+                                            <div className={`w-6 h-6 bg-[#fdfdfd] rounded-full shadow-sm transition-all ${habitReminders ? 'ml-auto' : 'ml-0'}`}></div>
                                         </button>
                                     </div>
 
@@ -509,9 +571,9 @@ export default function Settings() {
                                         <button
                                             onClick={() => updateNotificationSetting('scheduleReminders', !scheduleReminders)}
                                             disabled={isSavingNotifSetting}
-                                            className={`w-12 h-7 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${scheduleReminders ? 'bg-black' : 'bg-gray-300'} ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className={`w-12 h-7 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${scheduleReminders ? 'bg-zinc-900' : 'bg-gray-300'} ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
-                                            <div className={`w-6 h-6 bg-white rounded-full shadow-sm transition-all ${scheduleReminders ? 'ml-auto' : 'ml-0'}`}></div>
+                                            <div className={`w-6 h-6 bg-[#fdfdfd] rounded-full shadow-sm transition-all ${scheduleReminders ? 'ml-auto' : 'ml-0'}`}></div>
                                         </button>
                                     </div>
 
@@ -535,7 +597,7 @@ export default function Settings() {
                                                 <option value={60}>1 hour before</option>
                                             </select>
                                             <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
-                                                <span className="material-icons-outlined text-xl">expand_more</span>
+                                                <ChevronDown size={20} />
                                             </div>
                                         </div>
                                     </div>
@@ -546,9 +608,9 @@ export default function Settings() {
 
                     {/* Delete Account Section */}
                     <section>
-                        <h2 className="text-2xl font-bold tracking-tight mb-8 text-red-600">Account Actions</h2>
+                        <h2 className="text-3xl font-extrabold tracking-tight mb-8 text-red-600">Account Actions</h2>
 
-                        <div className="bg-white border border-red-200 rounded-xl p-8 shadow-sm">
+                        <div className="bg-[#fdfdfd] border border-red-200 rounded-xl p-8 shadow-sm">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <h4 className="text-base font-bold text-gray-900 mb-2">Delete Account</h4>
@@ -562,7 +624,7 @@ export default function Settings() {
                                     className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2 shrink-0"
                                 >
                                     {isDeletingAccount && (
-                                        <span className="material-icons-outlined text-[16px] animate-spin">refresh</span>
+                                        <RefreshCw size={16} className="animate-spin" />
                                     )}
                                     Delete Account
                                 </button>

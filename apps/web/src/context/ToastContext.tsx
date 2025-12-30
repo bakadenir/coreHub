@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { CheckCircle, AlertCircle, Info } from 'lucide-react';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -56,9 +57,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
     }, [toast.id, onRemove]);
 
     const bgColors = {
-        success: 'bg-black text-white',
+        success: 'bg-zinc-900 text-white',
         error: 'bg-red-600 text-white',
-        info: 'bg-white text-black border border-gray-200',
+        info: 'bg-[#fdfdfd] text-black border border-gray-200',
     };
 
     return (
@@ -66,13 +67,13 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
             className={`pointer-events-auto px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-fade-in-up flex items-center gap-2 min-w-[300px] ${bgColors[toast.type]}`}
         >
             {toast.type === 'success' && (
-                <span className="material-icons-outlined text-[18px]">check_circle</span>
+                <CheckCircle size={18} />
             )}
             {toast.type === 'error' && (
-                <span className="material-icons-outlined text-[18px]">error</span>
+                <AlertCircle size={18} />
             )}
             {toast.type === 'info' && (
-                <span className="material-icons-outlined text-[18px]">info</span>
+                <Info size={18} />
             )}
             <span>{toast.message}</span>
         </div>

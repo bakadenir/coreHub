@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { habitsApi, notesApi, linksApi, schedulesApi } from '../lib';
 import type { Habit, Note, LinkItem, ScheduleEvent } from '../types';
 import { useToast } from '../context/ToastContext';
@@ -20,6 +20,8 @@ import {
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { renderIcon } from '../lib/iconMap';
+import { Maximize2, GripVertical, ArrowUpRight } from 'lucide-react';
 
 interface ActivityCardsProps {
     refreshTrigger?: number;
@@ -77,13 +79,13 @@ function SortablePanel({
         <div
             ref={setNodeRef}
             style={style}
-            className={`bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors relative group min-h-[160px] ${isDragging ? 'shadow-lg' : ''}`}
+            className={`bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors relative group min-h-[140px] max-h-[180px] overflow-hidden ${isDragging ? 'shadow-lg' : ''}`}
         >
             <button
                 onClick={() => onNavigate(config.route)}
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-primary transition-colors z-10"
             >
-                <span className="material-icons-outlined text-lg">open_in_full</span>
+                <Maximize2 size={18} />
             </button>
 
             {/* Draggable Header */}
@@ -94,9 +96,9 @@ function SortablePanel({
             >
                 <span className="relative w-6 h-6 flex items-center justify-center">
                     {/* Panel icon - visible by default, hidden on hover */}
-                    <span className="material-icons-outlined text-gray-500 absolute inset-0 flex items-center justify-center group-hover/header:opacity-0 transition-opacity">{config.icon}</span>
+                    <span className="absolute inset-0 flex items-center justify-center group-hover/header:opacity-0 transition-opacity">{renderIcon(config.icon, { size: 20, className: 'text-gray-500' })}</span>
                     {/* Drag indicator - hidden by default, visible on hover */}
-                    <span className="material-icons-outlined text-gray-400 absolute inset-0 flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-opacity">drag_indicator</span>
+                    <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/header:opacity-100 transition-opacity"><GripVertical size={20} className="text-gray-400" /></span>
                 </span>
                 <h4 className="font-bold text-gray-900">{config.title}</h4>
             </div>
@@ -156,7 +158,34 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
             ]);
 
             if (habitsRes.success && habitsRes.data) {
-                setHabits(habitsRes.data.slice(0, 3));
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // Modal uses 0=Mon, ... 6=Sun. JS uses 0=Sun, 1=Mon.
+                // Convert JS day to Modal day: (day + 6) % 7
+                const currentDayIndex = (new Date().getDay() + 6) % 7;
+
+                const todaysHabits = habitsRes.data.filter(habit => {
+                    // Check start date
+                    if (habit.startDate) {
+                        const start = new Date(habit.startDate);
+                        start.setHours(0, 0, 0, 0);
+                        if (today < start) return false;
+                    }
+
+                    // Check frequency
+                    const freq = habit.frequency.toLowerCase();
+                    if (freq === 'daily') return true;
+                    if (freq === 'weekly') {
+                        if (habit.specificDays && habit.specificDays.length > 0) {
+                            return habit.specificDays.includes(currentDayIndex);
+                        }
+                        return false; // Weekly but no days selected -> hide
+                    }
+                    return true;
+                });
+
+                setHabits(todaysHabits);
             }
 
             if (schedulesRes.success && schedulesRes.data) {
@@ -167,15 +196,15 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                     return eventDate >= now;
                 });
                 upcomingSchedules.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-                setSchedule(upcomingSchedules.slice(0, 3));
+                setSchedule(upcomingSchedules);
             }
 
             if (notesRes.success && notesRes.data) {
-                setNotes(notesRes.data.slice(0, 2));
+                setNotes(notesRes.data);
             }
 
             if (linksRes.success && linksRes.data) {
-                setLinks(linksRes.data.slice(0, 2));
+                setLinks(linksRes.data);
             }
         } catch (error) {
             console.error('Failed to fetch activity data:', error);
@@ -219,106 +248,126 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
             }
             const habitsRes = await habitsApi.getAll();
             if (habitsRes.success && habitsRes.data) {
-                setHabits(habitsRes.data.slice(0, 3));
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const currentDayIndex = (new Date().getDay() + 6) % 7;
+
+                const todaysHabits = habitsRes.data.filter(habit => {
+                    if (habit.startDate) {
+                        const start = new Date(habit.startDate);
+                        start.setHours(0, 0, 0, 0);
+                        if (today < start) return false;
+                    }
+                    const freq = habit.frequency.toLowerCase();
+                    if (freq === 'daily') return true;
+                    if (freq === 'weekly') {
+                        if (habit.specificDays && habit.specificDays.length > 0) {
+                            return habit.specificDays.includes(currentDayIndex);
+                        }
+                        return false;
+                    }
+                    return true;
+                });
+                setHabits(todaysHabits);
             }
         } catch {
             showToast('Failed to update habit', 'error');
         }
     };
 
-    const linkColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500'];
+    const linkColors = ['bg-zinc-900', 'bg-zinc-700', 'bg-zinc-500', 'bg-zinc-400'];
 
     // Render panel content based on ID
     const renderPanelContent = (panelId: PanelId) => {
         switch (panelId) {
             case 'habits':
                 return habits.length === 0 ? (
-                    <p className="text-sm text-gray-400 font-light">No habits yet. Add your first habit!</p>
+                    <p className="text-sm text-gray-500">No habits yet. Add your first habit!</p>
                 ) : (
-                    <ul className="space-y-3 pl-1">
-                        {habits.map((habit) => (
-                            <li key={habit.id} className="flex items-center gap-3 text-sm text-gray-600">
-                                <input
-                                    checked={habit.completed}
-                                    onChange={() => handleHabitToggle(habit.id, habit.completed)}
-                                    className="form-checkbox h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary cursor-pointer"
-                                    type="checkbox"
-                                />
-                                <span className={`${habit.completed ? 'line-through text-gray-400' : ''} font-light`}>
-                                    {habit.name}
-                                </span>
-                            </li>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {habits.slice(0, 4).map((habit) => (
+                            <div key={habit.id} className="p-2.5 bg-gray-50 rounded h-full flex items-center">
+                                <label className="flex items-center gap-3 cursor-pointer select-none">
+                                    <input
+                                        checked={habit.completed}
+                                        onChange={() => handleHabitToggle(habit.id, habit.completed)}
+                                        className="form-checkbox h-4 w-4 shrink-0 accent-zinc-900 border-gray-300 rounded focus:ring-zinc-900 cursor-pointer"
+                                        type="checkbox"
+                                    />
+                                    <span className={`text-sm truncate ${habit.completed ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                                        {habit.name}
+                                    </span>
+                                </label>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 );
 
             case 'schedule':
                 return schedule.length === 0 ? (
-                    <p className="text-sm text-gray-400 font-light">No upcoming events. Add a schedule!</p>
+                    <p className="text-sm text-gray-500">No upcoming events. Add a schedule!</p>
                 ) : (
-                    <ul className="space-y-3">
-                        {schedule.map((item) => {
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {schedule.slice(0, 4).map((item) => {
                             const eventDate = new Date(item.startTime);
                             const dateStr = eventDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
                             const timeStr = eventDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
                             return (
-                                <li key={item.id} className="flex gap-3 text-sm">
-                                    <span className="font-mono text-xs font-bold pt-0.5 text-gray-400 whitespace-nowrap">
-                                        {dateStr} {timeStr}
-                                    </span>
-                                    <span className="text-gray-700 font-light truncate">
+                                <div key={item.id} className="p-2.5 bg-gray-50 rounded flex items-center gap-3 group h-full">
+                                    <span className="text-xs text-gray-500 shrink-0 min-w-[40px]">{dateStr}</span>
+                                    <span className="text-sm font-bold text-gray-800 shrink-0">{timeStr}</span>
+                                    <span className="text-gray-700 truncate font-medium text-sm">
                                         {item.title}
                                     </span>
-                                </li>
+                                </div>
                             );
                         })}
-                    </ul>
+                    </div>
                 );
 
             case 'notes':
                 return notes.length === 0 ? (
-                    <p className="text-sm text-gray-400 font-light">No notes yet. Create your first note!</p>
+                    <p className="text-sm text-gray-500">No notes yet. Create your first note!</p>
                 ) : (
-                    <div className="space-y-2">
-                        {notes.map((note) => (
-                            <div key={note.id} className="p-2.5 bg-gray-50 rounded border border-gray-100">
-                                <p className="text-xs font-bold text-gray-800 mb-1">
-                                    {note.title}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {notes.slice(0, 4).map((note) => (
+                            <Link
+                                key={note.id}
+                                to="/notes"
+                                state={{ noteId: note.id }}
+                                className="p-2.5 bg-gray-50 rounded h-full flex items-center transition-colors hover:bg-gray-100"
+                            >
+                                <p className="text-sm font-medium text-gray-700 line-clamp-2">
+                                    {note.title || 'Untitled Note'}
                                 </p>
-                                <p className="text-xs text-gray-500 line-clamp-1 font-light">
-                                    {note.content}
-                                </p>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 );
 
             case 'links':
                 return links.length === 0 ? (
-                    <p className="text-sm text-gray-400 font-light">No links saved. Add your first link!</p>
+                    <p className="text-sm text-gray-500">No links saved. Add your first link!</p>
                 ) : (
-                    <ul className="space-y-2">
-                        {links.map((link, idx) => (
-                            <li key={link.id}>
-                                <a
-                                    className="flex items-center justify-between p-2 rounded hover:bg-gray-50 group/link transition-colors"
-                                    href={link.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${linkColors[idx % linkColors.length]}`}></div>
-                                        <span className="text-sm font-medium text-gray-700 truncate font-light">
-                                            {link.title}
-                                        </span>
-                                    </div>
-                                    <span className="material-icons-outlined text-[14px] text-gray-300 group-hover/link:text-primary">
-                                        arrow_outward
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {links.slice(0, 4).map((link, idx) => (
+                            <a
+                                key={link.id}
+                                className="p-2.5 bg-gray-50 rounded flex items-center justify-between group/link h-full transition-colors hover:bg-gray-100"
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <div className={`w-1.5 h-1.5 shrink-0 rounded-full ${linkColors[idx % linkColors.length]}`}></div>
+                                    <span className="text-sm text-gray-700 truncate">
+                                        {link.title}
                                     </span>
-                                </a>
-                            </li>
+                                </div>
+                                <ArrowUpRight size={14} className="shrink-0 text-gray-300 group-hover/link:text-primary transition-colors" />
+                            </a>
                         ))}
-                    </ul>
+                    </div>
                 );
         }
     };
@@ -327,7 +376,7 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 min-h-[160px]">
+                    <div key={i} className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 min-h-[160px]">
                         {/* Header skeleton */}
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">

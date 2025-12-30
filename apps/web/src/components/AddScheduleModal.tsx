@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { schedulesApi } from '../lib';
+import { X, Clock, Calendar } from 'lucide-react';
 
 interface AddScheduleModalProps {
     isOpen: boolean;
@@ -11,7 +12,6 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
     const { showToast } = useToast();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [location, setLocation] = useState('');
     const [startDate, setStartDate] = useState('');
     const [startTime, setStartTime] = useState('09:00');
     const [endDate, setEndDate] = useState('');
@@ -24,7 +24,6 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
             const today = new Date().toISOString().split('T')[0];
             setTitle('');
             setDescription('');
-            setLocation('');
             setStartDate(today);
             setStartTime('09:00');
             setEndDate(today);
@@ -49,6 +48,17 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
     }, [isOpen]);
 
     if (!isOpen) return null;
+
+    // Helper to capitalize first letter of each word
+    const toTitleCase = (str: string) => {
+        return str.replace(/\b\w/g, char => char.toUpperCase());
+    };
+
+    // Helper to capitalize only the first letter of the text
+    const toSentenceCase = (str: string) => {
+        if (!str) return str;
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    };
 
     const handleSave = async () => {
         if (!title.trim()) {
@@ -75,7 +85,6 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
             const result = await schedulesApi.create({
                 title: title.trim(),
                 description: description.trim() || undefined,
-                location: location.trim() || undefined,
                 startTime: startTimeISO,
                 endTime: endTimeISO,
             });
@@ -97,12 +106,12 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-[2px] transition-opacity"
+                className="absolute inset-0 bg-zinc-900/40 backdrop-blur-[2px] transition-opacity"
                 onClick={onClose}
             ></div>
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-[540px] flex flex-col bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
+            <div className="relative w-full max-w-[540px] flex flex-col bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-10 text-gray-900 animate-fade-in-up">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h2 className="text-lg font-bold tracking-tight text-gray-900">Add Schedule</h2>
@@ -110,9 +119,7 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
                         onClick={onClose}
                         className="group p-1 rounded-md hover:bg-gray-100 transition-colors"
                     >
-                        <span className="material-icons-outlined text-gray-400 group-hover:text-black text-[20px]">
-                            close
-                        </span>
+                        <X size={20} className="text-gray-400 group-hover:text-black" />
                     </button>
                 </div>
 
@@ -122,12 +129,12 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
                     <div className="space-y-2.5">
                         <label className="block text-sm font-medium text-gray-500" htmlFor="event-title">Event Title *</label>
                         <input
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                            className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             id="event-title"
                             placeholder="e.g. Project Review Meeting"
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => setTitle(toTitleCase(e.target.value))}
                         />
                     </div>
 
@@ -138,74 +145,64 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
                             <span className="text-xs text-gray-400">Optional</span>
                         </div>
                         <textarea
-                            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
+                            className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
                             id="event-description"
                             placeholder="Enter event details..."
                             value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            onChange={(e) => setDescription(toSentenceCase(e.target.value))}
                         ></textarea>
                     </div>
 
-                    {/* Location */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500" htmlFor="event-location">Location</label>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <span className="material-icons-outlined text-gray-400 text-[20px] group-focus-within:text-black transition-colors">location_on</span>
-                            </div>
-                            <input
-                                className="w-full bg-white border border-gray-300 rounded-lg pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
-                                id="event-location"
-                                placeholder="e.g. Conference Room A or Zoom"
-                                type="text"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                            />
+                    {/* Date & Time Section */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <Calendar size={18} className="text-gray-400" />
+                            <label className="text-sm font-medium text-gray-500">Date & Time</label>
                         </div>
-                    </div>
 
-                    {/* Start Date & Time */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Start Date & Time *</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="relative group">
+                        <div className="grid grid-cols-2 gap-4">
+                            {/* Dates Row */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs text-gray-400 ml-1">From</label>
                                 <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 focus:border-zinc-900 focus:ring-0 transition-colors text-[14px] shadow-sm outline-none font-medium"
                                     type="date"
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
                                 />
                             </div>
-                            <div className="relative group">
+                            <div className="space-y-1.5">
+                                <label className="text-xs text-gray-400 ml-1">To</label>
                                 <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="time"
-                                    value={startTime}
-                                    onChange={(e) => setStartTime(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* End Date & Time */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">End Date & Time</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 focus:border-zinc-900 focus:ring-0 transition-colors text-[14px] shadow-sm outline-none font-medium"
                                     type="date"
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
                                 />
                             </div>
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-white border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="time"
-                                    value={endTime}
-                                    onChange={(e) => setEndTime(e.target.value)}
-                                />
+
+                            {/* Times Row */}
+                            <div className="space-y-1.5">
+                                <div className="relative">
+                                    <input
+                                        className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 focus:border-zinc-900 focus:ring-0 transition-colors text-[14px] shadow-sm outline-none font-mono"
+                                        type="time"
+                                        value={startTime}
+                                        onChange={(e) => setStartTime(e.target.value)}
+                                    />
+                                    <Clock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <div className="relative">
+                                    <input
+                                        className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 focus:border-zinc-900 focus:ring-0 transition-colors text-[14px] shadow-sm outline-none font-mono"
+                                        type="time"
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                    />
+                                    <Clock size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -223,7 +220,7 @@ export default function AddScheduleModal({ isOpen, onClose }: AddScheduleModalPr
                     <button
                         onClick={handleSave}
                         disabled={isSubmitting}
-                        className="px-6 py-2.5 text-sm font-medium bg-black text-white rounded-lg hover:bg-gray-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-6 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-zinc-800 transition-colors shadow-lg shadow-black/5 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? 'Saving...' : 'Save Schedule'}
                     </button>

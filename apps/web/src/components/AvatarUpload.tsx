@@ -124,7 +124,7 @@ export default function AvatarUpload({
                 />
 
                 {/* Overlay */}
-                <div className={`absolute inset-0 bg-black/50 flex items-center justify-center transition-opacity ${isLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                <div className={`absolute inset-0 bg-zinc-900/50 flex items-center justify-center transition-opacity ${isLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                     }`}>
                     {isLoading ? (
                         <span className="material-icons-outlined text-white text-2xl animate-spin">refresh</span>
