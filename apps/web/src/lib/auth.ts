@@ -10,6 +10,24 @@ export const signIn = {
         });
         return { data: data.session ? { user: data.user, session: data.session } : null, error };
     },
+    google: async () => {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/home`,
+            },
+        });
+        return { data, error };
+    },
+    github: async () => {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'github',
+            options: {
+                redirectTo: `${window.location.origin}/home`,
+            },
+        });
+        return { data, error };
+    },
 };
 
 export const signUp = {
@@ -44,3 +62,4 @@ export const useSession = () => {
 };
 
 export default supabase;
+
