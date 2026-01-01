@@ -24,8 +24,8 @@ router.post('/', optionalAuthMiddleware, async (req, res) => {
     try {
         const { name, avatar, rating, comment } = req.body;
 
-        if (!rating || !comment) {
-            return errorResponse(res, 'Bad Request', 'Rating and comment are required');
+        if (!rating) {
+            return errorResponse(res, 'Bad Request', 'Rating is required');
         }
 
         if (rating < 1 || rating > 5) {

@@ -156,9 +156,9 @@ export class LinksService {
             const html = await response.text();
 
             const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-            const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)['"]/i) ||
-                html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']*)['"]/i);
-            const imageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']*)['"]/i);
+            const descMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)['"]>/i) ||
+                html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']*)['"]>/i);
+            const imageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']*)['"]>/i);
 
             return {
                 title: titleMatch ? titleMatch[1].trim() : url,
@@ -168,33 +168,5 @@ export class LinksService {
         } catch {
             return { title: url, description: '', image: '' };
         }
-    }
-
-    async setPin(id: string, userId: string, isPinned: boolean) {
-        const { data: link, error } = await supabase
-            .from('links')
-            .update({
-                is_pinned: isPinned,
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', id)
-            .eq('user_id', userId)
-            .select('*, link_tags(*)')
-            .single();
-
-        if (error && error.code !== 'PGRST116') throw error;
-        if (!link) return null;
-
-        return {
-            id: link.id,
-            url: link.url,
-            title: link.title,
-            description: link.description,
-            image: link.image,
-            isPinned: link.is_pinned,
-            createdAt: link.created_at,
-            updatedAt: link.updated_at,
-            tags: (link.link_tags || []).map((t: any) => t.tag),
-        };
     }
 }

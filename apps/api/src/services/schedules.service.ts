@@ -89,16 +89,22 @@ export class SchedulesService {
     }
 
     async create(userId: string, data: CreateScheduleDto) {
+        const insertData: any = {
+            user_id: userId,
+            title: data.title,
+            description: data.description,
+            start_time: data.startTime,
+            end_time: data.endTime,
+        };
+        
+        // Add optional fields if provided
+        if (data.location) insertData.location = data.location;
+        if (data.color) insertData.color = data.color;
+        if (data.isAllDay !== undefined) insertData.is_all_day = data.isAllDay;
+
         const { data: event, error } = await supabase
             .from('schedule_events')
-            .insert({
-                user_id: userId,
-                title: data.title,
-                description: data.description,
-                start_time: data.startTime,
-                end_time: data.endTime,
-                // Note: location, platform, color, is_all_day, recurrence columns may not exist in DB
-            })
+            .insert(insertData)
             .select()
             .single();
 
@@ -125,7 +131,9 @@ export class SchedulesService {
         if (data.description !== undefined) updateData.description = data.description;
         if (data.startTime !== undefined) updateData.start_time = data.startTime;
         if (data.endTime !== undefined) updateData.end_time = data.endTime;
-        // Note: location, platform, color, is_all_day, recurrence columns may not exist in DB
+        if (data.location !== undefined) updateData.location = data.location;
+        if (data.color !== undefined) updateData.color = data.color;
+        if (data.isAllDay !== undefined) updateData.is_all_day = data.isAllDay;
 
         const { data: event, error } = await supabase
             .from('schedule_events')

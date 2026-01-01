@@ -11,6 +11,7 @@ export interface CreateNoteDto {
     content?: string;
     tag?: string;
     reminderAt?: string;
+    contentType?: 'rich' | 'markdown';
 }
 
 export interface UpdateNoteDto extends Partial<CreateNoteDto> { }
@@ -34,6 +35,7 @@ function transformNote(note: any) {
         title: note.title,
         content: note.content,
         tag: note.color, // Supabase uses 'color', frontend expects 'tag'
+        contentType: note.content_type || 'rich', // Default to rich for existing notes
         isPinned: note.is_pinned,
         isPublic: note.is_public || false,
         publicSlug: note.public_slug || null,
@@ -95,6 +97,7 @@ export class NotesService {
                 content: data.content,
                 tag: data.tag,
                 reminder_at: data.reminderAt,
+                content_type: data.contentType || 'rich',
             })
             .select()
             .single();
@@ -122,6 +125,7 @@ export class NotesService {
         if (data.content !== undefined) updateData.content = data.content;
         if (data.tag !== undefined) updateData.tag = data.tag;
         if (data.reminderAt !== undefined) updateData.reminder_at = data.reminderAt;
+        if (data.contentType !== undefined) updateData.content_type = data.contentType;
 
         const { data: note, error } = await supabase
             .from('notes')

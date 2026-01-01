@@ -97,7 +97,7 @@ async function checkHabitReminders() {
                                 setting.user_id,
                                 {
                                     title: '✅ Habit Reminder',
-                                    body: `Don't forget: ${habit.name}`,
+                                    body: `Don't forget: ${habit.title}`,
                                     tag: notifKey,
                                     data: { type: 'habit', id: habit.id },
                                 },

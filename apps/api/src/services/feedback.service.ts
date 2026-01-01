@@ -4,7 +4,7 @@ export interface CreateFeedbackDto {
     name?: string;
     avatar?: string;
     rating: number;
-    comment: string;
+    comment?: string;
 }
 
 export class FeedbackService {
@@ -23,7 +23,7 @@ export class FeedbackService {
                         name: data.name || existing.name,
                         avatar: data.avatar !== undefined ? data.avatar : existing.avatar,
                         rating: Math.min(5, Math.max(1, data.rating)),
-                        comment: data.comment,
+                        comment: data.comment !== undefined ? data.comment : existing.comment,
                         updated_at: new Date().toISOString(),
                     })
                     .eq('id', existing.id)
@@ -42,7 +42,7 @@ export class FeedbackService {
                 name: data.name || 'Anonymous',
                 avatar: data.avatar || null,
                 rating: Math.min(5, Math.max(1, data.rating)),
-                comment: data.comment,
+                comment: data.comment || '',
                 is_public: true,
                 is_approved: true,
             })
@@ -70,7 +70,7 @@ export class FeedbackService {
                 name: data.name || existing.name,
                 avatar: data.avatar !== undefined ? data.avatar : existing.avatar,
                 rating: Math.min(5, Math.max(1, data.rating)),
-                comment: data.comment,
+                comment: data.comment !== undefined ? data.comment : existing.comment,
                 updated_at: new Date().toISOString(),
             })
             .eq('id', id)

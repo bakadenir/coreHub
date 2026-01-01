@@ -11,11 +11,13 @@ const clients: Map<string, Response[]> = new Map();
 router.get('/notifications', authMiddleware, (req, res) => {
     const userId = req.user!.id;
 
-    // Set headers for SSE
+    // Set headers for SSE with proper CORS
+    const origin = req.headers.origin || '*';
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.flushHeaders();
 
     // Add client to connected clients

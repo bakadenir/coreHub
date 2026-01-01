@@ -83,10 +83,11 @@ export class DonationsService {
                 quantity: 1,
                 name: `Donation to coreHub${data.message ? ` - ${data.message.substring(0, 50)}` : ''}`,
             }],
+            // All callbacks point to /donate - frontend verifies actual status
             callbacks: {
-                finish: `${frontendUrl}/donate?status=success&order_id=${orderId}`,
-                error: `${frontendUrl}/donate?status=error&order_id=${orderId}`,
-                pending: `${frontendUrl}/donate?status=pending&order_id=${orderId}`,
+                finish: `${frontendUrl}/donate?order_id=${orderId}`,
+                error: `${frontendUrl}/donate?order_id=${orderId}`,
+                pending: `${frontendUrl}/donate?order_id=${orderId}`,
             },
         };
 

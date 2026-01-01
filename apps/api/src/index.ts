@@ -8,6 +8,7 @@ import habitsRouter from './routes/habits.routes';
 import schedulesRouter from './routes/schedules.routes';
 import notesRouter from './routes/notes.routes';
 import linksRouter from './routes/links.routes';
+import todosRouter from './routes/todos.routes';
 import usersRouter from './routes/users.routes';
 import adminRouter from './routes/admin.routes';
 import searchRouter from './routes/search.routes';
@@ -40,6 +41,7 @@ app.use('/api/habits', habitsRouter);
 app.use('/api/schedules', schedulesRouter);
 app.use('/api/notes', notesRouter);
 app.use('/api/links', linksRouter);
+app.use('/api/todos', todosRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/search', searchRouter);
@@ -67,12 +69,34 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // Start server
-app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, () => {
     console.log(`🚀 Server running on http://localhost:${env.PORT}`);
     console.log(`📚 API Docs: http://localhost:${env.PORT}/api/health`);
 
     // Start the notification scheduler
     startScheduler();
 });
+
+// Configure keep-alive for better connection stability
+server.keepAliveTimeout = 65000; // 65 seconds (slightly higher than typical load balancer timeouts)
+server.headersTimeout = 66000; // Slightly higher than keepAliveTimeout
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal: string) => {
+    console.log(`\n⚠️  Received ${signal}. Shutting down gracefully...`);
+    server.close(() => {
+        console.log('✅ Server closed. Exiting process.');
+        process.exit(0);
+    });
+
+    // Force close after 10 seconds
+    setTimeout(() => {
+        console.error('❌ Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;
