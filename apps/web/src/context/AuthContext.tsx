@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     // Track last user ID to prevent unnecessary updates
     const lastUserIdRef = useRef<string | null>(null);
 
@@ -56,13 +56,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
         });
 
-        // Listen for auth changes - only update if user actually changed
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        // Listen for auth changes - update on any auth event
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log('Auth event:', event, 'Session:', !!session);
+
             const newUser = mapSupabaseUser(session?.user ?? null);
             const newUserId = newUser?.id ?? null;
-            
-            // Only update state if user actually changed
-            if (newUserId !== lastUserIdRef.current) {
+
+            // Always update session and user on SIGNED_IN or TOKEN_REFRESHED
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+                lastUserIdRef.current = newUserId;
+                setSession(session);
+                setUser(newUser);
+            }
+            // For other events, only update if user actually changed
+            else if (newUserId !== lastUserIdRef.current) {
                 lastUserIdRef.current = newUserId;
                 setSession(session);
                 setUser(newUser);
