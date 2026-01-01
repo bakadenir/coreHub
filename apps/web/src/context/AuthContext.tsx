@@ -47,14 +47,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const lastUserIdRef = useRef<string | null>(null);
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        // Handle OAuth callback hash fragment
+        const handleOAuthCallback = async () => {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+
+            if (accessToken) {
+                console.log('OAuth callback detected, extracting session...');
+                // Let Supabase handle the hash - it should auto-detect it
+                // Just trigger a getSession which will pick up the hash
+            }
+
+            // Get initial session
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) {
+                console.error('Error getting session:', error);
+            }
             const newUser = mapSupabaseUser(session?.user ?? null);
             lastUserIdRef.current = newUser?.id ?? null;
             setSession(session);
             setUser(newUser);
             setIsLoading(false);
-        });
+        };
+
+        handleOAuthCallback();
 
         // Listen for auth changes - update on any auth event
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
