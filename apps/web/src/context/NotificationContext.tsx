@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { notificationsApi, type Notification } from '../lib/notifications.api';
 import { useAuth } from './AuthContext';
 
@@ -19,9 +20,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+    
+    // Use ref to track if initial fetch has been done
+    const hasFetchedRef = useRef(false);
+    // Use user.id for stable dependency instead of entire user object
+    const userId = user?.id;
 
     const refreshNotifications = useCallback(async () => {
-        if (!user) return;
+        if (!userId) return;
 
         setIsLoading(true);
         try {
@@ -41,31 +47,41 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, [user]);
+    }, [userId]);
 
     // Fetch notifications on mount and when user changes
     useEffect(() => {
-        if (user) {
-            refreshNotifications();
+        if (userId) {
+            // Only fetch if we haven't fetched yet or user actually changed
+            if (!hasFetchedRef.current) {
+                hasFetchedRef.current = true;
+                refreshNotifications();
+            }
         } else {
+            hasFetchedRef.current = false;
             setNotifications([]);
             setUnreadCount(0);
         }
-    }, [user, refreshNotifications]);
+    }, [userId, refreshNotifications]);
 
     // Set up SSE connection for real-time updates
     useEffect(() => {
-        if (!user) return;
+        if (!userId) return;
 
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
         let eventSource: EventSource | null = null;
         let reconnectAttempts = 0;
-        const maxReconnectAttempts = 3;
+        const maxReconnectAttempts = 10; // Limit max reconnection attempts
+        let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
         let isMounted = true;
 
         const connectSSE = async () => {
             // Don't attempt to connect if component unmounted or max attempts reached
-            if (!isMounted || reconnectAttempts >= maxReconnectAttempts) return;
+            if (!isMounted) return;
+            if (reconnectAttempts >= maxReconnectAttempts) {
+                console.log('Max SSE reconnection attempts reached, stopping.');
+                return;
+            }
 
             try {
                 // Get fresh token from Supabase
@@ -75,6 +91,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
                 if (!session?.access_token) {
                     console.log('No session for SSE, skipping connection');
                     return;
+                }
+
+                // Close existing connection before creating new one
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
                 }
 
                 // Pass token as query parameter since EventSource doesn't support headers
@@ -101,26 +123,49 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
                 eventSource.onerror = () => {
                     eventSource?.close();
+                    eventSource = null;
                     reconnectAttempts++;
 
-                    // Only reconnect if mounted and not exceeded max attempts
+                    // Reconnect with exponential backoff (max 60 seconds), with attempt limit
                     if (isMounted && reconnectAttempts < maxReconnectAttempts) {
-                        const delay = Math.min(5000 * reconnectAttempts, 30000);
-                        setTimeout(connectSSE, delay);
+                        const delay = Math.min(5000 * Math.pow(2, reconnectAttempts - 1), 60000);
+                        console.log(`SSE disconnected. Attempt ${reconnectAttempts}/${maxReconnectAttempts}. Reconnecting in ${Math.round(delay / 1000)}s...`);
+                        reconnectTimeout = setTimeout(connectSSE, delay);
                     }
                 };
             } catch (e) {
                 console.error('SSE connection error:', e);
+                reconnectAttempts++;
+                // Also retry on connection errors with limit
+                if (isMounted && reconnectAttempts < maxReconnectAttempts) {
+                    const delay = Math.min(5000 * Math.pow(2, reconnectAttempts), 60000);
+                    reconnectTimeout = setTimeout(connectSSE, delay);
+                }
             }
         };
 
-        connectSSE();
+        // Delay initial SSE connection slightly to avoid race with auth
+        const initialTimeout = setTimeout(connectSSE, 1000);
+
+        // Reconnect when tab becomes visible again
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && isMounted) {
+                if (!eventSource || eventSource.readyState === EventSource.CLOSED) {
+                    reconnectAttempts = 0; // Reset attempts on manual reconnect
+                    connectSSE();
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
 
         return () => {
             isMounted = false;
+            clearTimeout(initialTimeout);
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
             eventSource?.close();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [user]);
+    }, [userId]);
 
     const markAsRead = useCallback(async (id: string) => {
         try {

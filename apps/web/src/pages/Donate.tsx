@@ -1,18 +1,27 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { feedbackApi, usersApi, donationsApi } from '../lib';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { ArrowLeft, Clock, Heart, Loader2, History, MessageSquare, Send, Edit3, BadgeCheck, Box } from 'lucide-react';
+
+interface MidtransResult {
+    status_code: string;
+    status_message: string;
+    transaction_id?: string;
+    order_id?: string;
+    payment_type?: string;
+}
 
 declare global {
     interface Window {
         snap?: {
             pay: (token: string, options: {
-                onSuccess?: (result: any) => void;
-                onPending?: (result: any) => void;
-                onError?: (result: any) => void;
+                onSuccess?: (result: MidtransResult) => void;
+                onPending?: (result: MidtransResult) => void;
+                onError?: (result: MidtransResult) => void;
                 onClose?: () => void;
             }) => void;
         };
@@ -41,6 +50,37 @@ interface Review {
 export default function Donate() {
     const { showToast } = useToast();
     const { user } = useAuth();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+
+    // Handle Midtrans redirect callback
+    useEffect(() => {
+        const orderId = searchParams.get('order_id');
+
+        if (orderId) {
+            // Clear URL params
+            navigate('/donate', { replace: true });
+
+            // Verify actual transaction status with backend
+            donationsApi.verify(orderId).then((result) => {
+                if (result.success && result.data?.status === 'success') {
+                    showToast('Terima kasih atas donasi Anda! 🎉', 'success');
+                    // Refresh donations list
+                    donationsApi.getPublic(20).then(res => {
+                        if (res.success && res.data) setDonationsList(res.data);
+                    });
+                } else if (result.data?.status === 'pending') {
+                    showToast('Pembayaran pending. Silakan selesaikan pembayaran.', 'info');
+                } else if (result.data?.status === 'cancelled') {
+                    showToast('Transaksi dibatalkan.', 'info');
+                } else {
+                    // Don't show toast for unknown/other statuses
+                }
+            }).catch(() => {
+                // Silent fail - don't bother user with verification errors
+            });
+        }
+    }, [searchParams, navigate, showToast]);
 
     // Feedback form state
     const [rating, setRating] = useState(0);
@@ -78,12 +118,11 @@ export default function Donate() {
             try {
                 const result = await usersApi.getMe();
                 if (result.success && result.data) {
-                    const userData = result.data as any;
-                    const fullUrl = getFullAvatarUrl(userData.image);
+                    const fullUrl = getFullAvatarUrl(result.data.image);
                     setUserAvatar(fullUrl || null);
                 }
-            } catch (error) {
-                console.error('Error fetching user:', error);
+            } catch {
+                // Silently fail - avatar is optional
             }
         };
         fetchUserAvatar();
@@ -210,13 +249,13 @@ export default function Donate() {
                             }
                             return;
                         }
-                    } catch (e) {
-                        console.log('Verify check failed, showing pending panel');
+                    } catch {
+                        // Verify check failed, showing pending panel
                     }
                     setPendingDonation(result.data);
                 }
-            } catch (error) {
-                console.error('Error fetching pending donation:', error);
+            } catch {
+                // Error fetching pending donation - ignore
             }
         };
         fetchPending();
@@ -227,6 +266,7 @@ export default function Donate() {
         if (user?.name && !donorName) {
             setDonorName(user.name);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user]);
 
     // Handle cancel pending donation
@@ -239,7 +279,7 @@ export default function Donate() {
                 setPendingDonation(null);
                 showToast('Donasi pending dibatalkan', 'success');
             }
-        } catch (error) {
+        } catch {
             showToast('Gagal membatalkan donasi', 'error');
         } finally {
             setIsCancelling(false);
@@ -350,10 +390,6 @@ export default function Donate() {
             showToast('Please select a rating', 'error');
             return;
         }
-        if (!comment.trim()) {
-            showToast('Please write your feedback', 'error');
-            return;
-        }
 
         setIsSubmitting(true);
         try {
@@ -375,7 +411,7 @@ export default function Donate() {
             } else {
                 showToast(result.error || 'Failed to submit feedback', 'error');
             }
-        } catch (error) {
+        } catch {
             showToast('Network error', 'error');
         } finally {
             setIsSubmitting(false);
@@ -384,41 +420,41 @@ export default function Donate() {
 
     // Format relative time
     const formatRelativeTime = (dateString: string) => {
+        if (!dateString) return '';
         const date = new Date(dateString);
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
-        const diffMinutes = Math.floor(diffMs / (1000 * 60));
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-        // Handle just now / very recent
-        if (diffMinutes < 1) return 'Just now';
+        // Handle future dates or invalid dates
+        if (diffMs < 0 || isNaN(diffMs)) return date.toLocaleDateString();
+
+        const diffSeconds = Math.floor(diffMs / 1000);
+        const diffMinutes = Math.floor(diffSeconds / 60);
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffSeconds < 60) return 'Just now';
         if (diffMinutes < 60) return `${diffMinutes} min ago`;
         if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
         if (diffDays === 1) return 'Yesterday';
-        if (diffDays > 0 && diffDays < 7) return `${diffDays} days ago`;
-        if (diffDays >= 7) return date.toLocaleDateString();
-        // Fallback for edge cases (negative or weird values)
-        return 'Recently';
+        if (diffDays < 7) return `${diffDays} days ago`;
+        return date.toLocaleDateString();
     };
 
     return (
         <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary relative overflow-hidden">
             {/* Dynamic Background */}
+            {/* Dynamic Background */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 {/* Base bg */}
                 <div className="absolute inset-0 bg-gray-50/50"></div>
 
-                {/* Animated Gradient Blobs */}
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300/30 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
-                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
-                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200/30 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
-
                 {/* Grid Overlay */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
 
-                {/* Radial fade for grid to be softer at edges */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,transparent,white)]"></div>
+                {/* Gradient Fades */}
+                <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white to-transparent"></div>
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white to-transparent"></div>
             </div>
             <Header subtitle="Donate" />
 
@@ -430,7 +466,7 @@ export default function Donate() {
                         to="/home"
                         className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                     >
-                        <span className="material-icons-outlined text-base">arrow_back</span>
+                        <ArrowLeft size={16} />
                         Back to Home
                     </Link>
                 </div>
@@ -442,7 +478,7 @@ export default function Donate() {
                             Thank you for using{' '}
                             <span className="inline-flex items-center gap-1.5">
                                 <span className="inline-flex items-center justify-center rounded bg-zinc-900 text-white size-5">
-                                    <span className="material-icons-outlined text-sm">hub</span>
+                                    <Box size={14} />
                                 </span>
                                 <strong className="text-text-primary font-semibold">coreHub</strong>
                             </span>.
@@ -465,11 +501,11 @@ export default function Donate() {
                         {pendingDonation ? (
                             /* Pending Payment Panel */
                             <>
-                                <h3 className="text-lg font-bold text-amber-600 mb-4 flex items-center gap-2">
-                                    <span className="material-icons-outlined">pending</span>
+                                <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                    <Clock size={20} />
                                     Awaiting Payment
                                 </h3>
-                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                                         <div>
                                             <p className="text-sm text-gray-500">Order ID</p>
@@ -477,7 +513,7 @@ export default function Donate() {
                                         </div>
                                         <div className="text-right">
                                             <p className="text-sm text-gray-500">Total Amount</p>
-                                            <p className="text-2xl font-bold text-amber-600">
+                                            <p className="text-2xl font-bold text-gray-900">
                                                 Rp {pendingDonation.amount.toLocaleString('id-ID')}
                                             </p>
                                         </div>
@@ -497,7 +533,7 @@ export default function Donate() {
                                             onClick={() => {
                                                 setPendingDonation(null);
                                             }}
-                                            className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
+                                            className="flex-1 px-4 py-2.5 bg-zinc-900 text-white rounded-xl font-medium hover:bg-zinc-800 transition-colors"
                                         >
                                             Create New Donation
                                         </button>
@@ -508,7 +544,7 @@ export default function Donate() {
                             /* Donation Form */
                             <>
                                 <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                    <span className="material-icons-outlined text-amber-500">volunteer_activism</span>
+                                    <Heart size={20} className="text-gray-500" />
                                     Choose Payment Method
                                 </h3>
 
@@ -558,11 +594,13 @@ export default function Donate() {
                                         <label className="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
                                         <textarea
                                             value={donationMessage}
-                                            onChange={(e) => setDonationMessage(e.target.value)}
+                                            onChange={(e) => setDonationMessage(e.target.value.slice(0, 200))}
                                             placeholder="Write a message for the developer..."
                                             rows={2}
+                                            maxLength={200}
                                             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400 resize-none"
                                         />
+                                        <p className="text-xs text-gray-400 text-right mt-1">{donationMessage.length}/200</p>
                                     </div>
                                 </div>
 
@@ -572,11 +610,11 @@ export default function Donate() {
                                     <button
                                         onClick={handleDonate}
                                         disabled={isDonating}
-                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#0A8AFF] hover:bg-[#0070E0] text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         {isDonating ? (
                                             <>
-                                                <span className="material-icons-outlined text-xl animate-spin">refresh</span>
+                                                <Loader2 size={20} className="animate-spin" />
                                                 Processing...
                                             </>
                                         ) : (
@@ -590,7 +628,7 @@ export default function Donate() {
                                     {/* PayPal Button (Placeholder) */}
                                     <button
                                         disabled
-                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#FFC439] text-[#003087] font-bold rounded-xl opacity-60 cursor-not-allowed"
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-gray-200 text-gray-500 font-bold rounded-xl opacity-60 cursor-not-allowed"
                                     >
                                         <span className="text-lg font-extrabold italic">PayPal</span>
                                         <span className="text-sm opacity-80">(Coming Soon)</span>
@@ -599,7 +637,7 @@ export default function Donate() {
                                     {/* Stripe Button (Placeholder) */}
                                     <button
                                         disabled
-                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-[#635BFF] text-white font-bold rounded-xl opacity-60 cursor-not-allowed"
+                                        className="group flex items-center justify-center gap-3 px-6 py-4 bg-gray-300 text-gray-600 font-bold rounded-xl opacity-60 cursor-not-allowed"
                                     >
                                         <span className="text-lg font-bold">Stripe</span>
                                         <span className="text-sm opacity-80">(Coming Soon)</span>
@@ -616,7 +654,7 @@ export default function Donate() {
                 <section>
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-                            <span className="material-icons-outlined text-gray-400">history</span>
+                            <History size={20} className="text-gray-400" />
                             Donation History
                         </h2>
                         <div className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
@@ -637,7 +675,7 @@ export default function Donate() {
                                 {isLoadingDonations ? (
                                     <tr>
                                         <td colSpan={4} className="py-12 text-center">
-                                            <span className="material-icons-outlined text-2xl animate-spin text-gray-400">refresh</span>
+                                            <Loader2 size={24} className="animate-spin text-gray-400" />
                                         </td>
                                     </tr>
                                 ) : donationsList.length === 0 ? (
@@ -662,7 +700,7 @@ export default function Donate() {
                                             <td className={`py-4 px-6 ${donation.message ? 'text-gray-700' : 'text-gray-400 italic'} group-hover:text-black`}>
                                                 {donation.message || 'No message'}
                                             </td>
-                                            <td className="py-4 px-6 text-right font-mono font-medium text-amber-600">
+                                            <td className="py-4 px-6 text-right font-mono font-medium text-green-600">
                                                 Rp {donation.amount.toLocaleString('id-ID')}
                                             </td>
                                         </tr>
@@ -679,7 +717,7 @@ export default function Donate() {
                 <section>
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-                            <span className="material-icons-outlined text-gray-400">rate_review</span>
+                            <MessageSquare size={20} className="text-gray-400" />
                             Share Your Feedback
                         </h2>
                         <div className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
@@ -706,7 +744,7 @@ export default function Donate() {
                                         className="p-1 hover:scale-110 transition-transform"
                                     >
                                         <svg
-                                            className={`w-7 h-7 transition-colors ${starNum <= (hoverRating || rating) ? 'text-yellow-400' : 'text-gray-300'}`}
+                                            className={`w-7 h-7 transition-colors ${starNum <= (hoverRating || rating) ? 'text-zinc-700' : 'text-gray-300'}`}
                                             fill="currentColor"
                                             viewBox="0 0 20 20"
                                         >
@@ -719,14 +757,19 @@ export default function Donate() {
 
                         {/* Feedback Text */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Your Feedback</label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-sm font-medium text-gray-700">Your Feedback</label>
+                                <span className="text-xs text-gray-400">Optional</span>
+                            </div>
                             <textarea
                                 placeholder="Tell us about your experience with coreHub... What do you love? What could be improved?"
                                 value={comment}
-                                onChange={(e) => setComment(e.target.value)}
+                                onChange={(e) => setComment(e.target.value.slice(0, 500))}
+                                maxLength={500}
                                 className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-gray-400 resize-none bg-gray-50 focus:bg-[#fdfdfd] transition-colors"
                                 rows={4}
                             />
+                            <p className="text-xs text-gray-400 text-right mt-1">{comment.length}/500</p>
                         </div>
 
                         {/* Anonymous Checkbox */}
@@ -738,7 +781,7 @@ export default function Donate() {
                                     onChange={(e) => setIsAnonymous(e.target.checked)}
                                     className="sr-only peer"
                                 />
-                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-50 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-[#fdfdfd] after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-zinc-50 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-[#fdfdfd] after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-zinc-900"></div>
                             </label>
                             <span className="text-sm text-gray-600">
                                 Post as <span className="font-medium text-gray-900">{isAnonymous ? 'Anonymous' : (user?.name || 'Anonymous')}</span>
@@ -752,9 +795,9 @@ export default function Donate() {
                             className={`px-4 py-2 bg-primary text-white text-sm font-medium rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-2 ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             {isSubmitting ? (
-                                <span className="material-icons-outlined text-base animate-spin">refresh</span>
+                                <Loader2 size={16} className="animate-spin" />
                             ) : (
-                                <span className="material-icons-outlined text-base">{isEditing ? 'edit' : 'send'}</span>
+                                isEditing ? <Edit3 size={16} /> : <Send size={16} />
                             )}
                             {isSubmitting ? 'Saving...' : (isEditing ? 'Update Review' : 'Submit')}
                         </button>
@@ -767,15 +810,15 @@ export default function Donate() {
                             <div className="flex flex-col md:flex-row gap-8 mb-8 p-6 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-sm">
                                 {/* Average Rating */}
                                 <div className="flex flex-col items-center justify-center md:border-r border-gray-200 md:pr-8">
-                                    <span className="text-5xl font-bold text-amber-500">{averageRating}</span>
+                                    <span className="text-5xl font-bold text-zinc-900">{averageRating}</span>
                                     <div className="flex gap-0.5 my-2">
                                         {[1, 2, 3, 4, 5].map((star) => (
-                                            <svg key={star} className={`w-5 h-5 ${star <= Math.round(Number(averageRating)) ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                            <svg key={star} className={`w-5 h-5 ${star <= Math.round(Number(averageRating)) ? 'text-zinc-700' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                             </svg>
                                         ))}
                                     </div>
-                                    <span className="text-sm text-amber-600 font-medium">App Rating</span>
+                                    <span className="text-sm text-gray-600 font-medium">App Rating</span>
                                 </div>
 
                                 {/* Rating Distribution */}
@@ -787,14 +830,14 @@ export default function Donate() {
                                             <div key={star} className="flex items-center gap-3">
                                                 <div className="flex gap-0.5 min-w-[80px]">
                                                     {[...Array(5)].map((_, i) => (
-                                                        <svg key={i} className={`w-3.5 h-3.5 ${i < star ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                        <svg key={i} className={`w-3.5 h-3.5 ${i < star ? 'text-zinc-700' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
                                                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                                         </svg>
                                                     ))}
                                                 </div>
                                                 <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-amber-400 rounded-full transition-all duration-300"
+                                                        className="h-full bg-zinc-700 rounded-full transition-all duration-300"
                                                         style={{ width: `${percent}%` }}
                                                     />
                                                 </div>
@@ -847,7 +890,7 @@ export default function Donate() {
                         {/* Reviews List */}
                         {isLoadingReviews ? (
                             <div className="flex items-center justify-center py-12">
-                                <span className="material-icons-outlined text-3xl animate-spin text-gray-400">refresh</span>
+                                <Loader2 size={32} className="animate-spin text-gray-400" />
                             </div>
                         ) : filteredReviews.length === 0 ? (
                             <p className="text-sm text-gray-400 text-center py-12 bg-[#fdfdfd] border border-gray-200 rounded-xl">
@@ -860,11 +903,11 @@ export default function Donate() {
                                     return (
                                         <div
                                             key={review.id}
-                                            className={`rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow border ${isOwnReview ? 'bg-amber-50 border-amber-300 ring-2 ring-amber-200' : 'bg-[#fdfdfd] border-gray-200'}`}
+                                            className={`rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow border ${isOwnReview ? 'bg-gray-50 border-zinc-400 ring-2 ring-zinc-200' : 'bg-[#fdfdfd] border-gray-200'}`}
                                         >
                                             {isOwnReview && (
-                                                <div className="flex items-center gap-2 mb-3 text-amber-600">
-                                                    <span className="material-icons-outlined text-sm">verified</span>
+                                                <div className="flex items-center gap-2 mb-3 text-zinc-700">
+                                                    <BadgeCheck size={14} />
                                                     <span className="text-xs font-semibold uppercase tracking-wide">Your Review</span>
                                                 </div>
                                             )}
@@ -894,7 +937,7 @@ export default function Donate() {
                                                         <span className="font-semibold text-gray-900">{review.name}</span>
                                                         <div className="flex gap-0.5">
                                                             {[...Array(5)].map((_, i) => (
-                                                                <svg key={i} className={`w-4 h-4 ${i < review.rating ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                                                <svg key={i} className={`w-4 h-4 ${i < review.rating ? 'text-zinc-700' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
                                                                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                                                 </svg>
                                                             ))}

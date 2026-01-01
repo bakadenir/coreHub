@@ -26,23 +26,20 @@ export const linksApi = {
         if (filters?.tags?.length) params.set('tags', filters.tags.join(','));
         if (filters?.search) params.set('search', filters.search);
         const query = params.toString() ? `?${params.toString()}` : '';
-        return api.get<LinkItem[]>(`/api/links${query}`);
+        return api.get<LinkItem[]>(`/links${query}`);
     },
 
-    getById: (id: string) => api.get<LinkItem>(`/api/links/${id}`),
+    getById: (id: string) => api.get<LinkItem>(`/links/${id}`),
 
     preview: (url: string) => {
         const params = new URLSearchParams({ url });
-        return api.get<LinkMetadata>(`/api/links/preview?${params.toString()}`);
+        return api.get<LinkMetadata>(`/links/preview?${params.toString()}`);
     },
 
-    create: (data: CreateLinkData) => api.post<LinkItem>('/api/links', data),
+    create: (data: CreateLinkData) => api.post<LinkItem>('/links', data),
 
     update: (id: string, data: Partial<CreateLinkData>) =>
-        api.patch<LinkItem>(`/api/links/${id}`, data),
+        api.patch<LinkItem>(`/links/${id}`, data),
 
-    delete: (id: string) => api.delete(`/api/links/${id}`),
-
-    pin: (id: string, isPinned: boolean) =>
-        api.patch<LinkItem>(`/api/links/${id}/pin`, { isPinned }),
+    delete: (id: string) => api.delete(`/links/${id}`),
 };

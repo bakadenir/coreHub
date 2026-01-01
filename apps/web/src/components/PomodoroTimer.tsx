@@ -58,10 +58,18 @@ interface PomodoroTimerProps {
     isMain?: boolean;
 }
 
+// Extend Window interface for webkit prefix
+declare global {
+    interface Window {
+        webkitAudioContext: typeof AudioContext;
+    }
+}
+
 // Play alarm sound using Web Audio API (~3 seconds)
 const playAlarmSound = () => {
     try {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioContextClass();
 
         // Chime pattern: multiple tones with increasing pitch
         const playTone = (frequency: number, startTime: number, duration: number) => {
@@ -177,6 +185,34 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
         setIsRunning(false);
     };
 
+    // Handle timer completion
+    const handleTimerComplete = useCallback(() => {
+        setIsRunning(false);
+        playAlarmSound();
+
+        // Show notification if permitted
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Pomodoro Timer', {
+                body: mode === 'focus' ? 'Time for a break!' : 'Back to focus!',
+                icon: '/pomodoro-icon.png',
+                badge: '/pomodoro-icon.png',
+            });
+        }
+
+        // Auto-switch mode
+        if (mode === 'focus') {
+            const newSessions = sessions + 1;
+            setSessions(newSessions);
+            if (newSessions % 4 === 0) {
+                switchMode('longBreak');
+            } else {
+                switchMode('shortBreak');
+            }
+        } else {
+            switchMode('focus');
+        }
+    }, [mode, sessions, switchMode]);
+
     // Timer effect
     useEffect(() => {
         let interval: ReturnType<typeof setInterval> | null = null;
@@ -186,40 +222,14 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
                 setTimeLeft(prev => prev - 1);
             }, 1000);
         } else if (timeLeft === 0 && isRunning) {
-            // Timer finished
-            setIsRunning(false);
-
-            // Play notification sound
-            playAlarmSound();
-
-            // Show notification if permitted
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('Pomodoro Timer', {
-                    body: mode === 'focus' ? 'Time for a break!' : 'Back to focus!',
-                    icon: '/pomodoro-icon.png',
-                    badge: '/pomodoro-icon.png',
-                });
-            }
-
-            // Auto-switch mode
-            if (mode === 'focus') {
-                const newSessions = sessions + 1;
-                setSessions(newSessions);
-                // After 4 focus sessions, take a long break
-                if (newSessions % 4 === 0) {
-                    switchMode('longBreak');
-                } else {
-                    switchMode('shortBreak');
-                }
-            } else {
-                switchMode('focus');
-            }
+            // Defer completion handling to avoid synchronous setState in effect
+            queueMicrotask(handleTimerComplete);
         }
 
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [isRunning, timeLeft, mode, sessions, switchMode]);
+    }, [isRunning, timeLeft, handleTimerComplete]);
 
     // Request notification permission
     useEffect(() => {
@@ -326,7 +336,11 @@ export default function PomodoroTimer({ dragHandle, isMain = false }: PomodoroTi
 
     // Sidebar version with container
     return (
-        <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm">
+        <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm relative overflow-hidden group">
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                backgroundSize: '24px 24px',
+            }}></div>
             {content}
         </div>
     );

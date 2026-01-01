@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { schedulesApi } from '../lib';
 import type { ScheduleEvent } from '../types';
-import { X, MapPin } from 'lucide-react';
+import { X } from 'lucide-react';
+import { type DateRange } from 'react-day-picker';
+import { DateRangePicker } from './DateRangePicker';
+import { format } from 'date-fns';
 
 interface EditScheduleModalProps {
     isOpen: boolean;
@@ -15,9 +18,8 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
-    const [startDate, setStartDate] = useState('');
+    const [dateRange, setDateRange] = useState<DateRange | undefined>();
     const [startTime, setStartTime] = useState('09:00');
-    const [endDate, setEndDate] = useState('');
     const [endTime, setEndTime] = useState('10:00');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,22 +30,30 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
             setDescription(event.description || '');
             setLocation(event.location || '');
 
+            let fromDate = new Date();
+            let toDate = new Date();
+
             // Parse startTime ISO string
             if (event.startTime) {
                 const date = new Date(event.startTime);
-                setStartDate(date.toISOString().split('T')[0]);
+                fromDate = date;
                 setStartTime(date.toTimeString().slice(0, 5));
             }
 
             // Parse endTime if exists
             if (event.endTime) {
                 const date = new Date(event.endTime);
-                setEndDate(date.toISOString().split('T')[0]);
+                toDate = date;
                 setEndTime(date.toTimeString().slice(0, 5));
             } else {
-                setEndDate('');
+                toDate = fromDate;
                 setEndTime('');
             }
+
+            setDateRange({
+                from: fromDate,
+                to: toDate
+            });
         }
     }, [isOpen, event]);
 
@@ -70,6 +80,8 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
         return str.replace(/\b\w/g, char => char.toUpperCase());
     };
 
+
+
     // Helper to capitalize only the first letter of the text
     const toSentenceCase = (str: string) => {
         if (!str) return str;
@@ -81,16 +93,21 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
             showToast('Please enter an event title', 'error');
             return;
         }
-        if (!startDate || !startTime) {
+        if (!dateRange?.from || !startTime) {
             showToast('Please set start date and time', 'error');
             return;
         }
 
         setIsSubmitting(true);
         try {
+            // Format dates to YYYY-MM-DD using local time
+            const startDateStr = format(dateRange.from, 'yyyy-MM-dd');
+            // If to is undefined, use from
+            const endDateStr = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : startDateStr;
+
             // Combine date and time into ISO string
-            const startTimeISO = `${startDate}T${startTime}:00`;
-            const endTimeISO = endDate && endTime ? `${endDate}T${endTime}:00` : undefined;
+            const startTimeISO = `${startDateStr}T${startTime}:00`;
+            const endTimeISO = endDateStr && endTime ? `${endDateStr}T${endTime}:00` : undefined;
 
             const result = await schedulesApi.update(String(event.id), {
                 title: title.trim(),
@@ -138,13 +155,17 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 max-h-[70vh]">
                     {/* Event Title */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Event Title *</label>
+                        <div className="flex justify-between">
+                            <label className="block text-sm font-medium text-gray-500">Event Title *</label>
+                            <span className="text-xs text-gray-400">{title.length}/100</span>
+                        </div>
                         <input
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             placeholder="e.g. Project Review Meeting"
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(toTitleCase(e.target.value))}
+                            onChange={(e) => setTitle(toTitleCase(e.target.value.slice(0, 100)))}
+                            maxLength={100}
                         />
                     </div>
 
@@ -152,75 +173,69 @@ export default function EditScheduleModal({ isOpen, onClose, event }: EditSchedu
                     <div className="space-y-2.5">
                         <div className="flex justify-between">
                             <label className="block text-sm font-medium text-gray-500">Description</label>
-                            <span className="text-xs text-gray-400">Optional</span>
+                            <span className="text-xs text-gray-400">{description.length}/500</span>
                         </div>
                         <textarea
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
                             placeholder="Enter event details..."
                             value={description}
-                            onChange={(e) => setDescription(toSentenceCase(e.target.value))}
+                            onChange={(e) => setDescription(toSentenceCase(e.target.value.slice(0, 500)))}
+                            maxLength={500}
                         ></textarea>
                     </div>
 
                     {/* Location */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Location</label>
-                        <div className="relative group">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <MapPin size={20} className="text-gray-400 group-focus-within:text-black transition-colors" />
-                            </div>
-                            <input
-                                className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg pl-11 pr-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
-                                placeholder="e.g. Conference Room A or Zoom"
-                                type="text"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                            />
+                        <div className="flex justify-between">
+                            <label className="block text-sm font-medium text-gray-500">Location</label>
+                            <span className="text-xs text-gray-400">{location.length}/200</span>
                         </div>
+                        <input
+                            className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                            placeholder="e.g. Conference Room A or Zoom"
+                            type="text"
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value.slice(0, 200))}
+                            maxLength={200}
+                        />
                     </div>
 
-                    {/* Start Date & Time */}
+                    {/* Date & Time Section */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">Start Date & Time *</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                />
-                            </div>
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="time"
-                                    value={startTime}
-                                    onChange={(e) => setStartTime(e.target.value)}
-                                />
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm font-medium text-gray-500">Date & Time</label>
                         </div>
-                    </div>
 
-                    {/* End Date & Time */}
-                    <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">End Date & Time</label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
+                        <div className="space-y-3">
+                            {/* Date Range Picker */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs text-gray-400 ml-1">Date Range</label>
+                                <DateRangePicker
+                                    date={dateRange}
+                                    setDate={setDateRange}
                                 />
                             </div>
-                            <div className="relative group">
-                                <input
-                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
-                                    type="time"
-                                    value={endTime}
-                                    onChange={(e) => setEndTime(e.target.value)}
-                                />
+
+                            {/* Times Row */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-gray-400 ml-1">Start Time</label>
+                                    <input
+                                        className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                        type="time"
+                                        value={startTime}
+                                        onChange={(e) => setStartTime(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs text-gray-400 ml-1">End Time</label>
+                                    <input
+                                        className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                        type="time"
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

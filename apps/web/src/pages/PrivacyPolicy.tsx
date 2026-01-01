@@ -21,7 +21,7 @@ export default function PrivacyPolicy() {
             <main className="flex-1 flex flex-col items-center p-6 sm:p-8 lg:p-12">
                 <div className="w-full max-w-3xl">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-                    <p className="text-gray-500 mb-8">Last updated: December 26, 2025</p>
+                    <p className="text-gray-500 mb-8">Last updated: January 1, 2026</p>
 
                     <div className="prose prose-gray max-w-none space-y-8">
                         {/* Introduction */}
@@ -52,6 +52,7 @@ export default function PrivacyPolicy() {
                                 <li>Saved links and bookmarks</li>
                                 <li>Habit tracking data and completion history</li>
                                 <li>Schedule events and appointments</li>
+                                <li>Todo lists, tasks, and subtasks</li>
                                 <li>Dashboard widget configurations</li>
                             </ul>
 

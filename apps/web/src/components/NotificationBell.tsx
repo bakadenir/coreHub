@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
 import type { Notification } from '../lib/notifications.api';
 import { Bell, BellOff, CheckCircle, CalendarDays, Heart, X } from 'lucide-react';
@@ -7,6 +8,7 @@ export default function NotificationBell() {
     const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const location = useLocation();
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -55,16 +57,18 @@ export default function NotificationBell() {
         }
     };
 
+    const isNotificationsPage = location.pathname === '/notifications';
+
     return (
         <div className="relative" ref={dropdownRef}>
             {/* Bell Button */}
             <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="relative w-[38px] h-[38px] flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                onClick={() => !isNotificationsPage && setIsOpen(!isOpen)}
+                className={`relative w-[38px] h-[38px] flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors ${isNotificationsPage ? 'cursor-default bg-gray-100' : 'cursor-pointer'}`}
             >
                 <Bell size={20} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-xs font-bold rounded-full px-1">
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-zinc-900 text-white text-xs font-bold rounded-full px-1">
                         {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}
@@ -79,7 +83,7 @@ export default function NotificationBell() {
                         {unreadCount > 0 && (
                             <button
                                 onClick={() => markAllAsRead()}
-                                className="text-xs text-primary hover:underline"
+                                className="text-xs text-gray-900 hover:underline font-medium"
                             >
                                 Mark all as read
                             </button>
@@ -98,15 +102,11 @@ export default function NotificationBell() {
                                 <div
                                     key={notification.id}
                                     onClick={() => handleNotificationClick(notification)}
-                                    className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.isRead ? 'bg-blue-50/50' : ''
+                                    className={`px-4 py-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.isRead ? 'bg-gray-50/80' : ''
                                         }`}
                                 >
                                     <div className="flex gap-3">
-                                        <div className={`w-8 h-8 flex items-center justify-center rounded-full ${notification.type === 'habit_reminder' ? 'bg-green-100 text-green-600' :
-                                            notification.type === 'schedule_reminder' ? 'bg-blue-100 text-blue-600' :
-                                                notification.type === 'system' ? 'bg-amber-100 text-amber-600' :
-                                                    'bg-gray-100 text-gray-600'
-                                            }`}>
+                                        <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-zinc-900">
                                             {getNotificationIcon(notification.type)}
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -135,6 +135,16 @@ export default function NotificationBell() {
                                 </div>
                             ))
                         )}
+                    </div>
+                    {/* Footer */}
+                    <div className="border-t border-gray-100 p-2">
+                        <Link
+                            to="/notifications"
+                            onClick={() => setIsOpen(false)}
+                            className="block w-full py-2 text-center text-sm font-medium text-gray-600 hover:text-black hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            See all notifications
+                        </Link>
                     </div>
                 </div>
             )}

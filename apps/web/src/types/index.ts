@@ -13,6 +13,7 @@ export interface Habit {
     completionRate: number; // e.g., 100, 67, 0 (percentage)
     startDate?: string;
     specificDays?: number[];
+    reminderTime?: string; // e.g., "09:00" - 24h format for reminder
     isArchived?: boolean;
     hasStarted?: boolean; // true if today >= startDate
     isDueToday?: boolean; // true if habit should be done today based on frequency
@@ -49,6 +50,7 @@ export interface Note {
     id: number | string;
     title: string;
     content: string;
+    contentType?: 'rich' | 'markdown';
     date?: string; // legacy
     createdAt?: string;
     updatedAt?: string;
@@ -78,9 +80,10 @@ export interface ScheduleEvent {
     startTime: string;
     endTime?: string;
     title: string;
-    color: string; // class for border/text styling e.g. "border-gray-600"
+    color?: string; // color name e.g. "blue", "green"
     location?: string;
     description?: string;
+    isAllDay?: boolean;
 }
 
 export interface AgendaItem {
@@ -101,6 +104,7 @@ export interface UserProfile {
     bio: string;
     avatar: string; // url (legacy)
     image?: string; // url (from API)
+    location?: string;
 }
 
 export interface AdminStat {
@@ -123,4 +127,96 @@ export interface ActivityLog {
     action: string;
     user: string;
     time: string;
+}
+
+// ========== TODO TYPES ==========
+
+export type TodoPriority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface Todo {
+    id: string;
+    userId: string;
+    listId?: string;
+    parentId?: string;
+    title: string;
+    description?: string;
+    priority: TodoPriority;
+    dueDate?: string;
+    dueTime?: string;
+    isCompleted: boolean;
+    completedAt?: string;
+    sortOrder: number;
+    tags: string[];
+    reminderAt?: string;
+    isRecurring: boolean;
+    recurrencePattern?: string;
+    createdAt: string;
+    updatedAt: string;
+    subtasks: Todo[];
+}
+
+export interface TodoList {
+    id: string;
+    userId: string;
+    name: string;
+    color: string;
+    icon: string;
+    sortOrder: number;
+    createdAt: string;
+    updatedAt: string;
+    todoCount: number;
+}
+
+export interface TodoFilters {
+    listId?: string;
+    completed?: boolean;
+    priority?: TodoPriority;
+    dueDate?: 'today' | 'upcoming' | 'overdue' | 'no-date';
+    search?: string;
+}
+
+export interface CreateTodoDto {
+    title: string;
+    description?: string;
+    listId?: string;
+    parentId?: string;
+    priority?: TodoPriority;
+    dueDate?: string;
+    dueTime?: string;
+    tags?: string[];
+    reminderAt?: string;
+}
+
+export interface UpdateTodoDto {
+    title?: string;
+    description?: string;
+    listId?: string;
+    priority?: TodoPriority;
+    dueDate?: string;
+    dueTime?: string;
+    tags?: string[];
+    reminderAt?: string;
+    sortOrder?: number;
+}
+
+export interface CreateTodoListDto {
+    name: string;
+    color?: string;
+    icon?: string;
+}
+
+export interface UpdateTodoListDto {
+    name?: string;
+    color?: string;
+    icon?: string;
+    sortOrder?: number;
+}
+
+export interface TodoStats {
+    total: number;
+    completed: number;
+    active: number;
+    overdue: number;
+    dueToday: number;
+    completionRate: number;
 }

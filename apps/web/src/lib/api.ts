@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001') + '/api';
 
 interface ApiResponse<T> {
     success: boolean;
@@ -11,9 +11,11 @@ interface ApiResponse<T> {
 
 class ApiClient {
     private baseUrl: string;
+    private defaultTimeout: number;
 
-    constructor(baseUrl: string) {
+    constructor(baseUrl: string, timeout = 15000) {
         this.baseUrl = baseUrl;
+        this.defaultTimeout = timeout; // 15 seconds default timeout
     }
 
     private async getAuthHeaders(): Promise<Record<string, string>> {
@@ -32,9 +34,14 @@ class ApiClient {
 
     private async request<T>(
         endpoint: string,
-        options: RequestInit = {}
+        options: RequestInit = {},
+        timeout?: number
     ): Promise<ApiResponse<T>> {
         const url = `${this.baseUrl}${endpoint}`;
+
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout || this.defaultTimeout);
 
         const authHeaders = await this.getAuthHeaders();
 
@@ -44,10 +51,13 @@ class ApiClient {
                 ...authHeaders,
                 ...options.headers,
             },
+            signal: controller.signal,
         };
 
         try {
             const response = await fetch(url, config);
+            clearTimeout(timeoutId);
+
             const data = await response.json();
 
             if (!response.ok) {
@@ -60,6 +70,17 @@ class ApiClient {
 
             return data;
         } catch (error) {
+            clearTimeout(timeoutId);
+
+            // Check if request was aborted due to timeout
+            if (error instanceof Error && error.name === 'AbortError') {
+                return {
+                    success: false,
+                    error: 'Request timeout',
+                    message: 'The request took too long and was cancelled',
+                };
+            }
+
             return {
                 success: false,
                 error: 'Network error',

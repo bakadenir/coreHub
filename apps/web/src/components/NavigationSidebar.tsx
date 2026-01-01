@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, CheckCircle, Calendar, FileText, Link as LinkIcon } from 'lucide-react';
+import { LayoutDashboard, CheckCircle, Calendar, FileText, Link as LinkIcon, ListTodo } from 'lucide-react';
 
 export default function NavigationSidebar() {
     const location = useLocation();
@@ -10,13 +10,14 @@ export default function NavigationSidebar() {
     const isMouseInsideRef = useRef(false);
 
     // Apply collapsible sidebar to all main pages
-    const mainPages = ['/home', '/habits', '/schedule', '/notes', '/links'];
+    const mainPages = ['/home', '/todos', '/habits', '/schedule', '/notes', '/links'];
     const isMainPage = mainPages.includes(location.pathname);
 
     // Check if mouse is inside sidebar on mount and after navigation
     const checkMousePosition = useCallback(() => {
         if (isMouseInsideRef.current) {
-            setIsHovered(true);
+            // Defer to avoid synchronous setState in effect
+            queueMicrotask(() => setIsHovered(true));
         }
     }, []);
 
@@ -82,17 +83,23 @@ export default function NavigationSidebar() {
                     </span>
                     <span className={textClass}>Home</span>
                 </Link>
-                <Link className={linkClass('/habits')} to="/habits">
-                    <span className={iconClass('/habits')}>
-                        <CheckCircle size={16} />
+                <Link className={linkClass('/todos')} to="/todos">
+                    <span className={iconClass('/todos')}>
+                        <ListTodo size={16} />
                     </span>
-                    <span className={textClass}>Habits</span>
+                    <span className={textClass}>Todo List</span>
                 </Link>
                 <Link className={linkClass('/schedule')} to="/schedule">
                     <span className={iconClass('/schedule')}>
                         <Calendar size={16} />
                     </span>
                     <span className={textClass}>Schedule</span>
+                </Link>
+                <Link className={linkClass('/habits')} to="/habits">
+                    <span className={iconClass('/habits')}>
+                        <CheckCircle size={16} />
+                    </span>
+                    <span className={textClass}>Habits</span>
                 </Link>
                 <Link className={linkClass('/notes')} to="/notes">
                     <span className={iconClass('/notes')}>

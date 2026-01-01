@@ -26,7 +26,7 @@ import ClockWidget from '../components/ClockWidget';
 import LocationWidget from '../components/LocationWidget';
 import { schedulesApi } from '../lib';
 import { useToast } from '../context/ToastContext';
-import { GripVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Plus, CalendarDays, FileEdit, Link as LinkIcon, CalendarX, CalendarClock, MapPin } from 'lucide-react';
+import { GripVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Plus, CalendarDays, FileEdit, Link as LinkIcon, CalendarX, CalendarClock, MapPin, ListTodo } from 'lucide-react';
 
 const WIDGET_ORDER_KEY = 'corehub_widget_order_v4';
 const GREETING_SHOWN_KEY = 'corehub_greeting_shown';
@@ -248,7 +248,11 @@ export default function Home() {
                         <div className="mt-2"><LocationWidget /></div>
                     </div>
                 ) : (
-                    <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col min-h-[180px]">
+                    <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col min-h-[180px] relative overflow-hidden group">
+                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                            backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                            backgroundSize: '24px 24px',
+                        }}></div>
                         <div {...dragHandle?.titleProps}>
                             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Time</h2>
                             {dragHandle?.icon}
@@ -267,20 +271,27 @@ export default function Home() {
 
             case 'quickAction':
                 return (
-                    <div className={isMain ? "z-10 flex-1 flex items-center justify-center" : "bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col"}>
+                    <div className={isMain ? "z-10 flex-1 flex items-center justify-center" : "bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm h-full flex flex-col relative overflow-hidden group"}>
+                        {!isMain && (
+                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                                backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                                backgroundSize: '24px 24px',
+                            }}></div>
+                        )}
                         {!isMain && (
                             <div {...dragHandle?.titleProps}>
                                 <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Quick Action</h2>
                                 {dragHandle?.icon}
                             </div>
                         )}
-                        <nav className={isMain ? "grid grid-cols-2 gap-4 max-w-lg" : "space-y-2 flex-1 flex flex-col justify-center"}>
+                        <nav className={isMain ? "grid grid-cols-2 gap-3 max-w-lg" : "space-y-1 flex-1 flex flex-col justify-center"}>
                             {[
-                                { icon: <Plus size={isMain ? 20 : 14} />, label: 'Add Habit' },
+                                { icon: <ListTodo size={isMain ? 20 : 14} />, label: 'Add Todo List' },
                                 { icon: <CalendarDays size={isMain ? 20 : 14} />, label: 'Add Schedule' },
+                                { icon: <Plus size={isMain ? 20 : 14} />, label: 'Add Habit' },
                                 { icon: <FileEdit size={isMain ? 20 : 14} />, label: 'Add Notes' },
                                 { icon: <LinkIcon size={isMain ? 20 : 14} />, label: 'Add Link' },
-                            ].map((action) => (
+                            ].map((action, index) => (
                                 <button
                                     key={action.label}
                                     onClick={() => {
@@ -288,10 +299,11 @@ export default function Home() {
                                         if (action.label === 'Add Schedule') setIsAddScheduleOpen(true);
                                         if (action.label === 'Add Notes') setIsAddNoteOpen(true);
                                         if (action.label === 'Add Link') setIsAddLinkOpen(true);
+                                        if (action.label === 'Add Todo List') window.location.href = '/todos';
                                     }}
-                                    className={`flex items-center gap-3 ${isMain ? 'px-6 py-4 text-base border border-gray-200' : 'w-full px-3 py-2.5 text-sm'} font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all group`}
+                                    className={`flex items-center gap-3 ${isMain ? 'px-5 py-3 text-sm border border-gray-200' : 'w-full px-2 py-2 text-sm'} font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all group ${isMain && index === 0 ? 'col-span-2 justify-center' : ''}`}
                                 >
-                                    <span className={`flex items-center justify-center ${isMain ? 'w-10 h-10' : 'w-6 h-6'} rounded bg-gray-100 text-gray-500 group-hover:bg-[#fdfdfd] group-hover:text-zinc-900 transition-colors`}>
+                                    <span className={`flex items-center justify-center ${isMain ? 'w-8 h-8' : 'w-5 h-5'} rounded bg-gray-100 text-gray-500 group-hover:bg-[#fdfdfd] group-hover:text-zinc-900 transition-colors`}>
                                         {action.icon}
                                     </span>
                                     {action.label}
@@ -304,9 +316,15 @@ export default function Home() {
             case 'calendar':
                 return (
                     <div
-                        className={isMain ? "z-10 flex-1 flex flex-col" : "bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col"}
+                        className={isMain ? "z-10 flex-1 flex flex-col" : "bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col relative overflow-hidden group"}
                         onMouseLeave={() => handleDayHover(null)}
                     >
+                        {!isMain && (
+                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                                backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                                backgroundSize: '24px 24px',
+                            }}></div>
+                        )}
                         <div className={isMain ? "flex flex-col lg:flex-row lg:items-stretch flex-1" : ""}>
                             {/* Calendar Grid */}
                             <div className={isMain ? "lg:w-1/2 flex flex-col" : ""}>
@@ -316,7 +334,7 @@ export default function Home() {
                                         {/* Main: Title on its own row */}
                                         <div
                                             className={`flex items-center mb-3 ${dragHandle ? 'cursor-grab active:cursor-grabbing select-none group/title' : ''}`}
-                                            {...(dragHandle ? (({ className: _, ...rest }) => rest)(dragHandle.titleProps) : {})}
+                                            {...(dragHandle ? Object.fromEntries(Object.entries(dragHandle.titleProps).filter(([k]) => k !== 'className')) : {})}
                                         >
                                             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Calendar</h2>
                                             {dragHandle?.icon}
@@ -345,7 +363,7 @@ export default function Home() {
                                     <div className="flex items-center justify-between mb-4">
                                         <div
                                             className={`flex items-center ${dragHandle ? 'cursor-grab active:cursor-grabbing select-none group/title' : ''}`}
-                                            {...(dragHandle ? (({ className: _, ...rest }) => rest)(dragHandle.titleProps) : {})}
+                                            {...(dragHandle ? Object.fromEntries(Object.entries(dragHandle.titleProps).filter(([k]) => k !== 'className')) : {})}
                                         >
                                             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Calendar</h2>
                                             {dragHandle?.icon}
@@ -478,7 +496,11 @@ export default function Home() {
                             <div className="flex flex-col gap-6">
                                 {/* Main Widget - stretches to fill space */}
                                 {isShowingSchedule ? (
-                                    <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col">
+                                    <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm flex-1 flex flex-col relative overflow-hidden group">
+                                        <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
+                                            backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                                            backgroundSize: '24px 24px',
+                                        }}></div>
                                         <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-4">Schedule</h2>
                                         <div className="text-center mb-4">
                                             <p className="text-lg font-medium text-gray-900">{formatDateHeader(hoveredDate)}</p>
@@ -493,31 +515,38 @@ export default function Home() {
                                                 <p className="text-base font-medium">No schedule for this day</p>
                                             </div>
                                         ) : (
-                                            <div className="flex-1 overflow-y-auto space-y-3">
-                                                {schedules.map((schedule) => (
-                                                    <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 hover:border-gray-200 transition-colors">
-                                                        <div className="flex items-start gap-4">
-                                                            <div className="text-center min-w-[60px]">
-                                                                <span className="text-lg font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>
-                                                                {schedule.endTime && (
-                                                                    <>
-                                                                        <div className="text-xs text-gray-400">to</div>
-                                                                        <span className="text-sm font-mono text-gray-500">{formatTime(schedule.endTime)}</span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <h4 className="font-bold text-gray-900 mb-1">{schedule.title}</h4>
-                                                                {schedule.location && (
-                                                                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                                                                        <MapPin size={14} />
-                                                                        {schedule.location}
-                                                                    </div>
-                                                                )}
+                                            <div className="flex-1 flex items-center justify-center">
+                                                <div className="grid grid-cols-2 gap-3 w-full max-w-2xl">
+                                                    {schedules.slice(0, 6).map((schedule) => (
+                                                        <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 hover:border-gray-200 transition-colors">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="text-center min-w-[50px]">
+                                                                    <span className="text-base font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>
+                                                                    {schedule.endTime && (
+                                                                        <>
+                                                                            <div className="text-xs text-gray-400">to</div>
+                                                                            <span className="text-xs font-mono text-gray-500">{formatTime(schedule.endTime)}</span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <h4 className="font-bold text-gray-900 mb-1 truncate">{schedule.title}</h4>
+                                                                    {schedule.location && (
+                                                                        <div className="flex items-center gap-1 text-sm text-gray-500 truncate">
+                                                                            <MapPin size={12} className="shrink-0" />
+                                                                            <span className="truncate">{schedule.location}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
+                                                    ))}
+                                                    {schedules.length > 6 && (
+                                                        <div className="col-span-2 text-center text-sm text-gray-400 mt-2">
+                                                            +{schedules.length - 6} more schedules
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
                                     </section>
@@ -525,7 +554,11 @@ export default function Home() {
                                     <SortableWidget id={mainWidget} isMain>
                                         {(dragHandle) => mainWidget === 'calendar' ? (
                                             // Calendar has its own container
-                                            <div className="relative group flex-1 bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm">
+                                            <div className="relative group flex-1 bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 shadow-sm overflow-hidden">
+                                                <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
+                                                    backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                                                    backgroundSize: '24px 24px',
+                                                }}></div>
                                                 {renderWidget(mainWidget, true, dragHandle)}
                                             </div>
                                         ) : mainWidget === 'pomodoro' ? (
@@ -537,7 +570,7 @@ export default function Home() {
                                                     </h2>
                                                     {dragHandle?.icon}
                                                 </div>
-                                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                                                <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
                                                     backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
                                                     backgroundSize: '24px 24px',
                                                 }}></div>
@@ -551,7 +584,7 @@ export default function Home() {
                                                     </h2>
                                                     {dragHandle?.icon}
                                                 </div>
-                                                <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                                                <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{
                                                     backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
                                                     backgroundSize: '24px 24px',
                                                 }}></div>

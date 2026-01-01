@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
-import { usersApi } from '../lib';
+import { useUser } from '../hooks/useUser';
 import { Workflow, Search, ChevronDown, User, Settings, Heart, LogOut } from 'lucide-react';
 
 interface HeaderProps {
@@ -14,26 +14,9 @@ interface HeaderProps {
 export default function Header({ subtitle = 'Productivity, Simplified' }: HeaderProps) {
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const { user, signOut } = useAuth();
+    const { user: authUser, signOut } = useAuth();
+    const { user: profileData } = useUser(); // SWR cached fetch - deduped for 60s
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [userAvatar, setUserAvatar] = useState<string | null>(null);
-    const [userName, setUserName] = useState<string | null>(null);
-
-    // Fetch user data from API
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const result = await usersApi.getMe();
-                if (result.success && result.data) {
-                    setUserAvatar(result.data.image || null);
-                    setUserName(result.data.name || null);
-                }
-            } catch (error) {
-                console.error('Error fetching user:', error);
-            }
-        };
-        fetchUser();
-    }, []);
 
     // Global keyboard shortcut for search (Cmd+K, Ctrl+K, or /)
     useEffect(() => {
@@ -73,9 +56,9 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
         return imageUrl;
     };
 
-    const displayName = userName || user?.name || 'User';
+    const displayName = profileData?.name || authUser?.name || 'User';
     const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=000&color=fff`;
-    const fullAvatarUrl = getFullAvatarUrl(userAvatar);
+    const fullAvatarUrl = getFullAvatarUrl(profileData?.image);
     const displayAvatar = (fullAvatarUrl && fullAvatarUrl.trim() !== '') ? fullAvatarUrl : defaultAvatar;
 
     return (
@@ -125,7 +108,7 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                                     {displayName}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    {user?.role === 'admin' ? 'Admin' : 'Free Trial'}
+                                    {authUser?.role === 'admin' ? 'Admin' : 'Free Trial'}
                                 </p>
                             </div>
                             <img
@@ -134,35 +117,35 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                                 src={displayAvatar}
                             />
                             <ChevronDown size={20} className="text-gray-500 group-hover:text-primary transition-colors" />
-                            <div className="absolute top-full right-0 mt-2 w-48 bg-[#fdfdfd] border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50">
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50 py-1">
                                 <Link
-                                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 first:rounded-t-lg"
+                                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                                     to="/profile"
                                 >
-                                    <User size={18} />
-                                    Profile
+                                    <User size={18} className="text-gray-500" />
+                                    <span>Profile</span>
                                 </Link>
                                 <Link
-                                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                                     to="/settings"
                                 >
-                                    <Settings size={18} />
-                                    Settings
+                                    <Settings size={18} className="text-gray-500" />
+                                    <span>Settings</span>
                                 </Link>
                                 <Link
-                                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
                                     to="/donate"
                                 >
-                                    <Heart size={18} />
-                                    Donate
+                                    <Heart size={18} className="text-gray-500" />
+                                    <span>Donate</span>
                                 </Link>
-                                <div className="h-px bg-gray-200 my-1"></div>
+                                <div className="h-px bg-gray-200 my-1 mx-2"></div>
                                 <button
-                                    className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 last:rounded-b-lg w-full text-left"
+                                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
                                     onClick={handleLogout}
                                 >
-                                    <LogOut size={18} />
-                                    Logout
+                                    <LogOut size={18} className="text-gray-500" />
+                                    <span>Logout</span>
                                 </button>
                             </div>
                         </div>

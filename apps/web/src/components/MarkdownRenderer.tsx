@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown';
+import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkDefList from 'remark-definition-list';
 import rehypeRaw from 'rehype-raw';
@@ -6,6 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { useState, useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
+import type { Element } from 'hast';
 
 // Initialize mermaid
 mermaid.initialize({
@@ -23,7 +25,7 @@ interface CodeBlockProps {
     inline?: boolean;
     className?: string;
     children?: React.ReactNode;
-    node?: any;
+    node?: Element;
 }
 
 // Mermaid diagram component
@@ -157,9 +159,16 @@ function ImageComponent({ src, alt }: { src?: string; alt?: string }) {
 }
 
 // Custom list item for task lists
-function ListItemComponent({ children, node, ...props }: any) {
-    const isTaskItem = node?.children?.[0]?.tagName === 'input';
-    const isChecked = node?.children?.[0]?.properties?.checked;
+interface ListItemProps {
+    children?: React.ReactNode;
+    node?: Element;
+    [key: string]: unknown;
+}
+
+function ListItemComponent({ children, node, ...props }: ListItemProps) {
+    const firstChild = node?.children?.[0] as Element | undefined;
+    const isTaskItem = firstChild?.tagName === 'input';
+    const isChecked = (firstChild?.properties?.checked as boolean) ?? false;
 
     return (
         <li className={`${isTaskItem && isChecked ? 'line-through text-gray-400' : ''}`} {...props}>
@@ -169,17 +178,20 @@ function ListItemComponent({ children, node, ...props }: any) {
 }
 
 export default function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+    // Type assertion needed due to react-markdown's complex component types
+    const components: Partial<Components> = {
+        code: CodeBlock as Components['code'],
+        pre: ({ children }) => <>{children}</>,
+        img: ImageComponent as Components['img'],
+        li: ListItemComponent as Components['li'],
+    };
+
     return (
         <div className={`markdown-body ${className}`}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkDefList]}
                 rehypePlugins={[rehypeRaw]}
-                components={{
-                    code: CodeBlock as any,
-                    pre: ({ children }) => <>{children}</>,
-                    img: ImageComponent as any,
-                    li: ListItemComponent as any,
-                }}
+                components={components}
             >
                 {content}
             </ReactMarkdown>

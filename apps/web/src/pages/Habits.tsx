@@ -7,7 +7,7 @@ import { habitsApi } from '../lib';
 import type { Habit } from '../types';
 import { EmptyState, ErrorState } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
-import { CheckCircle, Clock, CalendarX, Circle, BarChart3, CalendarRange, Plus, Percent } from 'lucide-react';
+import { CheckCircle, Clock, CalendarX, Circle, BarChart3, CalendarRange, Plus, Percent, Flame } from 'lucide-react';
 import { iconMap } from '../lib/iconMap';
 
 // Generate heatmap data for last 12 weeks
@@ -138,9 +138,11 @@ function HabitCard({
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-lg shadow-inner shrink-0">
                         {(() => {
-                            const IconComponent = iconMap[habit.icon || ''];
+                            const IconComponent = iconMap[habit.icon || 'habit_check'];
                             if (IconComponent) return <IconComponent size={20} className="text-gray-700" />;
-                            return <span className="truncate max-w-full px-1">{habit.icon || '✓'}</span>;
+                            // Fallback to habit_check icon if custom icon not found
+                            const DefaultIcon = iconMap['habit_check'];
+                            return <DefaultIcon size={20} className="text-gray-700" />;
                         })()}
                     </div>
                     <div className="min-w-0">
@@ -154,7 +156,7 @@ function HabitCard({
             {/* Completed Today Status */}
             <div className="mb-1.5">
                 {habit.completed ? (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-text-primary">
                         <CheckCircle size={14} />
                         Completed Today
                     </span>
@@ -242,15 +244,15 @@ function HabitCard({
 
             {/* Streak */}
             <div className="flex items-center gap-2 mb-4">
-                <span className="text-lg">🔥</span>
+                <Flame size={18} className="text-text-primary" />
                 <span className="text-sm font-bold text-text-primary">{habit.streak || 0} day streak</span>
                 {(habit.streak || 0) > 0 && (
-                    <span className="px-2 py-0.5 bg-orange-100 text-orange-600 text-xs font-medium rounded-full">Keep it up!</span>
+                    <span className="px-2 py-0.5 bg-gray-100 text-text-primary text-xs font-medium rounded-full">Keep it up!</span>
                 )}
             </div>
 
             {/* Mark as Completed Button */}
-            {habit.hasStarted !== false && habit.isDueToday !== false && (
+            {!habit.isArchived && habit.hasStarted !== false && habit.isDueToday !== false && (
                 <button
                     onClick={() => onComplete(habit.id, habit.completed)}
                     className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all ${habit.completed
@@ -471,8 +473,8 @@ export default function Habits() {
                 {/* Quick Stats */}
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                            <CheckCircle className="text-green-600" size={24} />
+                        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                            <CheckCircle className="text-text-primary" size={24} />
                         </div>
                         <div>
                             <p className="text-xs text-text-secondary">Today</p>
@@ -481,8 +483,8 @@ export default function Habits() {
                     </div>
                     <div className="w-px h-10 bg-border-light" />
                     <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                            <Percent className="text-blue-600" size={24} />
+                        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                            <Percent className="text-text-primary" size={24} />
                         </div>
                         <div>
                             <p className="text-xs text-text-secondary">Completion</p>
@@ -491,8 +493,8 @@ export default function Habits() {
                     </div>
                     <div className="w-px h-10 bg-border-light hidden md:block" />
                     <div className="hidden md:flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-                            <span className="text-lg">🔥</span>
+                        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                            <Flame size={20} className="text-text-primary" />
                         </div>
                         <div>
                             <p className="text-xs text-text-secondary">Best Streak</p>

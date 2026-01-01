@@ -26,17 +26,17 @@ export const schedulesApi = {
         if (filters?.endDate) params.set('endDate', filters.endDate);
         if (filters?.view) params.set('view', filters.view);
         const query = params.toString() ? `?${params.toString()}` : '';
-        return api.get<ScheduleEvent[]>(`/api/schedules${query}`);
+        return api.get<ScheduleEvent[]>(`/schedules${query}`);
     },
 
-    getAgenda: () => api.get<AgendaItem[]>('/api/schedules/agenda'),
+    getAgenda: () => api.get<AgendaItem[]>('/schedules/agenda'),
 
-    getById: (id: string) => api.get<ScheduleEvent>(`/api/schedules/${id}`),
+    getById: (id: string) => api.get<ScheduleEvent>(`/schedules/${id}`),
 
-    create: (data: CreateScheduleData) => api.post<ScheduleEvent>('/api/schedules', data),
+    create: (data: CreateScheduleData) => api.post<ScheduleEvent>('/schedules', data),
 
     update: (id: string, data: Partial<CreateScheduleData>) =>
-        api.patch<ScheduleEvent>(`/api/schedules/${id}`, data),
+        api.patch<ScheduleEvent>(`/schedules/${id}`, data),
 
-    delete: (id: string) => api.delete(`/api/schedules/${id}`),
+    delete: (id: string) => api.delete(`/schedules/${id}`),
 };

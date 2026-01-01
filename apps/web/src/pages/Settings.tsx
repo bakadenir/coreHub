@@ -58,26 +58,23 @@ export default function Settings() {
             try {
                 const result = await usersApi.getMe();
                 if (result.success && result.data) {
-                    const userData = result.data as any;
-                    setName(userData.name || '');
-                    setBio(userData.bio || '');
-                    setLocation(userData.location || '');
-                    setAvatar(getFullAvatarUrl(userData.image));  // Apply full URL for uploaded images
-
+                    setName(result.data.name || '');
+                    setBio(result.data.bio || '');
+                    setLocation(result.data.location || '');
+                    setAvatar(getFullAvatarUrl(result.data.image));
                 }
-            } catch (error) {
-                console.error('Error fetching user:', error);
+            } catch {
                 // Fallback to session data
                 if (user) {
                     setName(user.name || '');
                     setBio(user.bio || '');
                     setLocation('');
                     setAvatar(user.avatar || '');
-
                 }
             }
         };
         fetchUser();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Load notification settings on mount
@@ -309,16 +306,12 @@ export default function Settings() {
                 {/* Base bg */}
                 <div className="absolute inset-0 bg-gray-50/50"></div>
 
-                {/* Animated Gradient Blobs */}
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300/30 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
-                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
-                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200/30 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
-
                 {/* Grid Overlay */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
 
-                {/* Radial fade for grid to be softer at edges */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,transparent,white)]"></div>
+                {/* Gradient Fades */}
+                <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white to-transparent"></div>
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white to-transparent"></div>
             </div>
             <Header subtitle="Settings" />
 
@@ -357,30 +350,41 @@ export default function Settings() {
                             {/* Form Fields */}
                             <div className="space-y-6">
                                 <div className="space-y-2.5">
-                                    <label className="block text-sm font-medium text-gray-500">Username</label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-sm font-medium text-gray-500">Username</label>
+                                        <span className="text-xs text-gray-400">{name.length}/50</span>
+                                    </div>
                                     <input
                                         type="text"
                                         value={name}
-                                        onChange={(e) => setName(e.target.value)}
+                                        onChange={(e) => setName(e.target.value.slice(0, 50))}
                                         placeholder="Enter your name"
+                                        maxLength={50}
                                         className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     />
                                 </div>
 
                                 <div className="space-y-2.5">
-                                    <label className="block text-sm font-medium text-gray-500">Bio</label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-sm font-medium text-gray-500">Bio</label>
+                                        <span className="text-xs text-gray-400">{bio.length}/160</span>
+                                    </div>
                                     <textarea
                                         value={bio}
-                                        onChange={(e) => setBio(e.target.value)}
+                                        onChange={(e) => setBio(e.target.value.slice(0, 160))}
                                         placeholder="Tell us about yourself..."
                                         rows={3}
+                                        maxLength={160}
                                         className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none resize-none"
                                     />
                                 </div>
 
                                 <div className="space-y-2.5">
                                     <div className="flex items-center justify-between">
-                                        <label className="block text-sm font-medium text-gray-500">Location</label>
+                                        <div className="flex items-center gap-2">
+                                            <label className="block text-sm font-medium text-gray-500">Location</label>
+                                            <span className="text-xs text-gray-400">{location.length}/100</span>
+                                        </div>
                                         <button
                                             type="button"
                                             onClick={handleDetectLocation}
@@ -398,8 +402,9 @@ export default function Settings() {
                                     <input
                                         type="text"
                                         value={location}
-                                        onChange={(e) => setLocation(e.target.value)}
+                                        onChange={(e) => setLocation(e.target.value.slice(0, 100))}
                                         placeholder="e.g., Jakarta, Indonesia"
+                                        maxLength={100}
                                         className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     />
                                 </div>
@@ -608,9 +613,9 @@ export default function Settings() {
 
                     {/* Delete Account Section */}
                     <section>
-                        <h2 className="text-3xl font-extrabold tracking-tight mb-8 text-red-600">Account Actions</h2>
+                        <h2 className="text-3xl font-extrabold tracking-tight mb-8 text-gray-900">Account Actions</h2>
 
-                        <div className="bg-[#fdfdfd] border border-red-200 rounded-xl p-8 shadow-sm">
+                        <div className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-8 shadow-sm">
                             <div className="flex items-start justify-between">
                                 <div>
                                     <h4 className="text-base font-bold text-gray-900 mb-2">Delete Account</h4>
@@ -621,7 +626,7 @@ export default function Settings() {
                                 <button
                                     onClick={() => setShowDeleteConfirm(true)}
                                     disabled={isDeletingAccount}
-                                    className="px-5 py-2.5 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2 shrink-0"
+                                    className="px-5 py-2.5 text-sm font-medium bg-zinc-900 text-white rounded-xl hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-2 shrink-0"
                                 >
                                     {isDeletingAccount && (
                                         <RefreshCw size={16} className="animate-spin" />
@@ -644,11 +649,12 @@ export default function Settings() {
                 onClose={() => setShowDeleteConfirm(false)}
                 onConfirm={handleDeleteAccount}
                 title="Delete Account"
-                message="Are you sure you want to delete your account? This action is permanent and cannot be undone. All your data including habits, schedules, notes, and links will be permanently deleted."
-                confirmLabel="Delete My Account"
+                itemName={`${name || user?.name || 'your account'}`}
+                message={`This will permanently delete the ${name || user?.name || 'your'} account and all of its data.`}
+                confirmLabel="I understand, delete this account"
                 variant="danger"
                 isLoading={isDeletingAccount}
-                confirmText="delete"
+                confirmText={name || user?.name || 'delete'}
             />
         </div>
     );

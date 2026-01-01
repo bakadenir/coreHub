@@ -44,6 +44,7 @@ const iconMap: Record<string, LucideIcon> = {
     'help': LucideIcons.HelpCircle,
 
     // Features
+    'calendar': LucideIcons.Calendar,
     'calendar_today': LucideIcons.Calendar,
     'event': LucideIcons.CalendarDays,
     'event_available': LucideIcons.CalendarCheck,
@@ -110,6 +111,32 @@ const iconMap: Record<string, LucideIcon> = {
     'close_fullscreen': LucideIcons.Minimize2,
     'drag_indicator': LucideIcons.GripVertical,
     'arrow_outward': LucideIcons.ArrowUpRight,
+
+    // Habit Icons
+    'habit_check': LucideIcons.CheckCircle,
+    'habit_book': LucideIcons.BookOpen,
+    'habit_fitness': LucideIcons.Dumbbell,
+    'habit_yoga': LucideIcons.PersonStanding,
+    'habit_running': LucideIcons.Footprints,
+    'habit_water': LucideIcons.Droplets,
+    'habit_apple': LucideIcons.Apple,
+    'habit_sleep': LucideIcons.Moon,
+    'habit_writing': LucideIcons.PenTool,
+    'habit_target': LucideIcons.Target,
+    'habit_idea': LucideIcons.Lightbulb,
+    'habit_art': LucideIcons.Palette,
+    'habit_music': LucideIcons.Music,
+    'habit_cleaning': LucideIcons.Sparkles,
+    'habit_money': LucideIcons.Wallet,
+    'habit_plant': LucideIcons.Sprout,
+    'habit_coffee': LucideIcons.Coffee,
+    'habit_pray': LucideIcons.HandHeart,
+    'habit_notes': LucideIcons.NotebookPen,
+    'habit_alarm': LucideIcons.AlarmClock,
+    'habit_heart': LucideIcons.Heart,
+    'habit_brain': LucideIcons.Brain,
+    'habit_sun': LucideIcons.Sun,
+    'habit_code': LucideIcons.Code,
 };
 
 // Default icon if not found

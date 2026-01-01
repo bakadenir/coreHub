@@ -44,7 +44,7 @@ export interface ActivityLog {
 
 export const adminApi = {
     // Get dashboard statistics
-    getStats: () => api.get<AdminStat[]>('/api/admin/stats'),
+    getStats: () => api.get<AdminStat[]>('/admin/stats'),
 
     // Get users with filtering and pagination
     getUsers: (filters?: UserFilters) => {
@@ -55,36 +55,36 @@ export const adminApi = {
         if (filters?.role) params.set('role', filters.role);
         if (filters?.status) params.set('status', filters.status);
         const query = params.toString() ? `?${params.toString()}` : '';
-        return api.get<UsersResponse>(`/api/admin/users${query}`);
+        return api.get<UsersResponse>(`/admin/users${query}`);
     },
 
     // Update user role
     updateUserRole: (id: string, role: string) =>
-        api.patch<AdminUser>(`/api/admin/users/${id}/role`, { role }),
+        api.patch<AdminUser>(`/admin/users/${id}/role`, { role }),
 
     // Ban/unban user
     updateUserStatus: (id: string, banned: boolean) =>
-        api.patch<AdminUser>(`/api/admin/users/${id}/status`, { banned }),
+        api.patch<AdminUser>(`/admin/users/${id}/status`, { banned }),
 
     // Get user by ID
     getUserById: (id: string) =>
-        api.get<AdminUser>(`/api/admin/users/${id}`),
+        api.get<AdminUser>(`/admin/users/${id}`),
 
     // Delete user permanently
     deleteUser: (id: string) =>
-        api.delete(`/api/admin/users/${id}`),
+        api.delete(`/admin/users/${id}`),
 
     // Get activity logs
     getActivityLogs: (page = 1, limit = 50) =>
-        api.get<ActivityLog[]>(`/api/admin/activity-logs?page=${page}&limit=${limit}`),
+        api.get<ActivityLog[]>(`/admin/activity-logs?page=${page}&limit=${limit}`),
 
     // Get content reports
     getReports: (status?: string) => {
         const query = status ? `?status=${status}` : '';
-        return api.get(`/api/admin/reports${query}`);
+        return api.get(`/admin/reports${query}`);
     },
 
     // Review a report
     reviewReport: (id: string, status: string) =>
-        api.patch(`/api/admin/reports/${id}`, { status }),
+        api.patch(`/admin/reports/${id}`, { status }),
 };

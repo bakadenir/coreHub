@@ -1,0 +1,10 @@
+# coreHub robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://corehub.life/sitemap.xml
+
+# Disallow admin and private routes
+Disallow: /admin
+Disallow: /api/

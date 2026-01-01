@@ -102,14 +102,18 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 max-h-[70vh]">
                     {/* Note Title */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500" htmlFor="note-title">Note Title *</label>
+                        <div className="flex justify-between">
+                            <label className="block text-sm font-medium text-gray-500" htmlFor="note-title">Note Title *</label>
+                            <span className="text-xs text-gray-400">{title.length}/100</span>
+                        </div>
                         <input
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             id="note-title"
                             placeholder="e.g. Ideas for Weekend Trip"
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(toTitleCase(e.target.value))}
+                            onChange={(e) => setTitle(toTitleCase(e.target.value.slice(0, 100)))}
+                            maxLength={100}
                         />
                     </div>
 
@@ -117,14 +121,15 @@ export default function AddNoteModal({ isOpen, onClose }: AddNoteModalProps) {
                     <div className="space-y-2.5">
                         <div className="flex justify-between">
                             <label className="block text-sm font-medium text-gray-500" htmlFor="note-content">Note Content</label>
-                            <span className="text-xs text-gray-400">Optional</span>
+                            <span className="text-xs text-gray-400">{content.length}/5000</span>
                         </div>
                         <textarea
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
                             id="note-content"
                             placeholder="Jot down thoughts, links, or ideas..."
                             value={content}
-                            onChange={(e) => setContent(toSentenceCase(e.target.value))}
+                            onChange={(e) => setContent(toSentenceCase(e.target.value.slice(0, 5000)))}
+                            maxLength={5000}
                         ></textarea>
                     </div>
                 </div>

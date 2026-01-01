@@ -18,6 +18,7 @@ export default function Schedule() {
     const [error, setError] = useState<string | null>(null);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState<'month' | 'week' | 'day'>('month');
+    const [quickAddDate, setQuickAddDate] = useState<Date | undefined>(); // For quick add when clicking a day
     const { showToast } = useToast();
 
     // Delete confirmation state
@@ -25,13 +26,51 @@ export default function Schedule() {
     const [eventToDelete, setEventToDelete] = useState<ScheduleEvent | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Quick add handler - click on empty area of a day cell
+    const handleQuickAdd = (date: Date) => {
+        setQuickAddDate(date);
+        setIsAddScheduleOpen(true);
+    };
+
+    // Close add modal and reset quick add date
+    const handleAddModalClose = () => {
+        setIsAddScheduleOpen(false);
+        setQuickAddDate(undefined);
+        fetchEvents();
+    };
+
     const fetchEvents = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            // Calculate start/end of current month for filtering
-            const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-            const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            let startDate: Date;
+            let endDate: Date;
+
+            if (view === 'month') {
+                // Full month
+                startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            } else if (view === 'week') {
+                // Current week (Mon-Sun)
+                const weekStart = new Date(currentDate);
+                const day = weekStart.getDay();
+                const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+                weekStart.setDate(diff);
+                weekStart.setHours(0, 0, 0, 0);
+                
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+                weekEnd.setHours(23, 59, 59, 999);
+                
+                startDate = weekStart;
+                endDate = weekEnd;
+            } else {
+                // Day view - single day
+                startDate = new Date(currentDate);
+                startDate.setHours(0, 0, 0, 0);
+                endDate = new Date(currentDate);
+                endDate.setHours(23, 59, 59, 999);
+            }
 
             const result = await schedulesApi.getAll({
                 startDate: startDate.toISOString(),
@@ -213,14 +252,23 @@ export default function Schedule() {
         return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     };
 
-    const getEventColor = (index: number) => {
-        const colors = ['border-l-blue-500', 'border-l-green-500', 'border-l-purple-500', 'border-l-orange-500', 'border-l-pink-500'];
-        return colors[index % colors.length];
+    const getEventColor = (color: string) => {
+        const colorMap: Record<string, string> = {
+            blue: 'border-l-blue-500',
+            green: 'border-l-green-500',
+            purple: 'border-l-purple-500',
+            orange: 'border-l-orange-500',
+            pink: 'border-l-pink-500',
+            red: 'border-l-red-500',
+            yellow: 'border-l-yellow-500',
+            gray: 'border-l-gray-500',
+        };
+        return colorMap[color] || 'border-l-blue-500';
     };
 
     return (
         <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-background-light">
-            <AddScheduleModal isOpen={isAddScheduleOpen} onClose={() => { setIsAddScheduleOpen(false); fetchEvents(); }} />
+            <AddScheduleModal isOpen={isAddScheduleOpen} onClose={handleAddModalClose} defaultDate={quickAddDate} />
             <EditScheduleModal
                 isOpen={isEditScheduleOpen}
                 onClose={() => { setIsEditScheduleOpen(false); setEditingEvent(null); fetchEvents(); }}
@@ -278,7 +326,17 @@ export default function Schedule() {
                                     type="radio"
                                     value={v}
                                     checked={view === v}
-                                    onChange={() => setView(v)}
+                                    onChange={() => {
+                                        setView(v);
+                                        // When switching to Today/Day view, jump to current date
+                                        if (v === 'day') {
+                                            setCurrentDate(new Date());
+                                        }
+                                        // When switching to Week view, jump to current week
+                                        if (v === 'week') {
+                                            setCurrentDate(new Date());
+                                        }
+                                    }}
                                 />
                                 <div className="h-full px-4 py-2 rounded-xl flex items-center justify-center peer-checked:bg-[#fdfdfd] peer-checked:shadow-sm peer-checked:text-black text-text-secondary text-xs font-semibold transition-all capitalize">
                                     {v === 'day' ? 'Today' : v}
@@ -321,16 +379,21 @@ export default function Schedule() {
                                             const day = i + 1;
                                             const dayEvents = getEventsForDay(day);
                                             const isToday = isCurrentMonth && day === todayDay;
+                                            const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
                                             return (
-                                                <div key={day} className="bg-[#fdfdfd] p-2 flex flex-col gap-1 min-h-[120px] group hover:bg-gray-50 transition-colors relative">
+                                                <div
+                                                    key={day}
+                                                    className="bg-[#fdfdfd] p-2 flex flex-col gap-1 min-h-[120px] group hover:bg-gray-50 transition-colors relative cursor-pointer"
+                                                    onClick={() => handleQuickAdd(cellDate)}
+                                                >
                                                     <span className={`text-text-primary font-mono text-sm font-medium p-1 ${isToday ? 'flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white shadow-md shadow-gray-500/30' : ''}`}>
                                                         {day}
                                                     </span>
-                                                    {dayEvents.slice(0, 3).map((event, idx) => (
+                                                    {dayEvents.slice(0, 3).map((event) => (
                                                         <div
                                                             key={event.id}
-                                                            onClick={() => handleEdit(event)}
-                                                            className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-xs font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5 flex items-center justify-between group/event`}
+                                                            onClick={(e) => { e.stopPropagation(); handleEdit(event); }}
+                                                            className={`bg-gray-50 border-l-2 ${getEventColor(event.color || 'blue')} text-gray-700 text-xs font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5 flex items-center justify-between group/event`}
                                                             title={event.title}
                                                         >
                                                             <span className="truncate">{formatTime(event.startTime)} {event.title}</span>
@@ -383,11 +446,11 @@ export default function Schedule() {
                                                     {dayEvents.length === 0 ? (
                                                         <div className="text-xs text-text-secondary text-center py-4">No events</div>
                                                     ) : (
-                                                        dayEvents.map((event, idx) => (
+                                                        dayEvents.map((event) => (
                                                             <div
                                                                 key={event.id}
                                                                 onClick={() => handleEdit(event)}
-                                                                className={`bg-gray-50 border-l-2 ${getEventColor(idx)} text-gray-700 text-xs font-medium p-2 rounded-r-md cursor-pointer hover:opacity-80 flex flex-col gap-1`}
+                                                                className={`bg-gray-50 border-l-2 ${getEventColor(event.color || 'blue')} text-gray-700 text-xs font-medium p-2 rounded-r-md cursor-pointer hover:opacity-80 flex flex-col gap-1`}
                                                             >
                                                                 <span className="font-mono text-[10px] text-gray-500">{formatTime(event.startTime)}</span>
                                                                 <span className="truncate font-semibold">{event.title}</span>
@@ -417,11 +480,11 @@ export default function Schedule() {
                                         </div>
                                     ) : (
                                         <div className="space-y-3 max-w-2xl mx-auto">
-                                            {getEventsForDate(currentDate).map((event, idx) => (
+                                            {getEventsForDate(currentDate).map((event) => (
                                                 <div
                                                     key={event.id}
                                                     onClick={() => handleEdit(event)}
-                                                    className={`bg-[#fdfdfd] border border-border-light rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all border-l-4 ${getEventColor(idx).replace('border-l-', 'border-l-')}`}
+                                                    className={`bg-[#fdfdfd] border border-border-light rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all border-l-4 ${getEventColor(event.color || 'blue')}`}
                                                 >
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
@@ -460,7 +523,7 @@ export default function Schedule() {
                 </div>
 
                 {/* Right Agenda Sidebar */}
-                <aside className="w-[320px] hidden xl:flex flex-col border-l border-border-light bg-gray-50 overflow-y-auto">
+                <aside className="w-[320px] hidden lg:flex flex-col border-l border-border-light bg-gray-50 overflow-y-auto">
                     <div className="p-5 border-b border-border-light sticky top-0 bg-gray-50 z-10 flex justify-between items-center">
                         <h3 className="text-base font-bold text-text-primary">Agenda</h3>
                         <span className="text-xs text-text-secondary">{events.length} events</span>

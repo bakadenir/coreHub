@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
@@ -41,19 +42,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    
+    // Track last user ID to prevent unnecessary updates
+    const lastUserIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
+            const newUser = mapSupabaseUser(session?.user ?? null);
+            lastUserIdRef.current = newUser?.id ?? null;
             setSession(session);
-            setUser(mapSupabaseUser(session?.user ?? null));
+            setUser(newUser);
             setIsLoading(false);
         });
 
-        // Listen for auth changes
+        // Listen for auth changes - only update if user actually changed
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(mapSupabaseUser(session?.user ?? null));
+            const newUser = mapSupabaseUser(session?.user ?? null);
+            const newUserId = newUser?.id ?? null;
+            
+            // Only update state if user actually changed
+            if (newUserId !== lastUserIdRef.current) {
+                lastUserIdRef.current = newUserId;
+                setSession(session);
+                setUser(newUser);
+            }
             setIsLoading(false);
         });
 

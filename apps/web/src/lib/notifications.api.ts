@@ -25,43 +25,43 @@ export interface NotificationSettings {
 export const notificationsApi = {
     // Get notifications
     getAll: (limit = 20, unreadOnly = false) =>
-        api.get<Notification[]>(`/api/notifications?limit=${limit}&unreadOnly=${unreadOnly}`),
+        api.get<Notification[]>(`/notifications?limit=${limit}&unreadOnly=${unreadOnly}`),
 
     // Get unread count
     getUnreadCount: () =>
-        api.get<{ count: number }>('/api/notifications/unread-count'),
+        api.get<{ count: number }>('/notifications/unread-count'),
 
     // Mark as read
     markAsRead: (id: string) =>
-        api.patch<Notification>(`/api/notifications/${id}/read`, {}),
+        api.patch<Notification>(`/notifications/${id}/read`, {}),
 
     // Mark all as read
     markAllAsRead: () =>
-        api.post<void>('/api/notifications/mark-all-read', {}),
+        api.post<void>('/notifications/mark-all-read', {}),
 
     // Delete notification
     delete: (id: string) =>
-        api.delete<void>(`/api/notifications/${id}`),
+        api.delete<void>(`/notifications/${id}`),
 
     // Get settings
     getSettings: () =>
-        api.get<NotificationSettings>('/api/notification-settings'),
+        api.get<NotificationSettings>('/notification-settings'),
 
     // Update settings
     updateSettings: (updates: Partial<Pick<NotificationSettings, 'habitReminders' | 'scheduleReminders' | 'scheduleReminderMinutes' | 'pushEnabled'>>) =>
-        api.patch<NotificationSettings>('/api/notification-settings', updates),
+        api.patch<NotificationSettings>('/notification-settings', updates),
 };
 
 export const pushApi = {
     // Get VAPID public key
     getVapidPublicKey: async () => {
-        const result = await api.get<{ publicKey: string }>('/api/push/vapid-public-key');
+        const result = await api.get<{ publicKey: string }>('/push/vapid-public-key');
         return result;
     },
 
     // Subscribe to push notifications
     subscribe: (subscription: PushSubscription) =>
-        api.post('/api/push/subscribe', {
+        api.post('/push/subscribe', {
             endpoint: subscription.endpoint,
             keys: {
                 p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
@@ -72,7 +72,7 @@ export const pushApi = {
 
     // Unsubscribe - using POST since endpoint in body
     unsubscribe: (endpoint: string) =>
-        api.post('/api/push/unsubscribe', { endpoint }),
+        api.post('/push/unsubscribe', { endpoint }),
 };
 
 // Helper to convert ArrayBuffer to base64

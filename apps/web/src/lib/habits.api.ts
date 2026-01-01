@@ -34,28 +34,28 @@ export const habitsApi = {
         if (filters?.archived) params.set('archived', 'true');
         if (filters?.date) params.set('date', filters.date);
         const query = params.toString() ? `?${params.toString()}` : '';
-        return api.get<Habit[]>(`/api/habits${query}`);
+        return api.get<Habit[]>(`/habits${query}`);
     },
 
-    getStats: () => api.get<HabitStats>('/api/habits/stats'),
+    getStats: () => api.get<HabitStats>('/habits/stats'),
 
-    getById: (id: string) => api.get<Habit>(`/api/habits/${id}`),
+    getById: (id: string) => api.get<Habit>(`/habits/${id}`),
 
-    create: (data: CreateHabitData) => api.post<Habit>('/api/habits', data),
+    create: (data: CreateHabitData) => api.post<Habit>('/habits', data),
 
     update: (id: string, data: Partial<CreateHabitData>) =>
-        api.patch<Habit>(`/api/habits/${id}`, data),
+        api.patch<Habit>(`/habits/${id}`, data),
 
-    delete: (id: string) => api.delete(`/api/habits/${id}`),
+    delete: (id: string) => api.delete(`/habits/${id}`),
 
     complete: (id: string, date?: string) =>
-        api.post(`/api/habits/${id}/complete`, { date }),
+        api.post(`/habits/${id}/complete`, { date }),
 
     uncomplete: (id: string, date?: string) => {
         const query = date ? `?date=${date}` : '';
-        return api.delete(`/api/habits/${id}/complete${query}`);
+        return api.delete(`/habits/${id}/complete${query}`);
     },
 
     archive: (id: string, archived: boolean) =>
-        api.patch(`/api/habits/${id}/archive`, { archived }),
+        api.patch(`/habits/${id}/archive`, { archived }),
 };

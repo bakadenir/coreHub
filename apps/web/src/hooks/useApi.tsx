@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useCallback } from 'react';
 import type { ApiResponse } from '../lib/api';
 import { renderIcon } from '../lib/iconMap';
@@ -28,7 +29,7 @@ export function useApi<T>(
             } else {
                 setState({ data: null, isLoading: false, error: result.error || 'Failed to fetch' });
             }
-        } catch (err) {
+        } catch {
             setState({ data: null, isLoading: false, error: 'Network error' });
         }
     }, [fetchFn]);

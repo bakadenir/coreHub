@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '../context/ToastContext';
 import { habitsApi } from '../lib';
 import { X } from 'lucide-react';
+import { iconMap } from '../lib/iconMap';
 
 interface AddHabitModalProps {
     isOpen: boolean;
@@ -11,23 +12,25 @@ interface AddHabitModalProps {
 export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
     const { showToast } = useToast();
     const [name, setName] = useState('');
-    const [icon, setIcon] = useState('✓');
+    const [icon, setIcon] = useState('habit_check');
     const [frequency, setFrequency] = useState('daily');
     const [startDate, setStartDate] = useState('');
     const [reminderTime, setReminderTime] = useState('09:00');
     const [selectedDays, setSelectedDays] = useState<number[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const habitEmojis = [
-        '✓', '📚', '💪', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎯',
-        '💡', '🎨', '🎵', '🧹', '💰', '🌱', '☕', '🙏', '📝', '⏰'
+    const habitIcons = [
+        'habit_check', 'habit_code', 'habit_book', 'habit_fitness', 'habit_yoga',
+        'habit_running', 'habit_water', 'habit_sleep', 'habit_writing', 'habit_target',
+        'habit_idea', 'habit_art', 'habit_music', 'habit_money', 'habit_plant',
+        'habit_notes', 'habit_alarm', 'habit_brain', 'habit_cleaning', 'habit_sun'
     ];
 
     // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
             setName('');
-            setIcon('✓');
+            setIcon('habit_check');
             setFrequency('daily');
             setStartDate('');
             setReminderTime('09:00');
@@ -59,6 +62,10 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
     const toTitleCase = (str: string) => {
         return str.replace(/\b\w/g, char => char.toUpperCase());
     };
+
+    // Get today's date in YYYY-MM-DD format for min attribute
+    const today = new Date();
+    const minDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     const toggleDay = (index: number) => {
         setSelectedDays(prev =>
@@ -126,31 +133,38 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                     <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-500">Icon</label>
                         <div className="flex flex-wrap gap-2">
-                            {habitEmojis.map((emoji) => (
-                                <button
-                                    key={emoji}
-                                    type="button"
-                                    onClick={() => setIcon(emoji)}
-                                    className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center transition-all ${icon === emoji
-                                        ? 'bg-zinc-900 text-white shadow-md scale-110'
-                                        : 'bg-gray-100 hover:bg-gray-200'
-                                        }`}
-                                >
-                                    {emoji}
-                                </button>
-                            ))}
+                            {habitIcons.map((iconKey) => {
+                                const IconComponent = iconMap[iconKey];
+                                return (
+                                    <button
+                                        key={iconKey}
+                                        type="button"
+                                        onClick={() => setIcon(iconKey)}
+                                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${icon === iconKey
+                                            ? 'bg-zinc-900 text-white shadow-md scale-110'
+                                            : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                            }`}
+                                    >
+                                        {IconComponent && <IconComponent size={20} />}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
                     {/* Habit Name */}
                     <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-500">Habit Name *</label>
+                        <div className="flex items-center justify-between">
+                            <label className="block text-sm font-medium text-gray-500">Habit Name *</label>
+                            <span className="text-xs text-gray-400">{name.length}/50</span>
+                        </div>
                         <input
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             placeholder="e.g., Meditate for 10 mins"
                             type="text"
                             value={name}
-                            onChange={(e) => setName(toTitleCase(e.target.value))}
+                            onChange={(e) => setName(toTitleCase(e.target.value.slice(0, 50)))}
+                            maxLength={50}
                         />
                     </div>
 
@@ -205,8 +219,9 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                             <label className="block text-sm font-medium text-gray-500">Start Date</label>
                             <div className="relative group">
                                 <input
-                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     type="date"
+                                    min={minDate}
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
                                 />
@@ -216,7 +231,7 @@ export default function AddHabitModal({ isOpen, onClose }: AddHabitModalProps) {
                             <label className="block text-sm font-medium text-gray-500">Reminder</label>
                             <div className="relative group">
                                 <input
-                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-base font-mono shadow-sm outline-none"
+                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                                     type="time"
                                     value={reminderTime}
                                     onChange={(e) => setReminderTime(e.target.value)}

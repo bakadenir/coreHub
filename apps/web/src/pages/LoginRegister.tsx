@@ -30,7 +30,7 @@ export default function LoginRegister() {
         confirmPassword: '',
     });
 
-    const [errors, setErrors] = useState<any>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Redirect to dashboard if already logged in
     // Prevent redirect while form is submitting (isLoading) to handle register->signOut flow
@@ -74,8 +74,8 @@ export default function LoginRegister() {
                 showToast('Welcome back!', 'success');
                 // Navigation handled by useEffect
             }
-        } catch (err: any) {
-            setErrors({ login: err.message });
+        } catch (err) {
+            setErrors({ login: err instanceof Error ? err.message : 'An error occurred' });
         } finally {
             setIsLoading(false);
         }
@@ -108,8 +108,8 @@ export default function LoginRegister() {
                 showToast('Account created! Please login.', 'success');
                 setIsSignUp(false); // Switch to login view
             }
-        } catch (err: any) {
-            setErrors({ register: err.message });
+        } catch (err) {
+            setErrors({ register: err instanceof Error ? err.message : 'An error occurred' });
         } finally {
             setIsLoading(false);
         }
@@ -149,12 +149,15 @@ export default function LoginRegister() {
         <div className="bg-background-light text-gray-900 font-sans antialiased min-h-screen flex flex-col transition-colors duration-300 relative overflow-hidden">
             {/* Dynamic Background */}
             <div className="absolute inset-0 z-0 pointer-events-none">
+                {/* Base bg */}
                 <div className="absolute inset-0 bg-gray-50/50"></div>
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300/30 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
-                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
-                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200/30 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
+
+                {/* Grid Overlay */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,transparent,white)]"></div>
+
+                {/* Gradient Fades */}
+                <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white to-transparent"></div>
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white to-transparent"></div>
             </div>
 
             {/* Header */}
@@ -320,14 +323,10 @@ export default function LoginRegister() {
                         </form>
                     </div>
 
-                    {/* Overlay Container */}
                     {/* Overlay Container - Industry Standard Premium Design */}
                     <div className={`absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1.0)] z-[100] 
-                        bg-zinc-900 text-white outline outline-1 outline-white/10
+                        bg-zinc-900 text-white
                         ${isSignUp ? '-translate-x-full' : 'translate-x-0'}`}>
-
-                        {/* Subtle inner glow/highlight for depth */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none"></div>
 
                         {/* Sign In Prompt (Show when on Left/Registering) */}
                         <div className={`absolute inset-0 flex flex-col items-center justify-center px-16 text-center transition-all duration-700 ease-in-out

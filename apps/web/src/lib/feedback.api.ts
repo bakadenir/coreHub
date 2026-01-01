@@ -22,13 +22,13 @@ export interface CreateFeedbackDto {
 export const feedbackApi = {
     // Get public reviews (no auth required)
     getReviews: (limit?: number) =>
-        api.get<Feedback[]>(`/api/feedback/reviews${limit ? `?limit=${limit}` : ''}`),
+        api.get<Feedback[]>(`/feedback/reviews${limit ? `?limit=${limit}` : ''}`),
 
     // Submit feedback
     submit: (data: CreateFeedbackDto) =>
-        api.post<Feedback>('/api/feedback', data),
+        api.post<Feedback>('/feedback', data),
 
     // Get current user's feedback
     getMyFeedback: () =>
-        api.get<Feedback[]>('/api/feedback/my'),
+        api.get<Feedback[]>('/feedback/my'),
 };

@@ -13,16 +13,16 @@ interface UploadAvatarResponse {
 }
 
 export const usersApi = {
-    getMe: () => api.get<UserProfile>('/api/users/me'),
+    getMe: () => api.get<UserProfile>('/users/me'),
 
     updateProfile: (data: UpdateProfileData) =>
-        api.patch<UserProfile>('/api/users/me', data),
+        api.patch<UserProfile>('/users/me', data),
 
     updateUsername: (username: string) =>
-        api.patch<UserProfile>('/api/users/me/username', { username }),
+        api.patch<UserProfile>('/users/me/username', { username }),
 
     uploadAvatar: (base64Image: string) =>
-        api.post<UploadAvatarResponse>('/api/upload/avatar', { image: base64Image }),
+        api.post<UploadAvatarResponse>('/upload/avatar', { image: base64Image }),
 
-    deleteAccount: () => api.delete('/api/users/me'),
+    deleteAccount: () => api.delete('/users/me'),
 };

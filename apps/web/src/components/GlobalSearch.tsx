@@ -65,7 +65,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     const navigate = useNavigate();
 
     // Filter navigation items based on query
-    const navResults = useMemo(() => {
+    const navResults = useMemo((): NavItem[] => {
         if (!query.trim() || query.length < 2) return [];
         const q = query.toLowerCase();
         return navigationItems.filter(item =>
@@ -79,6 +79,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             subtitle: item.subtitle,
             icon: item.icon,
             path: item.path,
+            keywords: item.keywords,
         }));
     }, [query]);
 
@@ -127,8 +128,8 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     }, [results.length]);
 
     // Handle selecting a result
-    const handleSelect = useCallback((result: any) => {
-        if (result.path) {
+    const handleSelect = useCallback((result: SearchResult | NavItem) => {
+        if ('path' in result) {
             // Navigation item
             navigate(result.path);
         } else {

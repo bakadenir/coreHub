@@ -3,7 +3,8 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CookieConsent from '../components/CookieConsent';
-import { Workflow, CheckCircle, Calendar, FileEdit, Link as LinkIcon } from 'lucide-react';
+import LandingDashboardPreview from '../components/LandingDashboardPreview';
+import { Workflow, CheckCircle, Calendar, FileEdit, Link as LinkIcon, ListTodo } from 'lucide-react';
 
 export default function Landing() {
     const navigate = useNavigate();
@@ -36,20 +37,17 @@ export default function Landing() {
     return (
         <div className="flex flex-col min-h-screen font-sans text-text-primary relative overflow-hidden">
             {/* Dynamic Background */}
+            {/* Dynamic Background */}
             <div className="absolute inset-0 z-0">
                 {/* Base bg */}
                 <div className="absolute inset-0 bg-gray-50/50"></div>
 
-                {/* Animated Gradient Blobs */}
-                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-300/30 rounded-full blur-[100px] animate-blob mix-blend-multiply"></div>
-                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply"></div>
-                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-amber-200/30 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-multiply"></div>
-
                 {/* Grid Overlay */}
                 <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
 
-                {/* Radial fade for grid to be softer at edges */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,transparent,white)]"></div>
+                {/* Gradient Fades */}
+                <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white to-transparent"></div>
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white to-transparent"></div>
             </div>
 
             {/* Navigation */}
@@ -110,15 +108,11 @@ export default function Landing() {
 
                         {/* Hero Image / Dashboard Preview */}
                         <div className="w-full md:w-1/2 mt-8 md:mt-0 relative group">
-                            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
+                            <div className="absolute -inset-1 bg-zinc-900 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
                             <div
                                 className="relative w-full aspect-[16/10] bg-[#fdfdfd] rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
                             >
-                                <img
-                                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAF_rx-ZO13WaUeZASRotPg6N5hniRXV4USNvwq7bImKviX1iS-D5VG3B3XKLr6wbZsoW6KBCmDSEwexK3EF085qztjJNAKy_r-0zfk26Ooc0eGijUwxTOrkQGU0iT5zdgzLOVQnAAQwkQze9QLeH6G2nRUe_uTngLZLuUAzYl-POsfwgyUGFrU7STEXvCAxMGWWFkBYiXzOoEyH1r0eGFRSKa-mDbIYifPoEkizPIb3mex7cqnJ09bM9ZPPHdt7QxwfOk8HeYWImP"
-                                    alt="Dashboard Preview"
-                                    className="w-full h-full object-cover object-top hover:scale-[1.01] transition-transform duration-700"
-                                />
+                                <LandingDashboardPreview />
                             </div>
                         </div>
                     </div>
@@ -132,11 +126,11 @@ export default function Landing() {
                                 Your brain, <span className="text-gray-400">organized</span>.
                             </h2>
                             <p className="text-lg text-text-secondary max-w-[600px]">
-                                Stop switching between 4 different apps. coreHub gives you a unified system to track everything that matters.
+                                Stop switching between 5 different apps. coreHub gives you a unified system to track everything that matters.
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                             {/* Feature 1 */}
                             <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-[#fdfdfd] p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
                                 <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-300">
@@ -175,6 +169,16 @@ export default function Landing() {
                                 <div className="flex flex-col gap-1.5">
                                     <h3 className="text-lg font-bold text-gray-900">Link Vault</h3>
                                     <p className="text-sm text-gray-500 leading-relaxed">Save resources and bookmarks for later reading and reference.</p>
+                                </div>
+                            </div>
+                            {/* Feature 5 */}
+                            <div className="group flex flex-col gap-4 rounded-xl border border-gray-100 bg-[#fdfdfd] p-6 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+                                <div className="w-12 h-12 flex items-center justify-center bg-gray-100 rounded-lg text-gray-800 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-300">
+                                    <ListTodo size={24} />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <h3 className="text-lg font-bold text-gray-900">Todo Lists</h3>
+                                    <p className="text-sm text-gray-500 leading-relaxed">Organize tasks with smart lists, priorities, and subtasks.</p>
                                 </div>
                             </div>
                         </div>

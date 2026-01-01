@@ -20,10 +20,11 @@ import AddHabitModal from './AddHabitModal';
 import AddScheduleModal from './AddScheduleModal';
 import AddNoteModal from './AddNoteModal';
 import AddLinkModal from './AddLinkModal';
+import AddTodoListModal from './AddTodoListModal';
 import PomodoroTimer from './PomodoroTimer';
 import ClockWidget from './ClockWidget';
 import LocationWidget from './LocationWidget';
-import { GripVertical, Maximize2, CheckCircle, Calendar, FileText, Link as LinkIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { GripVertical, Maximize2, CheckCircle, Calendar, FileText, Link as LinkIcon, ChevronLeft, ChevronRight, ListTodo } from 'lucide-react';
 
 interface SidebarProps {
     onDataChange?: () => void;
@@ -83,7 +84,9 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
     const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
     const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
     const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
+
     const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
+    const [isAddTodoListOpen, setIsAddTodoListOpen] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
 
     // Widget order state (only sidebar widgets)
@@ -214,8 +217,9 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
                 </h2>
                 <nav className="space-y-2">
                     {[
-                        { icon: CheckCircle, label: 'Add Habit' },
+                        { icon: ListTodo, label: 'Add Todo List' },
                         { icon: Calendar, label: 'Add Schedule' },
+                        { icon: CheckCircle, label: 'Add Habit' },
                         { icon: FileText, label: 'Add Notes' },
                         { icon: LinkIcon, label: 'Add Link' },
                     ].map((action) => {
@@ -228,6 +232,7 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
                                     if (action.label === 'Add Schedule') setIsAddScheduleOpen(true);
                                     if (action.label === 'Add Notes') setIsAddNoteOpen(true);
                                     if (action.label === 'Add Link') setIsAddLinkOpen(true);
+                                    if (action.label === 'Add Todo List') setIsAddTodoListOpen(true);
                                 }}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all group"
                             >
@@ -309,7 +314,9 @@ export default function Sidebar({ onDataChange, onDateHover, featuredWidget, onF
             <AddHabitModal isOpen={isAddHabitOpen} onClose={() => handleModalClose(setIsAddHabitOpen)} />
             <AddScheduleModal isOpen={isAddScheduleOpen} onClose={() => handleModalClose(setIsAddScheduleOpen)} />
             <AddNoteModal isOpen={isAddNoteOpen} onClose={() => handleModalClose(setIsAddNoteOpen)} />
+
             <AddLinkModal isOpen={isAddLinkOpen} onClose={() => handleModalClose(setIsAddLinkOpen)} />
+            <AddTodoListModal isOpen={isAddTodoListOpen} onClose={() => handleModalClose(setIsAddTodoListOpen)} />
 
             <DndContext
                 sensors={sensors}

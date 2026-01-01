@@ -238,7 +238,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
 
                     {/* Background pattern */}
                     <div
-                        className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                        className="absolute inset-0 opacity-[0.05] pointer-events-none"
                         style={{
                             backgroundImage: `radial-gradient(
                     circle at 1px 1px,

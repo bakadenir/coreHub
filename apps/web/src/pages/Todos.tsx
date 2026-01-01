@@ -1,0 +1,635 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { todosApi } from '../lib';
+import type { Todo, TodoList, TodoFilters } from '../types';
+import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { useToast } from '../context/ToastContext';
+import ActionMenu from '../components/ActionMenu';
+import ConfirmDialog from '../components/ConfirmDialog';
+import AddTodoListModal from '../components/AddTodoListModal';
+import { Calendar as CalendarComponent } from '../components/Calendar';
+import {
+    Plus, Calendar as CalendarIcon, ChevronDown,
+    Circle, CheckCircle2, Inbox, MoreVertical, X,
+    Trash2, Sun, CalendarClock
+} from 'lucide-react';
+
+type FilterView = 'all' | 'today' | 'upcoming' | 'completed';
+
+
+
+
+
+export default function Todos() {
+    const [todos, setTodos] = useState<Todo[]>([]);
+    const [lists, setLists] = useState<TodoList[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [filterView, setFilterView] = useState<FilterView>('all');
+    const [selectedListId, setSelectedListId] = useState<string | null>(null);
+    const { showToast } = useToast();
+
+    // Quick add state
+    const [quickAddValue, setQuickAddValue] = useState('');
+    const [isQuickAdding, setIsQuickAdding] = useState(false);
+    const quickAddRef = useRef<HTMLInputElement>(null);
+    const [quickAddDueDate, setQuickAddDueDate] = useState<Date | undefined>(undefined);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const datePickerRef = useRef<HTMLDivElement>(null);
+
+    // Date helper functions
+    const getToday = () => {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0);
+        return date;
+    };
+
+    const getTomorrow = () => {
+        const date = getToday();
+        date.setDate(date.getDate() + 1);
+        return date;
+    };
+
+    const getNextWeek = () => {
+        const date = getToday();
+        date.setDate(date.getDate() + 7);
+        return date;
+    };
+
+    const formatQuickAddDate = (date: Date | undefined) => {
+        if (!date) return 'No date';
+        const today = getToday();
+        const tomorrow = getTomorrow();
+        if (date.getTime() === today.getTime()) return 'Today';
+        if (date.getTime() === tomorrow.getTime()) return 'Tomorrow';
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    // Edit state
+    const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
+    const [editTitle, setEditTitle] = useState('');
+
+    // Delete confirmation
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [todoToDelete, setTodoToDelete] = useState<Todo | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    // New list modal
+    const [showNewListModal, setShowNewListModal] = useState(false);
+
+    const fetchTodos = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const filters: TodoFilters = {};
+
+            if (selectedListId) {
+                filters.listId = selectedListId;
+            }
+
+            if (filterView === 'today') {
+                filters.dueDate = 'today';
+            } else if (filterView === 'upcoming') {
+                filters.dueDate = 'upcoming';
+            } else if (filterView === 'completed') {
+                filters.completed = true;
+            }
+
+
+
+            const result = await todosApi.getAll(filters);
+            if (result.success && result.data) {
+                setTodos(result.data);
+            } else {
+                setError(result.error || 'Failed to fetch todos');
+            }
+        } catch {
+            setError('Network error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [filterView, selectedListId]);
+
+    const fetchLists = useCallback(async () => {
+        try {
+            const result = await todosApi.getLists();
+            if (result.success && result.data) {
+                setLists(result.data.lists);
+            }
+        } catch {
+            console.error('Failed to fetch lists');
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchTodos();
+        fetchLists();
+    }, [fetchTodos, fetchLists]);
+
+    // Click outside handler for date picker
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+                setShowDatePicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleQuickAdd = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && quickAddValue.trim()) {
+            setIsQuickAdding(true);
+            try {
+                const result = await todosApi.create({
+                    title: quickAddValue.trim(),
+                    listId: selectedListId || undefined,
+                    dueDate: quickAddDueDate?.toISOString(),
+                });
+                if (result.success) {
+                    setQuickAddValue('');
+                    setQuickAddDueDate(undefined);
+                    fetchTodos();
+                    fetchLists();
+                    showToast('Todo added', 'success');
+                } else {
+                    showToast(result.error || 'Failed to add todo', 'error');
+                }
+            } catch {
+                showToast('Network error', 'error');
+            } finally {
+                setIsQuickAdding(false);
+            }
+        }
+    };
+
+    const handleToggle = async (todo: Todo) => {
+        try {
+            const result = await todosApi.toggle(todo.id);
+            if (result.success) {
+                fetchTodos();
+                fetchLists();
+            } else {
+                showToast(result.error || 'Failed to toggle todo', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        }
+    };
+
+    const handleUpdateTodo = async (id: string, data: Partial<Todo>) => {
+        try {
+            const result = await todosApi.update(id, data);
+            if (result.success) {
+                fetchTodos();
+                setEditingTodo(null);
+            } else {
+                showToast(result.error || 'Failed to update todo', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        }
+    };
+
+    const handleDeleteClick = (todo: Todo) => {
+        setTodoToDelete(todo);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!todoToDelete) return;
+        setIsDeleting(true);
+        try {
+            const result = await todosApi.delete(todoToDelete.id);
+            if (result.success) {
+                showToast('Todo deleted', 'success');
+                fetchTodos();
+                fetchLists();
+            } else {
+                showToast(result.error || 'Failed to delete todo', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        } finally {
+            setIsDeleting(false);
+            setDeleteConfirmOpen(false);
+            setTodoToDelete(null);
+        }
+    };
+
+
+
+    const handleDeleteList = async (listId: string) => {
+        try {
+            const result = await todosApi.deleteList(listId);
+            if (result.success) {
+                showToast('List deleted', 'success');
+                if (selectedListId === listId) {
+                    setSelectedListId(null);
+                }
+                fetchLists();
+                fetchTodos();
+            } else {
+                showToast(result.error || 'Failed to delete list', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        }
+    };
+
+
+
+    const formatDueDate = (dueDate: string) => {
+        const date = new Date(dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dateOnly = new Date(date);
+        dateOnly.setHours(0, 0, 0, 0);
+
+        if (dateOnly.getTime() === today.getTime()) return 'Today';
+        if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow';
+        if (dateOnly < today) return `Overdue: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+
+
+    const getListColor = (color: string) => {
+        const colorMap: Record<string, string> = {
+            blue: 'bg-blue-500',
+            green: 'bg-green-500',
+            purple: 'bg-purple-500',
+            orange: 'bg-orange-500',
+            pink: 'bg-pink-500',
+            red: 'bg-red-500',
+            yellow: 'bg-yellow-500',
+            gray: 'bg-gray-500',
+        };
+        return colorMap[color] || 'bg-blue-500';
+    };
+
+    const renderTodoItem = (todo: Todo) => {
+        const isEditing = editingTodo?.id === todo.id;
+
+        return (
+            <div key={todo.id}>
+                <div
+                    className={`group flex items-center gap-3 p-3 rounded-xl border transition-all ${todo.isCompleted
+                        ? 'bg-white border-border-light opacity-60'
+                        : 'bg-white border-border-light hover:border-gray-300 hover:shadow-sm'
+                        }`}
+                >
+                    {/* Checkbox */}
+                    <button
+                        onClick={() => handleToggle(todo)}
+                        className={`shrink-0 ${todo.isCompleted ? 'text-gray-900' : 'text-gray-300 hover:text-gray-400'}`}
+                    >
+                        {todo.isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                    </button>
+
+                    {/* Date */}
+                    <span className="text-xs text-gray-500 font-semibold shrink-0">
+                        {todo.dueDate ? formatDueDate(todo.dueDate) : 'No date'}
+                    </span>
+
+                    {/* Separator */}
+                    <span className="text-gray-300">|</span>
+
+                    {/* Task Title */}
+                    {isEditing ? (
+                        <input
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    handleUpdateTodo(todo.id, { title: editTitle });
+                                } else if (e.key === 'Escape') {
+                                    setEditingTodo(null);
+                                }
+                            }}
+                            onBlur={() => setEditingTodo(null)}
+                            autoFocus
+                            className="flex-1 px-2 py-1 text-sm border border-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                    ) : (
+                        <span
+                            className={`flex-1 text-sm font-medium truncate ${todo.isCompleted ? 'text-gray-400 line-through' : 'text-text-primary'}`}
+                            onDoubleClick={() => {
+                                setEditingTodo(todo);
+                                setEditTitle(todo.title);
+                            }}
+                        >
+                            {todo.title}
+                        </span>
+                    )}
+
+                    {/* Actions */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <ActionMenu
+                            items={[
+                                {
+                                    label: 'Edit',
+                                    icon: 'edit',
+                                    onClick: () => {
+                                        setEditingTodo(todo);
+                                        setEditTitle(todo.title);
+                                    },
+                                },
+                                {
+                                    label: 'Delete',
+                                    icon: 'delete',
+                                    onClick: () => handleDeleteClick(todo),
+                                    variant: 'danger' as const,
+                                },
+                            ]}
+                            trigger={<MoreVertical size={16} className="text-gray-400" />}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const activeTodos = todos.filter(t => !t.isCompleted);
+    const completedTodos = todos.filter(t => t.isCompleted);
+
+    return (
+        <main className="flex-1 flex flex-col h-full overflow-hidden bg-background-light">
+            {/* Header - Full width spanning above sidebar and content */}
+            <header className="p-6 border-b border-border-light bg-[#fdfdfd] shrink-0">
+                <div className="flex flex-col gap-1">
+                    <h2 className="text-text-primary text-3xl font-extrabold tracking-tight">
+                        {selectedListId
+                            ? lists.find(l => l.id === selectedListId)?.name || 'List'
+                            : filterView === 'today'
+                                ? 'Today'
+                                : filterView === 'upcoming'
+                                    ? 'Upcoming'
+                                    : filterView === 'completed'
+                                        ? 'Completed'
+                                        : 'Todo List'}
+                    </h2>
+                    <p className="text-text-secondary text-base font-normal">Manage your tasks and stay productive.</p>
+                </div>
+            </header>
+
+            {/* Content area with sidebar and main */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Sidebar */}
+                <aside className="w-64 border-r border-border-light bg-background-light flex flex-col shrink-0">
+                    <nav className="flex-1 px-3 pt-4 pb-3 space-y-1 overflow-y-auto">
+                        {/* Smart Views */}
+                        <div className="mb-4 space-y-1">
+                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2">Views</div>
+                            <button
+                                onClick={() => { setFilterView('all'); setSelectedListId(null); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filterView === 'all' && !selectedListId
+                                    ? 'bg-gray-100 text-gray-900'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <Inbox size={18} />
+                                <span className="flex-1 text-left">All Tasks</span>
+                                <span className="text-xs text-gray-400">{todos.length}</span>
+                            </button>
+                            <button
+                                onClick={() => { setFilterView('today'); setSelectedListId(null); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filterView === 'today'
+                                    ? 'bg-gray-100 text-gray-900'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <Sun size={18} />
+                                <span className="flex-1 text-left">Today</span>
+                            </button>
+                            <button
+                                onClick={() => { setFilterView('upcoming'); setSelectedListId(null); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filterView === 'upcoming'
+                                    ? 'bg-gray-100 text-gray-900'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <CalendarClock size={18} />
+                                <span className="flex-1 text-left">Upcoming</span>
+                            </button>
+                            <button
+                                onClick={() => { setFilterView('completed'); setSelectedListId(null); }}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filterView === 'completed'
+                                    ? 'bg-gray-100 text-gray-900'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <CheckCircle2 size={18} />
+                                <span className="flex-1 text-left">Completed</span>
+                            </button>
+                        </div>
+
+                        {/* Lists */}
+                        <div className="space-y-1">
+                            <div className="flex items-center justify-between px-2 mb-2">
+                                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Lists</span>
+                                <button
+                                    onClick={() => setShowNewListModal(true)}
+                                    className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                                >
+                                    <Plus size={14} />
+                                </button>
+                            </div>
+
+                            {/* Custom Lists */}
+                            {lists.map(list => (
+                                <div key={list.id} className="group relative">
+                                    <button
+                                        onClick={() => { setSelectedListId(list.id); setFilterView('all'); }}
+                                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedListId === list.id
+                                            ? 'bg-gray-100 text-gray-900'
+                                            : 'text-gray-600 hover:bg-gray-100'
+                                            }`}
+                                    >
+                                        <div className={`w-3 h-3 rounded-full ${getListColor(list.color)}`} />
+                                        <span className="flex-1 text-left truncate">{list.name}</span>
+                                        {list.todoCount > 0 && (
+                                            <span className="text-xs text-gray-400">{list.todoCount}</span>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteList(list.id)}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </nav>
+                </aside>
+
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    {/* Quick Add & Search Bar */}
+                    <div className="flex flex-col gap-3 p-6 bg-[#fdfdfd] border-b border-border-light">
+                        {/* Quick Add */}
+                        <div className="flex gap-2 items-start">
+                            <div className="relative flex-1">
+                                <Plus size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    ref={quickAddRef}
+                                    type="text"
+                                    value={quickAddValue}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setQuickAddValue(val.charAt(0).toUpperCase() + val.slice(1));
+                                    }}
+                                    onKeyDown={handleQuickAdd}
+                                    placeholder="Add a Task... (press Enter)"
+                                    disabled={isQuickAdding}
+                                    className="w-full pl-10 pr-4 py-3 bg-white border border-border-light rounded-xl text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50"
+                                />
+                            </div>
+
+                            {/* Date Picker Button & Dropdown */}
+                            <div className="relative" ref={datePickerRef}>
+                                <button
+                                    onClick={() => setShowDatePicker(!showDatePicker)}
+                                    className="flex items-center gap-2 px-3 py-3 rounded-xl border text-sm font-medium transition-colors bg-white border-border-light text-gray-500 hover:bg-gray-50"
+                                >
+                                    <CalendarIcon size={16} />
+                                    <span className="hidden sm:inline">{formatQuickAddDate(quickAddDueDate)}</span>
+                                    <ChevronDown size={14} />
+                                </button>
+
+                                {showDatePicker && (
+                                    <div className="absolute right-0 top-full mt-2 bg-white rounded-xl border border-border-light shadow-lg z-50 min-w-[280px]">
+                                        {/* Quick Options */}
+                                        <div className="p-2 border-b border-border-light">
+                                            <button
+                                                onClick={() => { setQuickAddDueDate(getToday()); setShowDatePicker(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                                            >
+                                                <Sun size={16} className="text-orange-500" />
+                                                <span>Today</span>
+                                                <span className="ml-auto text-xs text-gray-400">
+                                                    {getToday().toLocaleDateString('en-US', { weekday: 'short' })}
+                                                </span>
+                                            </button>
+                                            <button
+                                                onClick={() => { setQuickAddDueDate(getTomorrow()); setShowDatePicker(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                                            >
+                                                <CalendarIcon size={16} className="text-blue-500" />
+                                                <span>Tomorrow</span>
+                                                <span className="ml-auto text-xs text-gray-400">
+                                                    {getTomorrow().toLocaleDateString('en-US', { weekday: 'short' })}
+                                                </span>
+                                            </button>
+                                            <button
+                                                onClick={() => { setQuickAddDueDate(getNextWeek()); setShowDatePicker(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                                            >
+                                                <CalendarClock size={16} className="text-purple-500" />
+                                                <span>Next Week</span>
+                                                <span className="ml-auto text-xs text-gray-400">
+                                                    {getNextWeek().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                </span>
+                                            </button>
+                                            <button
+                                                onClick={() => { setQuickAddDueDate(undefined); setShowDatePicker(false); }}
+                                                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors text-gray-500"
+                                            >
+                                                <X size={16} />
+                                                <span>No Date</span>
+                                            </button>
+                                        </div>
+
+                                        {/* Calendar Picker */}
+                                        <div className="p-2">
+                                            <CalendarComponent
+                                                mode="single"
+                                                selected={quickAddDueDate}
+                                                onSelect={(date) => { setQuickAddDueDate(date); setShowDatePicker(false); }}
+                                                disabled={(date) => date < getToday()}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Todo List */}
+                    <div className="flex-1 overflow-y-auto p-6">
+                        {isLoading ? (
+                            <LoadingSpinner message="Loading todos..." />
+                        ) : error ? (
+                            <ErrorState message={error} onRetry={fetchTodos} />
+                        ) : todos.length === 0 ? (
+                            <EmptyState
+                                message="No tasks yet. Add one above!"
+                                icon="tasks"
+                            />
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Active Todos */}
+                                {activeTodos.length > 0 && (
+                                    <div className="space-y-2">
+                                        {filterView !== 'completed' && (
+                                            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
+                                                Active ({activeTodos.length})
+                                            </h3>
+                                        )}
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {activeTodos.map(todo => renderTodoItem(todo))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Completed Todos */}
+                                {completedTodos.length > 0 && filterView !== 'completed' && (
+                                    <div className="space-y-2">
+                                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-1">
+                                            Completed ({completedTodos.length})
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {completedTodos.map(todo => renderTodoItem(todo))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {filterView === 'completed' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {completedTodos.map(todo => renderTodoItem(todo))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Delete Confirmation */}
+                <ConfirmDialog
+                    isOpen={deleteConfirmOpen}
+                    onClose={() => { setDeleteConfirmOpen(false); setTodoToDelete(null); }}
+                    onConfirm={handleDeleteConfirm}
+                    title="Delete Task"
+                    message={`Are you sure you want to delete "${todoToDelete?.title}"? This action cannot be undone.`}
+                    confirmLabel="Delete"
+                    variant="danger"
+                    isLoading={isDeleting}
+                />
+
+                {/* New List Modal */}
+                <AddTodoListModal
+                    isOpen={showNewListModal}
+                    onClose={() => setShowNewListModal(false)}
+                    onSuccess={() => {
+                        fetchLists();
+                        fetchTodos();
+                    }}
+                />
+            </div>
+        </main >
+    );
+}

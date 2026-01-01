@@ -3,6 +3,7 @@ export { habitsApi } from './habits.api';
 export { notesApi } from './notes.api';
 export { linksApi } from './links.api';
 export { schedulesApi } from './schedules.api';
+export { todosApi } from './todos.api';
 export { usersApi } from './users.api';
 export { searchApi } from './search.api';
 export { adminApi } from './admin.api';

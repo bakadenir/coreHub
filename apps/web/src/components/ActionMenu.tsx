@@ -66,7 +66,7 @@ export default function ActionMenu({ items, trigger, className = '' }: ActionMen
                             disabled={item.disabled}
                             className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors
                                 ${item.variant === 'danger'
-                                    ? 'text-red-600 hover:bg-red-50'
+                                    ? 'text-gray-700 hover:bg-gray-100'
                                     : 'text-text-primary hover:bg-gray-50'
                                 }
                                 ${item.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

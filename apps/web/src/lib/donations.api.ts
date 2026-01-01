@@ -28,29 +28,29 @@ export interface DonationResult {
 export const donationsApi = {
     // Create donation and get Midtrans Snap token
     create: (data: CreateDonationDto): Promise<ApiResponse<DonationResult>> =>
-        api.post('/api/donations', data),
+        api.post('/donations', data),
 
     // Get public donations list
     getPublic: (limit = 20): Promise<ApiResponse<Donation[]>> =>
-        api.get(`/api/donations?limit=${limit}`),
+        api.get(`/donations?limit=${limit}`),
 
     // Get user's donation history
     getMy: (): Promise<ApiResponse<Donation[]>> =>
-        api.get('/api/donations/my'),
+        api.get('/donations/my'),
 
     // Get pending donation for current user
     getPending: (): Promise<ApiResponse<Donation | null>> =>
-        api.get('/api/donations/pending'),
+        api.get('/donations/pending'),
 
     // Get donation by order ID
     getByOrderId: (orderId: string): Promise<ApiResponse<Donation>> =>
-        api.get(`/api/donations/${orderId}`),
+        api.get(`/donations/${orderId}`),
 
     // Verify transaction status with Midtrans (for localhost testing)
     verify: (orderId: string): Promise<ApiResponse<Donation>> =>
-        api.post(`/api/donations/${orderId}/verify`),
+        api.post(`/donations/${orderId}/verify`),
 
     // Cancel pending donation
     cancel: (orderId: string): Promise<ApiResponse<{ cancelled: boolean }>> =>
-        api.post(`/api/donations/${orderId}/cancel`),
+        api.post(`/donations/${orderId}/cancel`),
 };

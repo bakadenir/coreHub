@@ -10,5 +10,5 @@ export interface SearchResult {
 }
 
 export const searchApi = {
-    search: (query: string) => api.get<SearchResult[]>(`/api/search?q=${encodeURIComponent(query)}`),
+    search: (query: string) => api.get<SearchResult[]>(`/search?q=${encodeURIComponent(query)}`),
 };

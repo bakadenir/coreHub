@@ -115,13 +115,17 @@ export default function EditLinkModal({ isOpen, onClose, link }: EditLinkModalPr
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 max-h-[70vh]">
                     {/* URL */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500">URL *</label>
+                        <div className="flex justify-between">
+                            <label className="block text-sm font-medium text-gray-500">URL *</label>
+                            <span className="text-xs text-gray-400">{url.length}/500</span>
+                        </div>
                         <input
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             placeholder="https://example.com"
                             type="url"
                             value={url}
-                            onChange={(e) => setUrl(e.target.value)}
+                            onChange={(e) => setUrl(e.target.value.slice(0, 500))}
+                            maxLength={500}
                         />
                     </div>
 
@@ -129,14 +133,15 @@ export default function EditLinkModal({ isOpen, onClose, link }: EditLinkModalPr
                     <div className="space-y-2.5">
                         <div className="flex justify-between">
                             <label className="block text-sm font-medium text-gray-500">Title</label>
-                            <span className="text-xs text-gray-400">Optional</span>
+                            <span className="text-xs text-gray-400">{title.length}/100</span>
                         </div>
                         <input
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
                             placeholder="Link title"
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(toTitleCase(e.target.value))}
+                            onChange={(e) => setTitle(toTitleCase(e.target.value.slice(0, 100)))}
+                            maxLength={100}
                         />
                     </div>
 
@@ -144,13 +149,14 @@ export default function EditLinkModal({ isOpen, onClose, link }: EditLinkModalPr
                     <div className="space-y-2.5">
                         <div className="flex justify-between">
                             <label className="block text-sm font-medium text-gray-500">Description</label>
-                            <span className="text-xs text-gray-400">Optional</span>
+                            <span className="text-xs text-gray-400">{description.length}/200</span>
                         </div>
                         <textarea
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] min-h-[100px] resize-none shadow-sm outline-none"
                             placeholder="What is this link about?"
                             value={description}
-                            onChange={(e) => setDescription(toSentenceCase(e.target.value))}
+                            onChange={(e) => setDescription(toSentenceCase(e.target.value.slice(0, 200)))}
+                            maxLength={200}
                         ></textarea>
                     </div>
                 </div>

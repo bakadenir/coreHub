@@ -13,13 +13,16 @@ export default function UserDetailsModal({ isOpen, onClose, userId }: UserDetail
 
     useEffect(() => {
         if (isOpen && userId) {
-            setIsLoading(true);
-            adminApi.getUserById(userId).then(res => {
+            // Defer loading state to avoid synchronous setState warning
+            const loadUser = async () => {
+                setIsLoading(true);
+                const res = await adminApi.getUserById(userId);
                 if (res.success && res.data) {
                     setUser(res.data);
                 }
                 setIsLoading(false);
-            });
+            };
+            loadUser();
         }
     }, [isOpen, userId]);
 

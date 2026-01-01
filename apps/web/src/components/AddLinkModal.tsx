@@ -113,7 +113,10 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 max-h-[70vh]">
                     {/* Link URL */}
                     <div className="space-y-2.5">
-                        <label className="block text-sm font-medium text-gray-500" htmlFor="link-url">Link URL *</label>
+                        <div className="flex justify-between">
+                            <label className="block text-sm font-medium text-gray-500" htmlFor="link-url">Link URL *</label>
+                            <span className="text-xs text-gray-400">{url.length}/500</span>
+                        </div>
                         <div className="relative group">
                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <LinkIcon size={20} className="text-gray-400 group-focus-within:text-black transition-colors" />
@@ -124,7 +127,8 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                                 placeholder="e.g. https://example.com/awesome-article"
                                 type="url"
                                 value={url}
-                                onChange={(e) => setUrl(e.target.value)}
+                                onChange={(e) => setUrl(e.target.value.slice(0, 500))}
+                                maxLength={500}
                             />
                         </div>
                     </div>
@@ -133,7 +137,7 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                     <div className="space-y-2.5">
                         <div className="flex justify-between">
                             <label className="block text-sm font-medium text-gray-500" htmlFor="link-title">Link Title</label>
-                            <span className="text-xs text-gray-400">Optional</span>
+                            <span className="text-xs text-gray-400">{title.length}/100</span>
                         </div>
                         <input
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
@@ -141,7 +145,8 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                             placeholder="e.g. My Favorite Article"
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(toTitleCase(e.target.value))}
+                            onChange={(e) => setTitle(toTitleCase(e.target.value.slice(0, 100)))}
+                            maxLength={100}
                         />
                     </div>
 
@@ -149,14 +154,15 @@ export default function AddLinkModal({ isOpen, onClose }: AddLinkModalProps) {
                     <div className="space-y-2.5">
                         <div className="flex justify-between">
                             <label className="block text-sm font-medium text-gray-500" htmlFor="link-description">Description</label>
-                            <span className="text-xs text-gray-400">Optional</span>
+                            <span className="text-xs text-gray-400">{description.length}/200</span>
                         </div>
                         <textarea
                             className="w-full bg-[#fdfdfd] border border-gray-300 rounded-lg px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] min-h-[70px] resize-none shadow-sm outline-none"
                             id="link-description"
                             placeholder="A short summary or your thoughts..."
                             value={description}
-                            onChange={(e) => setDescription(toSentenceCase(e.target.value))}
+                            onChange={(e) => setDescription(toSentenceCase(e.target.value.slice(0, 200)))}
+                            maxLength={200}
                         ></textarea>
                     </div>
                 </div>

@@ -12,6 +12,7 @@ interface CreateNoteData {
     content?: string;
     tag?: string;
     reminderAt?: string;
+    contentType?: 'rich' | 'markdown';
 }
 
 interface PublicNote {
@@ -31,25 +32,25 @@ export const notesApi = {
         if (filters?.search) params.set('search', filters.search);
         if (filters?.sort) params.set('sort', filters.sort);
         const query = params.toString() ? `?${params.toString()}` : '';
-        return api.get<Note[]>(`/api/notes${query}`);
+        return api.get<Note[]>(`/notes${query}`);
     },
 
-    getById: (id: string) => api.get<Note>(`/api/notes/${id}`),
+    getById: (id: string) => api.get<Note>(`/notes/${id}`),
 
-    create: (data: CreateNoteData) => api.post<Note>('/api/notes', data),
+    create: (data: CreateNoteData) => api.post<Note>('/notes', data),
 
     update: (id: string, data: Partial<CreateNoteData>) =>
-        api.patch<Note>(`/api/notes/${id}`, data),
+        api.patch<Note>(`/notes/${id}`, data),
 
-    delete: (id: string) => api.delete(`/api/notes/${id}`),
+    delete: (id: string) => api.delete(`/notes/${id}`),
 
     pin: (id: string, isPinned: boolean, pinnedUntil?: string) =>
-        api.patch(`/api/notes/${id}/pin`, { isPinned, pinnedUntil }),
+        api.patch(`/notes/${id}/pin`, { isPinned, pinnedUntil }),
 
-    publish: (id: string) => api.post<Note>(`/api/notes/${id}/publish`),
+    publish: (id: string) => api.post<Note>(`/notes/${id}/publish`),
 
-    unpublish: (id: string) => api.post<Note>(`/api/notes/${id}/unpublish`),
+    unpublish: (id: string) => api.post<Note>(`/notes/${id}/unpublish`),
 
-    getPublic: (slug: string) => api.get<PublicNote>(`/api/public/notes/${slug}`),
+    getPublic: (slug: string) => api.get<PublicNote>(`/public/notes/${slug}`),
 };
 

@@ -81,6 +81,10 @@ function SortablePanel({
             style={style}
             className={`bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 hover:border-gray-300 transition-colors relative group min-h-[140px] max-h-[180px] overflow-hidden ${isDragging ? 'shadow-lg' : ''}`}
         >
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{
+                backgroundImage: `radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)`,
+                backgroundSize: '24px 24px',
+            }}></div>
             <button
                 onClick={() => onNavigate(config.route)}
                 className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-primary transition-colors z-10"
@@ -115,7 +119,7 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
     const [schedule, setSchedule] = useState<ScheduleEvent[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
     const [links, setLinks] = useState<LinkItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
 
     // Panel order state with localStorage persistence
     const [panelOrder, setPanelOrder] = useState<PanelId[]>(() => {
@@ -148,7 +152,7 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
     );
 
     const fetchData = useCallback(async () => {
-        setIsLoading(true);
+        // Don't show skeleton on refresh, only on initial load
         try {
             const [habitsRes, schedulesRes, notesRes, linksRes] = await Promise.all([
                 habitsApi.getAll(),
@@ -209,7 +213,7 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         } catch (error) {
             console.error('Failed to fetch activity data:', error);
         } finally {
-            setIsLoading(false);
+            setIsInitialLoading(false);
         }
     }, []);
 
@@ -372,7 +376,7 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         }
     };
 
-    if (isLoading) {
+    if (isInitialLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {[1, 2, 3, 4].map(i => (
