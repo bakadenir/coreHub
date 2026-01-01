@@ -121,8 +121,11 @@ export default function LoginRegister() {
 
     const socialButtons = (
         <div className="flex gap-4 mb-4">
-            {/* Google - Coming soon due to config issues */}
-            <button type="button" className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors bg-[#fdfdfd] shadow-sm" onClick={() => showToast('Google login coming soon!', 'info')}>
+            {/* Google - Verified */}
+            <button type="button" className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors bg-[#fdfdfd] shadow-sm" onClick={async () => {
+                const { error } = await signIn.google();
+                if (error) showToast(error.message, 'error');
+            }}>
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="#EA4335" d="M24 12.276c0-1.16-.104-2.268-.297-3.328H12v6.29h6.728c-.288 1.55-1.165 2.87-2.482 3.75v3.12h4.02c2.352-2.164 3.708-5.352 3.708-9.832z" />
                     <path fill="#34A853" d="M12 24c3.24 0 5.956-1.074 7.94-2.906l-4.02-3.12c-1.074.72-2.45 1.146-3.92 1.146-3.128 0-5.776-2.112-6.724-4.95H1.14v3.226C3.136 21.366 7.228 24 12 24z" />
