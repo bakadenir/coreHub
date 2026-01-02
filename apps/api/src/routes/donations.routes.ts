@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware, optionalAuthMiddleware } from '../middleware/auth.middleware';
+import { adminMiddleware } from '../middleware/admin.middleware';
 import { DonationsService } from '../services/donations.service';
 import { successResponse, createdResponse, errorResponse, serverErrorResponse } from '../utils/response';
 
@@ -158,8 +159,8 @@ router.post('/:orderId/verify', async (req, res) => {
 });
 
 // POST /api/donations/:orderId/mark-success - Directly mark donation as success
-// Used as fallback when Midtrans API is unreachable (localhost, network issues)
-router.post('/:orderId/mark-success', async (req, res) => {
+// ADMIN ONLY - Used as fallback when Midtrans API is unreachable
+router.post('/:orderId/mark-success', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const donation = await donationsService.markAsSuccess(req.params.orderId);
         if (!donation) {
@@ -173,8 +174,8 @@ router.post('/:orderId/mark-success', async (req, res) => {
 });
 
 // GET /api/donations/admin/all - Get all donations (including pending) for admin
-// NOTE: Temporarily without auth for localhost debugging
-router.get('/admin/all', async (_req, res) => {
+// PROTECTED: Admin only
+router.get('/admin/all', authMiddleware, adminMiddleware, async (_req, res) => {
     try {
         const donations = await donationsService.findAll();
         return successResponse(res, donations);
@@ -185,8 +186,8 @@ router.get('/admin/all', async (_req, res) => {
 });
 
 // POST /api/donations/admin/verify-pending - Verify all pending donations with Midtrans
-// NOTE: Temporarily without auth for localhost debugging
-router.post('/admin/verify-pending', async (_req, res) => {
+// PROTECTED: Admin only
+router.post('/admin/verify-pending', authMiddleware, adminMiddleware, async (_req, res) => {
     try {
         const results = await donationsService.verifyAllPending();
         return successResponse(res, results);
