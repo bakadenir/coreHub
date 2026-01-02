@@ -55,16 +55,17 @@ app.use(helmet({
 // Security: Rate limiting to prevent DDoS attacks
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: 500, // Limit each IP to 500 requests per windowMs (increased for normal usage)
     message: { error: 'Too many requests', message: 'Please try again after 15 minutes' },
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.path.includes('/sse'), // Skip rate limit for SSE connections
 });
 
 // Stricter rate limit for auth-related endpoints
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Limit each IP to 10 auth requests per windowMs
+    max: 20, // Limit each IP to 20 auth requests per windowMs
     message: { error: 'Too many login attempts', message: 'Please try again after 15 minutes' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -73,9 +74,14 @@ const authLimiter = rateLimit({
 // Apply rate limiting to all API routes
 app.use('/api/', generalLimiter);
 
-// Middleware
+// Middleware - CORS must include all production domains
 app.use(cors({
-    origin: [env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174'],
+    origin: [
+        env.FRONTEND_URL,
+        'https://corehub.life',  // Production frontend
+        'http://localhost:5173',
+        'http://localhost:5174',
+    ],
     credentials: true,
 }));
 app.use(express.json({ limit: '2mb' }));  // Increased for base64 images
