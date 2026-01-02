@@ -4,7 +4,13 @@ import path from 'path';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env';
+import { initSentry, Sentry } from './config/sentry';
+import { swaggerSpec } from './config/swagger';
+
+// Initialize Sentry for error tracking (must be first!)
+initSentry();
 
 // Import routes
 import habitsRouter from './routes/habits.routes';
@@ -100,8 +106,21 @@ app.get('/api/health', (_, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Error handler
+// API Documentation (Swagger)
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'coreHub API Docs',
+}));
+
+// Swagger JSON spec
+app.get('/api/docs.json', (_, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+});
+
+// Error handler with Sentry
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    // Report error to Sentry in production
+    Sentry.captureException(err);
     console.error('Error:', err);
     res.status(500).json({
         error: 'Internal Server Error',
