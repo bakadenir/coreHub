@@ -45,10 +45,11 @@ function transformNote(note: any) {
 }
 
 export class NotesService {
-    async findAll(userId: string, filters: NoteFilters) {
+    async findAll(userId: string, filters: NoteFilters & { limit?: number; offset?: number }) {
+        // Optimized: Select only needed columns instead of *
         let query = supabase
             .from('notes')
-            .select('*')
+            .select('id, title, content, color, content_type, is_pinned, is_public, public_slug, created_at, updated_at')
             .eq('user_id', userId)
             .is('deleted_at', null);
 
@@ -69,6 +70,11 @@ export class NotesService {
             default:
                 query = query.order('created_at', { ascending: false });
         }
+
+        // Pagination support
+        const limit = filters.limit || 100; // Default limit
+        const offset = filters.offset || 0;
+        query = query.range(offset, offset + limit - 1);
 
         const { data, error } = await query;
 

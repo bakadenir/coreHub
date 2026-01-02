@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 
@@ -27,6 +28,17 @@ import publicRouter from './routes/public.routes';
 import { startScheduler } from './services/scheduler.service';
 
 const app = express();
+
+// Performance: Gzip compression for responses (60-80% size reduction)
+app.use(compression({
+    level: 6, // Balanced compression level
+    threshold: 1024, // Only compress responses > 1KB
+    filter: (req, res) => {
+        // Don't compress SSE streams
+        if (req.path.includes('/sse')) return false;
+        return compression.filter(req, res);
+    },
+}));
 
 // Security: Helmet for HTTP security headers
 app.use(helmet({
