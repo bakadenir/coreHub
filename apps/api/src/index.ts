@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { env } from './config/env';
 
 // Import routes
@@ -26,6 +28,33 @@ import { startScheduler } from './services/scheduler.service';
 
 const app = express();
 
+// Security: Helmet for HTTP security headers
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow cross-origin for assets
+    contentSecurityPolicy: false, // Disable CSP as frontend handles it
+}));
+
+// Security: Rate limiting to prevent DDoS attacks
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: { error: 'Too many requests', message: 'Please try again after 15 minutes' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Stricter rate limit for auth-related endpoints
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 auth requests per windowMs
+    message: { error: 'Too many login attempts', message: 'Please try again after 15 minutes' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Apply rate limiting to all API routes
+app.use('/api/', generalLimiter);
+
 // Middleware
 app.use(cors({
     origin: [env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174'],
@@ -42,7 +71,7 @@ app.use('/api/schedules', schedulesRouter);
 app.use('/api/notes', notesRouter);
 app.use('/api/links', linksRouter);
 app.use('/api/todos', todosRouter);
-app.use('/api/users', usersRouter);
+app.use('/api/users', authLimiter, usersRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/search', searchRouter);
 app.use('/api/upload', uploadRouter);
