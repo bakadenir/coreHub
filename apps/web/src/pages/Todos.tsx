@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { todosApi } from '../lib';
 import type { Todo, TodoList, TodoFilters } from '../types';
-import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { EmptyState, ErrorState } from '../hooks/useApi';
+import { TodoGridSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
 import ActionMenu from '../components/ActionMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -562,7 +563,7 @@ export default function Todos() {
                     {/* Todo List */}
                     <div className="flex-1 overflow-y-auto p-6">
                         {isLoading ? (
-                            <LoadingSpinner message="Loading todos..." />
+                            <TodoGridSkeleton count={6} />
                         ) : error ? (
                             <ErrorState message={error} onRetry={fetchTodos} />
                         ) : todos.length === 0 ? (

@@ -5,7 +5,8 @@ import RichTextEditor from '../components/RichTextEditor';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { notesApi } from '../lib';
 import type { Note } from '../types';
-import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { EmptyState, ErrorState } from '../hooks/useApi';
+import { NoteGridSkeleton, NoteSidebarSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
 import { useLocation } from 'react-router-dom';
 import { Plus, ArrowUpDown, Search, MoreHorizontal, Pin, Globe, Lock, Link, Edit3, Eye, FileText, Code2, ChevronDown, Cloud, CloudOff, Loader2, ArrowLeft } from 'lucide-react';
@@ -572,9 +573,7 @@ export default function Notes() {
 
                         {/* Notes Grid */}
                         {isLoading ? (
-                            <div className="flex justify-center py-20">
-                                <LoadingSpinner message="Loading notes..." />
-                            </div>
+                            <NoteGridSkeleton count={6} />
                         ) : error ? (
                             <ErrorState message={error} onRetry={fetchNotes} />
                         ) : notes.length === 0 ? (
@@ -661,7 +660,7 @@ export default function Notes() {
 
                         <div className="flex flex-col p-4 gap-2">
                             {isLoading ? (
-                                <LoadingSpinner message="Loading notes..." />
+                                <NoteSidebarSkeleton count={5} />
                             ) : error ? (
                                 <ErrorState message={error} onRetry={fetchNotes} />
                             ) : notes.length === 0 ? (

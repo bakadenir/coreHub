@@ -25,6 +25,7 @@ import PomodoroTimer from '../components/PomodoroTimer';
 import ClockWidget from '../components/ClockWidget';
 import LocationWidget from '../components/LocationWidget';
 import { schedulesApi } from '../lib';
+import { ScheduleEventListSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
 import { GripVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Plus, CalendarDays, FileEdit, Link as LinkIcon, CalendarX, CalendarClock, MapPin, ListTodo } from 'lucide-react';
 
@@ -419,8 +420,8 @@ export default function Home() {
                                         <>
                                             <p className="text-base font-medium text-gray-700 mb-3">{formatDateHeader(hoveredDate)}</p>
                                             {isLoadingSchedules ? (
-                                                <div className="flex-1 flex items-center justify-center">
-                                                    <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+                                                <div className="flex-1">
+                                                    <ScheduleEventListSkeleton count={3} />
                                                 </div>
                                             ) : schedules.length === 0 ? (
                                                 <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
@@ -506,8 +507,8 @@ export default function Home() {
                                             <p className="text-lg font-medium text-gray-900">{formatDateHeader(hoveredDate)}</p>
                                         </div>
                                         {isLoadingSchedules ? (
-                                            <div className="flex-1 flex items-center justify-center">
-                                                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full"></div>
+                                            <div className="flex-1 p-4">
+                                                <ScheduleEventListSkeleton count={4} />
                                             </div>
                                         ) : schedules.length === 0 ? (
                                             <div className="flex-1 flex flex-col items-center justify-center text-gray-400">

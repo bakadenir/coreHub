@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
+import { DonationTableSkeleton, ReviewListSkeleton } from '../components/Skeleton';
 import { feedbackApi, usersApi, donationsApi } from '../lib';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -673,11 +674,7 @@ export default function Donate() {
                             </thead>
                             <tbody className="divide-y divide-border-light text-sm">
                                 {isLoadingDonations ? (
-                                    <tr>
-                                        <td colSpan={4} className="py-12 text-center">
-                                            <Loader2 size={24} className="animate-spin text-gray-400" />
-                                        </td>
-                                    </tr>
+                                    <DonationTableSkeleton rows={5} />
                                 ) : donationsList.length === 0 ? (
                                     <tr>
                                         <td colSpan={4} className="py-12 text-center text-gray-400">
@@ -889,9 +886,7 @@ export default function Donate() {
 
                         {/* Reviews List */}
                         {isLoadingReviews ? (
-                            <div className="flex items-center justify-center py-12">
-                                <Loader2 size={32} className="animate-spin text-gray-400" />
-                            </div>
+                            <ReviewListSkeleton count={3} />
                         ) : filteredReviews.length === 0 ? (
                             <p className="text-sm text-gray-400 text-center py-12 bg-[#fdfdfd] border border-gray-200 rounded-xl">
                                 {reviews.length === 0 ? 'No reviews yet. Be the first to share your feedback!' : 'No reviews match your search.'}

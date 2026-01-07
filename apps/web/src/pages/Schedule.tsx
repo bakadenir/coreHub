@@ -5,7 +5,8 @@ import ActionMenu from '../components/ActionMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { schedulesApi } from '../lib';
 import type { ScheduleEvent } from '../types';
-import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { EmptyState, ErrorState } from '../hooks/useApi';
+import { ScheduleEventListSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
 import { ChevronLeft, ChevronRight, Plus, MoreVertical, CalendarX, MapPin, CheckCircle } from 'lucide-react';
 
@@ -57,11 +58,11 @@ export default function Schedule() {
                 const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
                 weekStart.setDate(diff);
                 weekStart.setHours(0, 0, 0, 0);
-                
+
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekStart.getDate() + 6);
                 weekEnd.setHours(23, 59, 59, 999);
-                
+
                 startDate = weekStart;
                 endDate = weekEnd;
             } else {
@@ -349,8 +350,8 @@ export default function Schedule() {
             <div className="flex flex-1 overflow-hidden">
                 <div className="flex-1 flex flex-col overflow-y-auto bg-[#fdfdfd]">
                     {isLoading ? (
-                        <div className="flex-1 flex items-center justify-center">
-                            <LoadingSpinner message="Loading events..." />
+                        <div className="flex-1 p-6">
+                            <ScheduleEventListSkeleton count={6} />
                         </div>
                     ) : error ? (
                         <div className="flex-1 flex items-center justify-center">

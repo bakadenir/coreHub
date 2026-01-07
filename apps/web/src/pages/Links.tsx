@@ -5,7 +5,8 @@ import ActionMenu from '../components/ActionMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { linksApi } from '../lib';
 import type { LinkItem } from '../types';
-import { LoadingSpinner, EmptyState, ErrorState } from '../hooks/useApi';
+import { EmptyState, ErrorState } from '../hooks/useApi';
+import { LinkGridSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
 import { Plus, ArrowUpDown, Search, Check, MoreHorizontal, Link as LinkLucide, ExternalLink, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 
@@ -262,9 +263,7 @@ export default function Links() {
 
                         {/* Links Grid */}
                         {isLoading ? (
-                            <div className="flex justify-center py-20">
-                                <LoadingSpinner message="Loading links..." />
-                            </div>
+                            <LinkGridSkeleton count={6} />
                         ) : error ? (
                             <ErrorState message={error} onRetry={fetchLinks} />
                         ) : links.length === 0 ? (

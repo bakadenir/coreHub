@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import AvatarUpload from '../components/AvatarUpload';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { SettingsSkeleton } from '../components/Skeleton';
 import { usersApi, notificationsApi } from '../lib';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -509,9 +510,7 @@ export default function Settings() {
 
                         <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-8 shadow-sm">
                             {isLoadingNotifSettings ? (
-                                <div className="flex items-center justify-center py-8">
-                                    <RefreshCw size={24} className="animate-spin text-gray-400" />
-                                </div>
+                                <SettingsSkeleton />
                             ) : (
                                 <div className="space-y-6">
                                     {/* Push Notifications */}

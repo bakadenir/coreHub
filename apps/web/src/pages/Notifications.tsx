@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
-import { ArrowLeft, Bell, Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
+import { NotificationListSkeleton } from '../components/Skeleton';
+import { ArrowLeft, Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 // Removed unused Notification type import
 import { notificationsApi } from '../lib';
@@ -176,8 +177,8 @@ export default function Notifications() {
                 {/* Notifications List */}
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     {isLoading ? (
-                        <div className="flex items-center justify-center py-16">
-                            <Loader2 size={24} className="animate-spin text-gray-400" />
+                        <div className="p-4">
+                            <NotificationListSkeleton count={5} />
                         </div>
                     ) : filteredNotifications.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center">
