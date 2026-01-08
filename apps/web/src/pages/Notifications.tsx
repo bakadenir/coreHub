@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { NotificationListSkeleton } from '../components/Skeleton';
-import { ArrowLeft, Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { ArrowLeft, Bell, Check, CheckCheck, Trash2, Loader2 } from 'lucide-react';
 import { useNotifications } from '../context/NotificationContext';
 // Removed unused Notification type import
 import { notificationsApi } from '../lib';

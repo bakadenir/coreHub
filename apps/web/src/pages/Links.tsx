@@ -373,7 +373,7 @@ export default function Links() {
                         </div>
                         <div className="flex flex-col p-4 gap-2">
                             {isLoading ? (
-                                <LoadingSpinner message="Loading links..." />
+                                <LinkGridSkeleton count={4} />
                             ) : error ? (
                                 <ErrorState message={error} onRetry={fetchLinks} />
                             ) : links.length === 0 ? (
