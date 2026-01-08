@@ -336,7 +336,7 @@ export default function LoginRegister() {
                                 To keep connected with us please login with your personal info
                             </p>
                             <button
-                                className="rounded-xl border border-zinc-50/20 bg-[#fdfdfd] px-8 py-2.5 text-sm font-bold text-zinc-900 uppercase tracking-wider hover:bg-[#fdfdfd]/10 hover:border-zinc-50 hover:text-white transition-all duration-300 shadow-lg"
+                                className="rounded-xl bg-white/10 px-8 py-2.5 text-sm font-bold text-white uppercase tracking-wider hover:bg-white hover:text-zinc-900 transition-all duration-300 shadow-lg"
                                 onClick={() => setIsSignUp(false)}
                             >
                                 Login
@@ -351,7 +351,7 @@ export default function LoginRegister() {
                                 Join coreHub to unlock your productivity.
                             </p>
                             <button
-                                className="rounded-xl border border-zinc-50/20 bg-[#fdfdfd] px-8 py-2.5 text-sm font-bold text-zinc-900 uppercase tracking-wider hover:bg-[#fdfdfd]/10 hover:border-zinc-50 hover:text-white transition-all duration-300 shadow-lg"
+                                className="rounded-xl bg-white/10 px-8 py-2.5 text-sm font-bold text-white uppercase tracking-wider hover:bg-white hover:text-zinc-900 transition-all duration-300 shadow-lg"
                                 onClick={() => setIsSignUp(true)}
                             >
                                 Register

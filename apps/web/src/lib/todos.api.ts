@@ -67,4 +67,8 @@ export const todosApi = {
     async deleteList(id: string): Promise<ApiResponse<{ deleted: boolean }>> {
         return api.delete<{ deleted: boolean }>(`/todos/lists/${id}`);
     },
+
+    async resetList(id: string): Promise<ApiResponse<{ reset: boolean; count: number }>> {
+        return api.post<{ reset: boolean; count: number }>(`/todos/lists/${id}/reset`, {});
+    },
 };

@@ -215,7 +215,6 @@ export default function Home() {
     const todayDay = today.getDate();
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
-    const prevMonthDays = getDaysInMonth(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
 
     const handleDayHover = (day: number | null) => {
         if (day !== null) {
@@ -390,8 +389,9 @@ export default function Home() {
 
                                 {/* Dates Grid */}
                                 <div className={`grid grid-cols-7 gap-1 text-center ${isMain ? 'text-base' : 'text-sm'}`}>
+                                    {/* Empty placeholders for alignment */}
                                     {[...Array(firstDay)].map((_, i) => (
-                                        <div key={`prev-${i}`} className="p-2 text-gray-300">{prevMonthDays - firstDay + i + 1}</div>
+                                        <div key={`empty-${i}`} className={`${isMain ? 'aspect-square w-10' : 'aspect-square w-8'}`}></div>
                                     ))}
                                     {[...Array(daysInMonth)].map((_, i) => {
                                         const day = i + 1;
@@ -400,7 +400,7 @@ export default function Home() {
                                             <div
                                                 key={day}
                                                 onMouseEnter={() => handleDayHover(day)}
-                                                className={`p-2 rounded transition-all cursor-default ${isToday ? 'bg-primary text-white font-semibold' : 'hover:bg-gray-100 text-gray-600'}`}
+                                                className={`${isMain ? 'aspect-square w-10' : 'aspect-square w-8'} flex items-center justify-center rounded-lg transition-all cursor-default ${isToday ? 'bg-primary text-white font-semibold' : 'hover:bg-gray-100 text-gray-600'}`}
                                             >
                                                 {day}
                                             </div>

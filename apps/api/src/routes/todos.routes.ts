@@ -148,6 +148,17 @@ router.patch('/lists/:id', async (req, res) => {
     }
 });
 
+// POST /api/todos/lists/:id/reset - Reset list (uncomplete all todos)
+router.post('/lists/:id/reset', async (req, res) => {
+    try {
+        const result = await todosService.resetList(req.params.id, req.user!.id);
+        return successResponse(res, result);
+    } catch (error) {
+        console.error('Error resetting todo list:', error);
+        return serverErrorResponse(res);
+    }
+});
+
 // DELETE /api/todos/lists/:id - Delete list
 router.delete('/lists/:id', async (req, res) => {
     try {
