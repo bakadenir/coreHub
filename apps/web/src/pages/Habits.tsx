@@ -89,6 +89,15 @@ function getDateRangeText() {
     return `${formatDate(startDate)} — ${formatDate(today)}`;
 }
 
+// Format specific days to readable text
+function formatSpecificDays(specificDays?: number[]): string {
+    if (!specificDays || specificDays.length === 0) return '';
+
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const sortedDays = [...specificDays].sort((a, b) => a - b);
+    return sortedDays.map(d => dayNames[d]).join(', ');
+}
+
 // Habit Card Component with Heatmap
 function HabitCard({
     habit,
@@ -169,6 +178,9 @@ function HabitCard({
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary">
                         <CalendarX size={14} />
                         Not scheduled today
+                        {habit.specificDays && habit.specificDays.length > 0 && (
+                            <span className="text-text-secondary/70">• {formatSpecificDays(habit.specificDays)}</span>
+                        )}
                     </span>
                 ) : (
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-text-secondary">
