@@ -543,7 +543,11 @@ export default function Habits() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {habits.map((habit) => (
+                        {[...habits].sort((a, b) => {
+                            // Sort: incomplete habits first, completed habits last
+                            if (a.completed === b.completed) return 0;
+                            return a.completed ? 1 : -1;
+                        }).map((habit) => (
                             <HabitCard
                                 key={habit.id}
                                 habit={habit}
