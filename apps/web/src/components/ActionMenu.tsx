@@ -44,7 +44,7 @@ export default function ActionMenu({ items, trigger, className = '' }: ActionMen
     };
 
     return (
-        <div ref={menuRef} className={`relative ${className}`}>
+        <div ref={menuRef} className={`relative ${className}`} data-state={isOpen ? 'open' : 'closed'}>
             {/* Trigger Button */}
             <button
                 onClick={(e) => {

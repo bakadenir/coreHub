@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import GlobalSearch from './GlobalSearch';
 import NotificationBell from './NotificationBell';
 import { useUser } from '../hooks/useUser';
-import { Workflow, Search, ChevronDown, User, Settings, Heart, LogOut } from 'lucide-react';
+import { Search, ChevronDown, User, Settings, Heart, LogOut } from 'lucide-react';
 
 interface HeaderProps {
     subtitle?: string;
@@ -69,9 +69,7 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                            <div className="flex items-center justify-center rounded-lg bg-zinc-900 text-white size-8">
-                                <Workflow size={20} />
-                            </div>
+                            <img src="/logo.png" alt="Logo" className="size-8 object-contain" />
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">
                                 coreHub
                             </h1>

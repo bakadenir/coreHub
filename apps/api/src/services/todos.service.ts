@@ -118,7 +118,7 @@ export class TodosService {
         if (filters.dueDate === 'today') {
             query = query.gte('due_date', todayStr).lt('due_date', tomorrowStr);
         } else if (filters.dueDate === 'upcoming') {
-            query = query.gte('due_date', todayStr).lt('due_date', weekLaterStr);
+            query = query.gte('due_date', tomorrowStr).lt('due_date', weekLaterStr);
         } else if (filters.dueDate === 'overdue') {
             query = query.lt('due_date', todayStr).eq('is_completed', false);
         } else if (filters.dueDate === 'no-date') {
@@ -311,7 +311,7 @@ export class TodosService {
 
         const total = todos?.length || 0;
         const completed = todos?.filter(t => t.is_completed).length || 0;
-        const overdue = todos?.filter(t => 
+        const overdue = todos?.filter(t =>
             !t.is_completed && t.due_date && new Date(t.due_date) < today
         ).length || 0;
         const dueToday = todos?.filter(t => {
@@ -406,13 +406,34 @@ export class TodosService {
     }
 
     async deleteList(id: string, userId: string) {
-        // Move all todos to inbox (null list_id)
-        await supabase
+        // Soft delete all todos in this list (including their subtasks)
+        // First get all todo IDs in this list
+        const { data: todosInList } = await supabase
             .from('todos')
-            .update({ list_id: null })
+            .select('id')
             .eq('list_id', id)
-            .eq('user_id', userId);
+            .eq('user_id', userId)
+            .is('deleted_at', null);
 
+        const todoIds = (todosInList || []).map(t => t.id);
+
+        if (todoIds.length > 0) {
+            // Soft delete subtasks of todos in this list
+            await supabase
+                .from('todos')
+                .update({ deleted_at: new Date().toISOString() })
+                .in('parent_id', todoIds)
+                .eq('user_id', userId);
+
+            // Soft delete todos in this list
+            await supabase
+                .from('todos')
+                .update({ deleted_at: new Date().toISOString() })
+                .eq('list_id', id)
+                .eq('user_id', userId);
+        }
+
+        // Delete the list itself
         const { error } = await supabase
             .from('todo_lists')
             .delete()
@@ -420,5 +441,31 @@ export class TodosService {
             .eq('user_id', userId);
 
         if (error) throw error;
+    }
+
+    async resetList(id: string, userId: string) {
+        // Uncomplete all todos in this list
+        const { error } = await supabase
+            .from('todos')
+            .update({
+                is_completed: false,
+                completed_at: null,
+                updated_at: new Date().toISOString(),
+            })
+            .eq('list_id', id)
+            .eq('user_id', userId)
+            .is('deleted_at', null);
+
+        if (error) throw error;
+
+        // Count how many were reset
+        const { count } = await supabase
+            .from('todos')
+            .select('*', { count: 'exact', head: true })
+            .eq('list_id', id)
+            .eq('user_id', userId)
+            .is('deleted_at', null);
+
+        return { reset: true, count: count || 0 };
     }
 }

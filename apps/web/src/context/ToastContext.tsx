@@ -28,7 +28,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 return prev;
             }
             const id = Math.random().toString(36).substring(2, 9);
-            return [...prev, { id, message, type }];
+            // Limit to max 3 toasts to prevent spamming
+            const newToasts = [...prev, { id, message, type }];
+            return newToasts.slice(-3);
         });
     };
 

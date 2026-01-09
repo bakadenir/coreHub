@@ -21,6 +21,7 @@ import AddHabitModal from '../components/AddHabitModal';
 import AddScheduleModal from '../components/AddScheduleModal';
 import AddNoteModal from '../components/AddNoteModal';
 import AddLinkModal from '../components/AddLinkModal';
+import AddTodoModal from '../components/AddTodoModal';
 import PomodoroTimer from '../components/PomodoroTimer';
 import ClockWidget from '../components/ClockWidget';
 import LocationWidget from '../components/LocationWidget';
@@ -110,6 +111,7 @@ export default function Home() {
     const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
     const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
     const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
+    const [isAddTodoOpen, setIsAddTodoOpen] = useState(false);
 
     // Toast for greeting
     const { showToast } = useToast();
@@ -215,7 +217,6 @@ export default function Home() {
     const todayDay = today.getDate();
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
-    const prevMonthDays = getDaysInMonth(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
 
     const handleDayHover = (day: number | null) => {
         if (day !== null) {
@@ -287,7 +288,7 @@ export default function Home() {
                         )}
                         <nav className={isMain ? "grid grid-cols-2 gap-3 max-w-lg" : "space-y-1 flex-1 flex flex-col justify-center"}>
                             {[
-                                { icon: <ListTodo size={isMain ? 20 : 14} />, label: 'Add Todo List' },
+                                { icon: <ListTodo size={isMain ? 20 : 14} />, label: 'Add Todo' },
                                 { icon: <CalendarDays size={isMain ? 20 : 14} />, label: 'Add Schedule' },
                                 { icon: <Plus size={isMain ? 20 : 14} />, label: 'Add Habit' },
                                 { icon: <FileEdit size={isMain ? 20 : 14} />, label: 'Add Notes' },
@@ -300,7 +301,7 @@ export default function Home() {
                                         if (action.label === 'Add Schedule') setIsAddScheduleOpen(true);
                                         if (action.label === 'Add Notes') setIsAddNoteOpen(true);
                                         if (action.label === 'Add Link') setIsAddLinkOpen(true);
-                                        if (action.label === 'Add Todo List') window.location.href = '/todos';
+                                        if (action.label === 'Add Todo') setIsAddTodoOpen(true);
                                     }}
                                     className={`flex items-center gap-3 ${isMain ? 'px-5 py-3 text-sm border border-gray-200' : 'w-full px-2 py-2 text-sm'} font-medium text-gray-700 rounded-lg hover:bg-surface-light transition-all group ${isMain && index === 0 ? 'col-span-2 justify-center' : ''}`}
                                 >
@@ -390,8 +391,9 @@ export default function Home() {
 
                                 {/* Dates Grid */}
                                 <div className={`grid grid-cols-7 gap-1 text-center ${isMain ? 'text-base' : 'text-sm'}`}>
+                                    {/* Empty placeholders for alignment */}
                                     {[...Array(firstDay)].map((_, i) => (
-                                        <div key={`prev-${i}`} className="p-2 text-gray-300">{prevMonthDays - firstDay + i + 1}</div>
+                                        <div key={`empty-${i}`} className={`${isMain ? 'aspect-square w-10' : 'aspect-square w-8'}`}></div>
                                     ))}
                                     {[...Array(daysInMonth)].map((_, i) => {
                                         const day = i + 1;
@@ -400,7 +402,7 @@ export default function Home() {
                                             <div
                                                 key={day}
                                                 onMouseEnter={() => handleDayHover(day)}
-                                                className={`p-2 rounded transition-all cursor-default ${isToday ? 'bg-primary text-white font-semibold' : 'hover:bg-gray-100 text-gray-600'}`}
+                                                className={`${isMain ? 'aspect-square w-10' : 'aspect-square w-8'} flex items-center justify-center rounded-lg transition-all cursor-default ${isToday ? 'bg-primary text-white font-semibold' : 'hover:bg-gray-100 text-gray-600'}`}
                                             >
                                                 {day}
                                             </div>
@@ -476,6 +478,7 @@ export default function Home() {
             <AddScheduleModal isOpen={isAddScheduleOpen} onClose={() => handleModalClose(setIsAddScheduleOpen)} />
             <AddNoteModal isOpen={isAddNoteOpen} onClose={() => handleModalClose(setIsAddNoteOpen)} />
             <AddLinkModal isOpen={isAddLinkOpen} onClose={() => handleModalClose(setIsAddLinkOpen)} />
+            <AddTodoModal isOpen={isAddTodoOpen} onClose={() => handleModalClose(setIsAddTodoOpen)} />
 
             <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>

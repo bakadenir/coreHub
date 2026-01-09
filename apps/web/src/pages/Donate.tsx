@@ -6,7 +6,7 @@ import { DonationTableSkeleton, ReviewListSkeleton } from '../components/Skeleto
 import { feedbackApi, usersApi, donationsApi } from '../lib';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Clock, Heart, Loader2, History, MessageSquare, Send, Edit3, BadgeCheck, Box } from 'lucide-react';
+import { ArrowLeft, Clock, Heart, Loader2, History, MessageSquare, Send, Edit3, BadgeCheck } from 'lucide-react';
 
 interface MidtransResult {
     status_code: string;
@@ -478,8 +478,8 @@ export default function Donate() {
                         <p>
                             Thank you for using{' '}
                             <span className="inline-flex items-center gap-1.5">
-                                <span className="inline-flex items-center justify-center rounded bg-zinc-900 text-white size-5">
-                                    <Box size={14} />
+                                <span className="inline-flex items-center justify-center size-5">
+                                    <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                                 </span>
                                 <strong className="text-text-primary font-semibold">coreHub</strong>
                             </span>.

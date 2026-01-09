@@ -363,12 +363,15 @@ export default function Habits() {
 
     const handleComplete = async (habitId: string, currentlyCompleted: boolean) => {
         try {
+            const habit = habits.find(h => h.id === habitId);
+            const firstWord = habit?.name.split(' ')[0] || 'Habit';
+
             if (currentlyCompleted) {
                 await habitsApi.uncomplete(habitId);
-                showToast('Habit uncompleted', 'success');
+                showToast(`${firstWord} Uncompleted 🎉`, 'success');
             } else {
                 await habitsApi.complete(habitId);
-                showToast('Habit completed! 🎉', 'success');
+                showToast(`${firstWord} Completed 🎉`, 'success');
             }
             fetchHabits();
         } catch {
