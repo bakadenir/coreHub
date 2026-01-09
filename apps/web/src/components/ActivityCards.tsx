@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { habitsApi, notesApi, linksApi, schedulesApi } from '../lib';
-import type { Habit, Note, LinkItem, ScheduleEvent } from '../types';
+import { habitsApi, notesApi, linksApi, schedulesApi, todosApi } from '../lib';
+import type { Habit, Note, LinkItem, ScheduleEvent, Todo } from '../types';
 import { useToast } from '../context/ToastContext';
 import {
     DndContext,
@@ -22,30 +22,8 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { renderIcon } from '../lib/iconMap';
 import { Maximize2, GripVertical, ArrowUpRight } from 'lucide-react';
-
-interface ActivityCardsProps {
-    refreshTrigger?: number;
-}
-
-// Panel configuration
-type PanelId = 'habits' | 'schedule' | 'notes' | 'links';
-
-interface PanelConfig {
-    id: PanelId;
-    title: string;
-    icon: string;
-    route: string;
-}
-
-const panelConfigs: Record<PanelId, PanelConfig> = {
-    habits: { id: 'habits', title: 'Habit Tracker', icon: 'check_circle', route: '/habits' },
-    schedule: { id: 'schedule', title: 'Schedule', icon: 'schedule', route: '/schedule' },
-    notes: { id: 'notes', title: 'Notes', icon: 'description', route: '/notes' },
-    links: { id: 'links', title: 'List Link', icon: 'link', route: '/links' },
-};
-
-const defaultOrder: PanelId[] = ['habits', 'schedule', 'notes', 'links'];
-const STORAGE_KEY = 'activityPanelOrder';
+import type { PanelId, PanelConfig } from '../lib/activity-config';
+import { panelConfigs } from '../lib/activity-config';
 
 // Sortable Panel Component
 function SortablePanel({
@@ -112,32 +90,23 @@ function SortablePanel({
     );
 }
 
-export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps) {
+export interface ActivityCardsProps {
+    refreshTrigger?: number;
+    panelOrder: PanelId[];
+    onOrderChange: (newOrder: PanelId[]) => void;
+}
+
+export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderChange }: ActivityCardsProps) {
     const navigate = useNavigate();
     const { showToast } = useToast();
     const [habits, setHabits] = useState<Habit[]>([]);
     const [schedule, setSchedule] = useState<ScheduleEvent[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
     const [links, setLinks] = useState<LinkItem[]>([]);
+    const [todos, setTodos] = useState<Todo[]>([]);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-    // Panel order state with localStorage persistence
-    const [panelOrder, setPanelOrder] = useState<PanelId[]>(() => {
-        if (typeof window === 'undefined') return defaultOrder;
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (Array.isArray(parsed) && parsed.length === 4 &&
-                    parsed.every((id: string) => defaultOrder.includes(id as PanelId))) {
-                    return parsed as PanelId[];
-                }
-            }
-        } catch (e) {
-            console.error('Error loading panel order:', e);
-        }
-        return defaultOrder;
-    });
+    // Removed internal panelOrder state and localStorage logic (moved to parent)
 
     // Sensors for drag and drop
     const sensors = useSensors(
@@ -154,11 +123,12 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
     const fetchData = useCallback(async () => {
         // Don't show skeleton on refresh, only on initial load
         try {
-            const [habitsRes, schedulesRes, notesRes, linksRes] = await Promise.all([
+            const [habitsRes, schedulesRes, notesRes, linksRes, todosRes] = await Promise.all([
                 habitsApi.getAll(),
                 schedulesApi.getAll(),
                 notesApi.getAll(),
-                linksApi.getAll()
+                linksApi.getAll(),
+                todosApi.getAll()
             ]);
 
             if (habitsRes.success && habitsRes.data) {
@@ -210,6 +180,33 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
             if (linksRes.success && linksRes.data) {
                 setLinks(linksRes.data);
             }
+
+            // Fix: todosApi.getAll() returns { success: boolean, data?: Todo[], error?: string }
+            // But checking the actual API response type might be needed. Assuming standard pattern.
+            // The result for todosApi.getAll() is the 5th element in the Promise.all array (index 4)
+            // Wait, Promise.all returns an array, but the destructuring above only took 4 elements.
+            // I need to update the destructuring.
+            // Actually, let's fix the destructuring in a separate chunk to be safe or just assume I fixed it in chunk 4 (I didn't).
+            // Let me fix chunk 4 destructuring logic first.
+            // Wait, I can't edit chunk 4 anymore. I will just handle the 5th element here by accessing it from the result array if I didn't verify index.
+            // Actually, looking at chunk 4 replacement:
+            // [habitsRes, schedulesRes, notesRes, linksRes] = await Promise.all(...)
+            // I need to add todosRes to that destructuring.
+            // So I will edit this chunk to be a no-op for now and fix the destructuring in the next tool call?
+            // No, I can do it in one go if I am careful.
+            // Let's look at the lines around 157.
+            // I will use a separate replacement for line 157 in a second.
+
+            // For this chunk (lines 210-212), I will append the todo setting logic.
+            if (linksRes.success && linksRes.data) {
+                setLinks(linksRes.data);
+            }
+
+            if (todosRes.success && todosRes.data) {
+                setTodos(todosRes.data);
+            }
+            // We need to access the todos result. Since I missed adding it to the destructuring variable list in the previous chunk replacement (I only added the call inside Promise.all array),
+            // I must update line 157 as well. I'll add a chunk for line 157.
         } catch (error) {
             console.error('Failed to fetch activity data:', error);
         } finally {
@@ -221,23 +218,16 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         fetchData();
     }, [fetchData, refreshTrigger]);
 
-    // Save order to localStorage when it changes
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(panelOrder));
-        }
-    }, [panelOrder]);
+
 
     // Handle drag end
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (over && active.id !== over.id) {
-            setPanelOrder((items) => {
-                const oldIndex = items.indexOf(active.id as PanelId);
-                const newIndex = items.indexOf(over.id as PanelId);
-                return arrayMove(items, oldIndex, newIndex);
-            });
+            const oldIndex = panelOrder.indexOf(active.id as PanelId);
+            const newIndex = panelOrder.indexOf(over.id as PanelId);
+            onOrderChange(arrayMove(panelOrder, oldIndex, newIndex));
         }
     };
 
@@ -370,6 +360,24 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
                                 </div>
                                 <ArrowUpRight size={14} className="shrink-0 text-gray-300 group-hover/link:text-primary transition-colors" />
                             </a>
+                        ))}
+                    </div>
+                );
+
+            case 'todos':
+                return todos.length === 0 ? (
+                    <p className="text-sm text-gray-500">No tasks yet. Add a task!</p>
+                ) : (
+                    <div className="flex flex-col gap-2">
+                        {todos.slice(0, 2).map((todo) => (
+                            <div key={todo.id} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded group">
+                                <div className={`w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center ${todo.isCompleted ? 'bg-gray-200 border-gray-200' : 'bg-white'}`}>
+                                    {todo.isCompleted && <div className="w-2 h-2 bg-gray-500 rounded-full" />}
+                                </div>
+                                <span className={`text-sm truncate flex-1 ${todo.isCompleted ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
+                                    {todo.title}
+                                </span>
+                            </div>
                         ))}
                     </div>
                 );

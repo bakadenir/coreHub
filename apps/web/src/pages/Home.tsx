@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -17,6 +17,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import ActivityCards from '../components/ActivityCards';
+import type { PanelId } from '../lib/activity-config';
+import { panelConfigs, defaultOrder, ACTIVITY_STORAGE_KEY } from '../lib/activity-config';
+import { renderIcon } from '../lib/iconMap';
 import AddHabitModal from '../components/AddHabitModal';
 import AddScheduleModal from '../components/AddScheduleModal';
 import AddNoteModal from '../components/AddNoteModal';
@@ -28,7 +31,7 @@ import LocationWidget from '../components/LocationWidget';
 import { schedulesApi } from '../lib';
 import { ScheduleEventListSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
-import { GripVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Plus, CalendarDays, FileEdit, Link as LinkIcon, CalendarX, CalendarClock, MapPin, ListTodo } from 'lucide-react';
+import { GripVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Plus, CalendarDays, FileEdit, Link as LinkIcon, CalendarX, CalendarClock, MapPin, ListTodo, Check, Settings2, RotateCcw } from 'lucide-react';
 
 const WIDGET_ORDER_KEY = 'corehub_widget_order_v4';
 const GREETING_SHOWN_KEY = 'corehub_greeting_shown';
@@ -144,6 +147,69 @@ export default function Home() {
             localStorage.setItem(WIDGET_ORDER_KEY, JSON.stringify(widgetOrder));
         } catch { /* ignore */ }
     }, [widgetOrder]);
+
+    // Activity Panels State
+    const [isActivitySettingsOpen, setIsActivitySettingsOpen] = useState(false);
+    const [panelOrder, setPanelOrder] = useState<PanelId[]>(() => {
+        if (typeof window === 'undefined') return defaultOrder;
+        try {
+            const saved = localStorage.getItem(ACTIVITY_STORAGE_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    const validIds = parsed.filter((id: string) => Object.keys(panelConfigs).includes(id));
+                    if (validIds.length > 0) return validIds as PanelId[];
+                }
+            }
+        } catch (e) {
+            console.error('Error loading panel order:', e);
+        }
+        return defaultOrder;
+    });
+
+    // Save activity order persistence
+    useEffect(() => {
+        localStorage.setItem(ACTIVITY_STORAGE_KEY, JSON.stringify(panelOrder));
+    }, [panelOrder]);
+
+    const handlePanelToggle = (panelId: PanelId) => {
+        setPanelOrder(current => {
+            if (current.includes(panelId)) {
+                return current.filter(id => id !== panelId);
+            } else {
+                if (current.length >= 4) {
+                    showToast('You can only display 4 activity cards. Please remove one first.', 'error');
+                    return current;
+                }
+                return [...current, panelId];
+            }
+        });
+    };
+
+    const handleResetPanels = () => {
+        setPanelOrder(defaultOrder);
+        showToast('Activity layout reset to default', 'success');
+    };
+
+    // Click outside handler for activity settings
+    const activitySettingsRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (activitySettingsRef.current && !activitySettingsRef.current.contains(event.target as Node)) {
+                setIsActivitySettingsOpen(false);
+            }
+        };
+
+        if (isActivitySettingsOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isActivitySettingsOpen]);
+
 
     // DnD sensors
     const sensors = useSensors(
@@ -600,11 +666,75 @@ export default function Home() {
 
                                 {/* Activity Cards - fixed at bottom */}
                                 <section className="shrink-0">
-                                    <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
-                                        My Activity
-                                        <span className="h-px bg-gray-200 flex-1 ml-2"></span>
-                                    </h3>
-                                    <ActivityCards refreshTrigger={refreshTrigger} />
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                                            My Activity
+                                        </h3>
+                                        {/* Settings Dropdown */}
+                                        <div className="relative" ref={activitySettingsRef}>
+                                            <button
+                                                onClick={() => setIsActivitySettingsOpen(!isActivitySettingsOpen)}
+                                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                                title="Customize Activity Cards"
+                                            >
+                                                <Settings2 size={16} />
+                                            </button>
+
+                                            {isActivitySettingsOpen && (
+                                                <div className="absolute right-0 top-full mt-2 w-56 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-100 py-1">
+                                                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                                        <span className="text-xs font-bold text-gray-500">Display 4 Items</span>
+                                                        <button
+                                                            onClick={handleResetPanels}
+                                                            className="text-xs text-gray-500 hover:text-gray-900 font-medium flex items-center gap-1 transition-colors"
+                                                            title="Reset to default"
+                                                        >
+                                                            <RotateCcw size={10} /> Reset
+                                                        </button>
+                                                    </div>
+                                                    <div className="py-1">
+                                                        {Object.values(panelConfigs).map((config) => {
+                                                            const isSelected = panelOrder.includes(config.id);
+                                                            const isDisabled = !isSelected && panelOrder.length >= 4;
+
+                                                            return (
+                                                                <button
+                                                                    key={config.id}
+                                                                    onClick={() => handlePanelToggle(config.id)}
+                                                                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors
+                                                                            ${isSelected
+                                                                            ? 'text-gray-900 font-medium bg-gray-50'
+                                                                            : isDisabled
+                                                                                ? 'text-gray-400 cursor-not-allowed opacity-70'
+                                                                                : 'text-gray-700 hover:bg-gray-50'
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className={`text-gray-500 ${isSelected ? 'text-gray-900' : ''}`}>
+                                                                            {renderIcon(config.icon, { size: 18 })}
+                                                                        </span>
+                                                                        <span>{config.title}</span>
+                                                                    </div>
+                                                                    {isSelected && <Check size={16} className="text-gray-900" />}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    {panelOrder.length !== 4 && (
+                                                        <div className="px-4 py-2 bg-gray-50 text-gray-500 text-xs border-t border-gray-100 text-center">
+                                                            Please select exactly 4 items
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="h-px bg-gray-200 mb-6"></div>
+                                    <ActivityCards
+                                        refreshTrigger={refreshTrigger}
+                                        panelOrder={panelOrder}
+                                        onOrderChange={setPanelOrder}
+                                    />
                                 </section>
                             </div>
                         </div>
