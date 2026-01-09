@@ -5,12 +5,15 @@ import LocationWidget from './LocationWidget';
 import PomodoroTimer from './PomodoroTimer';
 import { schedulesApi } from '../lib';
 import { CalendarX, MapPin, Minimize2 } from 'lucide-react';
+import type { PanelId } from '../lib/activity-config';
 
 interface DashboardProps {
     refreshTrigger?: number;
     hoveredDate?: Date | null;
     featuredWidget: string;
     onDemoteWidget: () => void;
+    panelOrder: PanelId[];
+    onOrderChange: (newOrder: PanelId[]) => void;
 }
 
 interface ScheduleItem {
@@ -22,7 +25,7 @@ interface ScheduleItem {
     description?: string;
 }
 
-export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, featuredWidget, onDemoteWidget }: DashboardProps) {
+export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, featuredWidget, onDemoteWidget, panelOrder, onOrderChange }: DashboardProps) {
     const [schedules, setSchedules] = useState<ScheduleItem[]>([]);
     const [isLoadingSchedules, setIsLoadingSchedules] = useState(false);
 
@@ -259,7 +262,7 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                     Your Activity
                     <span className="h-px bg-gray-200 flex-1 ml-2"></span>
                 </h3>
-                <ActivityCards refreshTrigger={refreshTrigger} />
+                <ActivityCards refreshTrigger={refreshTrigger} panelOrder={panelOrder} onOrderChange={onOrderChange} />
             </section>
         </div>
     );
