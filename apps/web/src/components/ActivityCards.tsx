@@ -279,7 +279,7 @@ export default function ActivityCards({ refreshTrigger = 0 }: ActivityCardsProps
         }
     };
 
-    const linkColors = ['bg-zinc-900', 'bg-zinc-700', 'bg-zinc-500', 'bg-zinc-400'];
+    const linkColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-yellow-500'];
 
     // Render panel content based on ID
     const renderPanelContent = (panelId: PanelId) => {

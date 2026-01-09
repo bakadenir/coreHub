@@ -601,7 +601,7 @@ export default function Home() {
                                 {/* Activity Cards - fixed at bottom */}
                                 <section className="shrink-0">
                                     <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
-                                        Your Activity
+                                        My Activity
                                         <span className="h-px bg-gray-200 flex-1 ml-2"></span>
                                     </h3>
                                     <ActivityCards refreshTrigger={refreshTrigger} />
