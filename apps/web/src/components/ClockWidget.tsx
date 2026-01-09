@@ -40,8 +40,8 @@ export default function ClockWidget({ showSeconds = false, className = '', compa
                 {hours}:{minutes}
                 {showSeconds && <>:{seconds}</>}
             </h2>
-            <div className={compact ? 'mt-3' : 'mt-4 space-y-2'}>
-                <p className={compact ? 'text-sm font-medium text-gray-600' : 'text-xl md:text-2xl font-medium text-gray-900'}>
+            <div className={compact ? 'mt-3' : 'mt-6 space-y-2'}>
+                <p className={compact ? 'text-sm font-medium text-gray-600' : 'text-lg md:text-xl font-medium text-gray-600'}>
                     {formatDate()}
                 </p>
             </div>

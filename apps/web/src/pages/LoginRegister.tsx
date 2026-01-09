@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import FloatingInput from '../components/FloatingInput';
 import { signIn, signUp, signOut } from '../lib/auth';
-import { Workflow, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export default function LoginRegister() {
     const navigate = useNavigate();
@@ -165,9 +165,7 @@ export default function LoginRegister() {
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link to="/" className="flex items-center gap-2 select-none hover:opacity-80 transition-opacity">
-                            <div className="flex items-center justify-center rounded-xl bg-zinc-900 text-white size-8 shadow-md">
-                                <Workflow size={20} />
-                            </div>
+                            <img src="/logo.png" alt="Logo" className="size-8 object-contain" />
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">coreHub</h1>
                         </Link>
                         <div className="h-6 w-px bg-gray-300 mx-2 hidden sm:block"></div>

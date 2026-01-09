@@ -108,8 +108,8 @@ export default function LocationWidget() {
     };
 
     return (
-        <div className="flex items-center justify-center gap-2 text-gray-500 text-xs">
-            {location.isLoading ? <RefreshCw size={18} className="animate-spin" /> : <MapPin size={18} />}
+        <div className="flex items-center justify-center gap-1.5 text-gray-400 text-[13px] font-medium tracking-wide">
+            {location.isLoading ? <RefreshCw size={14} className="animate-spin" /> : <MapPin size={14} />}
             <span className={location.isLoading ? 'animate-pulse' : ''}>
                 {formatLocation()}
             </span>

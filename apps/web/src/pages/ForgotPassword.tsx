@@ -98,9 +98,7 @@ export default function ForgotPassword() {
                 <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link to="/" className="flex items-center gap-2 select-none hover:opacity-80 transition-opacity">
-                            <div className="flex items-center justify-center rounded-xl bg-zinc-900 text-white size-8 shadow-md">
-                                <span className="material-icons-outlined text-[20px]">hub</span>
-                            </div>
+                            <img src="/logo.png" alt="Logo" className="size-8 object-contain" />
                             <h1 className="text-xl font-bold tracking-tight text-text-primary">coreHub</h1>
                         </Link>
                         <div className="h-6 w-px bg-gray-300 mx-2 hidden sm:block"></div>

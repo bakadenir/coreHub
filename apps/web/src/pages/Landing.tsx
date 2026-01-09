@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CookieConsent from '../components/CookieConsent';
 import LandingDashboardPreview from '../components/LandingDashboardPreview';
-import { Workflow, CheckCircle, Calendar, FileEdit, Link as LinkIcon, ListTodo } from 'lucide-react';
+import { CheckCircle, Calendar, FileEdit, Link as LinkIcon, ListTodo } from 'lucide-react';
 
 export default function Landing() {
     const navigate = useNavigate();
@@ -55,9 +55,7 @@ export default function Landing() {
                 <div className="max-w-[1200px] mx-auto px-4 md:px-10 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {/* Logo Icon */}
-                        <div className="flex items-center justify-center rounded-lg bg-zinc-900 text-white size-8 shadow-lg shadow-black/10">
-                            <Workflow size={20} />
-                        </div>
+                        <img src="/logo.png" alt="Logo" className="size-8 object-contain" />
                         <h2 className="text-xl font-bold leading-tight tracking-tight text-text-primary">coreHub</h2>
                     </div>
                     {/* Desktop Navigation */}
@@ -190,9 +188,7 @@ export default function Landing() {
             <footer className="py-10 bg-[#fdfdfd] border-t border-gray-200 relative z-10">
                 <div className="w-full max-w-[1200px] mx-auto px-4 md:px-10 flex flex-col gap-6 items-center text-center">
                     <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center rounded-md bg-zinc-900 text-white size-6">
-                            <Workflow size={16} />
-                        </div>
+                        <img src="/logo.png" alt="Logo" className="size-6 object-contain" />
                         <span className="font-bold text-text-primary">coreHub</span>
                     </div>
                     <div className="flex gap-6">
