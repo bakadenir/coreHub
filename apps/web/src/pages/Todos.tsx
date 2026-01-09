@@ -280,9 +280,10 @@ export default function Todos() {
 
 
 
-    const getListColor = (_: string) => {
-        // Force monochrome for all lists as per user request
-        return 'bg-gray-400 group-hover:bg-gray-600 transition-colors';
+    const listColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-yellow-500'];
+
+    const getListColor = (index: number) => {
+        return listColors[index % listColors.length] + ' transition-colors';
     };
 
     const renderTodoItem = (todo: Todo) => {
@@ -457,7 +458,7 @@ export default function Todos() {
                             </div>
 
                             {/* Custom Lists */}
-                            {lists.map(list => (
+                            {lists.map((list, index) => (
                                 <div key={list.id} className="group relative">
                                     <button
                                         onClick={() => { setSelectedListId(list.id); setFilterView('all'); }}
@@ -466,7 +467,7 @@ export default function Todos() {
                                             : 'text-gray-600 hover:bg-surface-light'
                                             }`}
                                     >
-                                        <div className={`w-3 h-3 rounded-full ${getListColor(list.color)}`} />
+                                        <div className={`w-3 h-3 rounded-full ${getListColor(index)}`} />
                                         <span className="flex-1 text-left truncate">{list.name}</span>
                                         {list.todoCount > 0 && (
                                             <span className="text-xs text-gray-400">{list.todoCount}</span>
