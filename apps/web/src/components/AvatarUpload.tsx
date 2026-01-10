@@ -1,20 +1,20 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { User } from 'lucide-react';
 
 interface AvatarUploadProps {
     currentAvatar?: string;
-    name: string;
     onAvatarChange: (base64: string) => void;
     size?: 'sm' | 'md' | 'lg';
 }
 
 export default function AvatarUpload({
     currentAvatar,
-    name,
     onAvatarChange,
     size = 'lg',
 }: AvatarUploadProps) {
     const [isDragOver, setIsDragOver] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const sizeClasses = {
@@ -23,8 +23,20 @@ export default function AvatarUpload({
         lg: 'h-20 w-20',
     };
 
-    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'U')}&background=000&color=fff`;
-    const displayAvatar = (currentAvatar && currentAvatar.trim() !== '') ? currentAvatar : defaultAvatar;
+    const iconSizes = {
+        sm: 20,
+        md: 24,
+        lg: 32,
+    };
+
+    const hasAvatar = currentAvatar && currentAvatar.trim() !== '';
+
+    // Reset image loading state when avatar URL changes
+    useEffect(() => {
+        if (hasAvatar) {
+            setIsImageLoaded(false);
+        }
+    }, [currentAvatar, hasAvatar]);
 
     const processFile = useCallback((file: File) => {
         if (!file.type.startsWith('image/')) {
@@ -116,12 +128,25 @@ export default function AvatarUpload({
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
             >
-                <img
-                    src={displayAvatar}
-                    alt="Profile"
-                    className={`w-full h-full object-cover border border-gray-200 rounded-full transition-all ${isDragOver ? 'scale-105 border-primary' : ''
-                        }`}
-                />
+                {/* Skeleton loading state */}
+                {(hasAvatar && !isImageLoaded) && (
+                    <div className="absolute inset-0 rounded-full bg-gray-200 animate-pulse" />
+                )}
+
+                {/* Actual avatar or default icon */}
+                {hasAvatar ? (
+                    <img
+                        src={currentAvatar}
+                        alt="Profile"
+                        className={`w-full h-full object-cover border border-gray-200 rounded-full transition-all duration-200 ${isDragOver ? 'scale-105 border-primary' : ''} ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        onLoad={() => setIsImageLoaded(true)}
+                        onError={() => setIsImageLoaded(true)}
+                    />
+                ) : (
+                    <div className={`w-full h-full rounded-full border border-gray-200 bg-gray-900 flex items-center justify-center ${isDragOver ? 'scale-105 border-primary' : ''}`}>
+                        <User size={iconSizes[size]} className="text-white" />
+                    </div>
+                )}
 
                 {/* Overlay */}
                 <div className={`absolute inset-0 bg-zinc-900/50 flex items-center justify-center transition-opacity ${isLoading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'

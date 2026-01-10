@@ -1,160 +1,112 @@
 -- ============================================
--- SUPABASE ROW LEVEL SECURITY (RLS) POLICIES
--- coreHub Database Security
+-- COREHUB RLS POLICIES (v2)
+-- Run this AFTER schema.sql
 -- ============================================
 
--- Enable RLS on all tables (run once per table)
-ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE habits ENABLE ROW LEVEL SECURITY;
-ALTER TABLE habit_completions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE links ENABLE ROW LEVEL SECURITY;
-ALTER TABLE todo_lists ENABLE ROW LEVEL SECURITY;
-ALTER TABLE todos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notification_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
-ALTER TABLE donations ENABLE ROW LEVEL SECURITY;
+-- ============================================
+-- ENABLE RLS ON ALL TABLES
+-- ============================================
+ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.habit_completions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.schedule_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.schedule_attendees ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.link_tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.todo_lists ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.todos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notification_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.donations ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- NOTES POLICIES
 -- ============================================
-
--- Users can only view their own notes
-CREATE POLICY "Users can view own notes" ON notes
-    FOR SELECT USING (auth.uid() = user_id);
-
--- Users can only insert their own notes
-CREATE POLICY "Users can insert own notes" ON notes
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Users can only update their own notes
-CREATE POLICY "Users can update own notes" ON notes
-    FOR UPDATE USING (auth.uid() = user_id);
-
--- Users can only delete their own notes
-CREATE POLICY "Users can delete own notes" ON notes
-    FOR DELETE USING (auth.uid() = user_id);
-
--- Public notes can be read by anyone
-CREATE POLICY "Public notes are viewable by anyone" ON notes
-    FOR SELECT USING (is_public = true);
+CREATE POLICY "notes_select" ON public.notes FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "notes_insert" ON public.notes FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "notes_update" ON public.notes FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "notes_delete" ON public.notes FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "notes_public_select" ON public.notes FOR SELECT USING (is_public = true);
 
 -- ============================================
 -- HABITS POLICIES
 -- ============================================
-
-CREATE POLICY "Users can CRUD own habits" ON habits
-    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "habits_all" ON public.habits FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================
--- HABIT_COMPLETIONS POLICIES
+-- HABIT COMPLETIONS POLICIES
 -- ============================================
-
-CREATE POLICY "Users can CRUD own habit completions" ON habit_completions
+CREATE POLICY "habit_completions_all" ON public.habit_completions
     FOR ALL USING (
-        auth.uid() = (SELECT user_id FROM habits WHERE id = habit_id)
+        auth.uid() = (SELECT user_id FROM public.habits WHERE id = habit_id)
     );
 
 -- ============================================
--- SCHEDULES POLICIES
+-- SCHEDULE EVENTS POLICIES
 -- ============================================
+CREATE POLICY "schedule_events_all" ON public.schedule_events FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can CRUD own schedules" ON schedules
-    FOR ALL USING (auth.uid() = user_id);
+-- ============================================
+-- SCHEDULE ATTENDEES POLICIES
+-- ============================================
+CREATE POLICY "schedule_attendees_all" ON public.schedule_attendees
+    FOR ALL USING (
+        auth.uid() = (SELECT user_id FROM public.schedule_events WHERE id = event_id)
+    );
 
 -- ============================================
 -- LINKS POLICIES
 -- ============================================
-
-CREATE POLICY "Users can CRUD own links" ON links
-    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "links_all" ON public.links FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================
--- TODO_LISTS POLICIES
+-- LINK TAGS POLICIES
 -- ============================================
+CREATE POLICY "link_tags_all" ON public.link_tags
+    FOR ALL USING (
+        auth.uid() = (SELECT user_id FROM public.links WHERE id = link_id)
+    );
 
-CREATE POLICY "Users can CRUD own todo lists" ON todo_lists
-    FOR ALL USING (auth.uid() = user_id);
+-- ============================================
+-- TODO LISTS POLICIES
+-- ============================================
+CREATE POLICY "todo_lists_all" ON public.todo_lists FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================
 -- TODOS POLICIES
 -- ============================================
-
-CREATE POLICY "Users can CRUD own todos" ON todos
-    FOR ALL USING (
-        auth.uid() = (SELECT user_id FROM todo_lists WHERE id = list_id)
-    );
+CREATE POLICY "todos_all" ON public.todos FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================
 -- NOTIFICATIONS POLICIES
 -- ============================================
-
-CREATE POLICY "Users can CRUD own notifications" ON notifications
-    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "notifications_all" ON public.notifications FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================
--- PUSH_SUBSCRIPTIONS POLICIES
+-- NOTIFICATION SETTINGS POLICIES
 -- ============================================
-
-CREATE POLICY "Users can CRUD own push subscriptions" ON push_subscriptions
-    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "notification_settings_all" ON public.notification_settings FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================
--- NOTIFICATION_SETTINGS POLICIES
+-- PUSH SUBSCRIPTIONS POLICIES
 -- ============================================
-
-CREATE POLICY "Users can CRUD own notification settings" ON notification_settings
-    FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "push_subscriptions_all" ON public.push_subscriptions FOR ALL USING (auth.uid() = user_id);
 
 -- ============================================
 -- FEEDBACK POLICIES
 -- ============================================
-
--- Anyone can submit feedback
-CREATE POLICY "Anyone can insert feedback" ON feedback
-    FOR INSERT WITH CHECK (true);
-
--- Users can view their own feedback
-CREATE POLICY "Users can view own feedback" ON feedback
-    FOR SELECT USING (user_id IS NULL OR auth.uid() = user_id);
+CREATE POLICY "feedback_insert" ON public.feedback FOR INSERT WITH CHECK (true);
+CREATE POLICY "feedback_select" ON public.feedback FOR SELECT USING (user_id IS NULL OR auth.uid() = user_id);
 
 -- ============================================
 -- DONATIONS POLICIES
 -- ============================================
-
--- Anyone can create a donation
-CREATE POLICY "Anyone can create donation" ON donations
-    FOR INSERT WITH CHECK (true);
-
--- Users can view their own donations
-CREATE POLICY "Users can view own donations" ON donations
-    FOR SELECT USING (user_id IS NULL OR auth.uid() = user_id);
-
--- Public donations (success) viewable by anyone
-CREATE POLICY "Success donations are public" ON donations
-    FOR SELECT USING (status = 'success');
+CREATE POLICY "donations_insert" ON public.donations FOR INSERT WITH CHECK (true);
+CREATE POLICY "donations_select_own" ON public.donations FOR SELECT USING (user_id IS NULL OR auth.uid() = user_id);
+CREATE POLICY "donations_select_public" ON public.donations FOR SELECT USING (status = 'success');
 
 -- ============================================
--- PROFILES POLICIES (if exists)
+-- DONE! RLS policies applied.
 -- ============================================
-
--- Uncomment if you have a profiles table
--- ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
--- CREATE POLICY "Users can view own profile" ON profiles
---     FOR SELECT USING (auth.uid() = id);
--- CREATE POLICY "Users can update own profile" ON profiles
---     FOR UPDATE USING (auth.uid() = id);
-
--- ============================================
--- HOW TO APPLY THESE POLICIES
--- ============================================
--- 1. Go to Supabase Dashboard
--- 2. Navigate to SQL Editor
--- 3. Copy and paste this entire file
--- 4. Run the SQL
--- 5. Check Authentication > Policies to verify
-
--- Note: If policies already exist, you may need to drop them first:
--- DROP POLICY IF EXISTS "policy_name" ON table_name;

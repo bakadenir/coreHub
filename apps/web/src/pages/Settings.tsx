@@ -339,7 +339,6 @@ export default function Settings() {
                             <div className="flex items-center gap-6 mb-8">
                                 <AvatarUpload
                                     currentAvatar={avatar}
-                                    name={name}
                                     onAvatarChange={handleAvatarChange}
                                 />
                                 <div className="hidden sm:block">
