@@ -41,7 +41,9 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     handleRetry = (): void => {
-        this.setState({ hasError: false, error: null });
+        // For most errors (especially network/chunk ones), a full reload is safer
+        // than just resetting the error boundary state
+        window.location.reload();
     };
 
     handleGoHome = (): void => {
