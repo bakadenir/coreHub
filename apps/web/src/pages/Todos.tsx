@@ -380,15 +380,7 @@ export default function Todos() {
             <header className="p-6 border-b border-border-light bg-[#fdfdfd] shrink-0">
                 <div className="flex flex-col gap-1">
                     <h2 className="text-text-primary text-3xl font-extrabold tracking-tight">
-                        {selectedListId
-                            ? lists.find(l => l.id === selectedListId)?.name || 'List'
-                            : filterView === 'today'
-                                ? 'Today'
-                                : filterView === 'upcoming'
-                                    ? 'Upcoming'
-                                    : filterView === 'completed'
-                                        ? 'Completed'
-                                        : 'Todo List'}
+                        Todo List
                     </h2>
                     <p className="text-text-secondary text-base font-normal">Manage your tasks and stay productive.</p>
                 </div>
@@ -467,10 +459,12 @@ export default function Todos() {
                                             : 'text-gray-600 hover:bg-surface-light'
                                             }`}
                                     >
-                                        <div className={`w-3 h-3 rounded-full ${getListColor(index)}`} />
+                                        <div className="w-[18px] flex justify-center">
+                                            <div className={`w-3 h-3 rounded-full ${getListColor(index)}`} />
+                                        </div>
                                         <span className="flex-1 text-left truncate">{list.name}</span>
                                         {list.todoCount > 0 && (
-                                            <span className="text-xs text-gray-400">{list.todoCount}</span>
+                                            <span className="text-xs text-gray-400 group-hover:opacity-0 transition-opacity">{list.todoCount}</span>
                                         )}
                                     </button>
                                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -537,7 +531,7 @@ export default function Todos() {
                                                 onClick={() => { setQuickAddDueDate(getToday()); setShowDatePicker(false); }}
                                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
                                             >
-                                                <Sun size={16} className="text-gray-500" />
+                                                <Sun size={16} className="text-orange-500" />
                                                 <span>Today</span>
                                                 <span className="ml-auto text-xs text-gray-400">
                                                     {getToday().toLocaleDateString('en-US', { weekday: 'short' })}
@@ -547,7 +541,7 @@ export default function Todos() {
                                                 onClick={() => { setQuickAddDueDate(getTomorrow()); setShowDatePicker(false); }}
                                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
                                             >
-                                                <CalendarIcon size={16} className="text-gray-500" />
+                                                <CalendarIcon size={16} className="text-blue-500" />
                                                 <span>Tomorrow</span>
                                                 <span className="ml-auto text-xs text-gray-400">
                                                     {getTomorrow().toLocaleDateString('en-US', { weekday: 'short' })}
@@ -557,7 +551,7 @@ export default function Todos() {
                                                 onClick={() => { setQuickAddDueDate(getNextWeek()); setShowDatePicker(false); }}
                                                 className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
                                             >
-                                                <CalendarClock size={16} className="text-gray-500" />
+                                                <CalendarClock size={16} className="text-purple-500" />
                                                 <span>Next Week</span>
                                                 <span className="ml-auto text-xs text-gray-400">
                                                     {getNextWeek().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
@@ -586,7 +580,7 @@ export default function Todos() {
                                                 >
                                                     <ChevronLeft size={14} className="text-gray-500" />
                                                 </button>
-                                                <span className="text-sm font-medium text-gray-900">
+                                                <span className="text-sm font-semibold text-gray-900">
                                                     {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                                                 </span>
                                                 <button

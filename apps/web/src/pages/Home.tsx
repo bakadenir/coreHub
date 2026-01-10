@@ -415,7 +415,7 @@ export default function Home() {
                                             <button onClick={() => navigateMonth(-1)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Previous month">
                                                 <ChevronLeft size={14} className="text-gray-500" />
                                             </button>
-                                            <span className="text-xs font-mono text-gray-500 min-w-[120px] text-center">
+                                            <span className="text-xs font-medium text-gray-500 min-w-[120px] text-center">
                                                 {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase()}
                                             </span>
                                             <button onClick={() => navigateMonth(1)} className="p-1 hover:bg-gray-100 rounded transition-colors" title="Next month">
@@ -440,7 +440,7 @@ export default function Home() {
                                             <button onClick={() => navigateMonth(-1)} className="p-1 hover:bg-gray-100 rounded transition-colors">
                                                 <ChevronLeft size={14} className="text-gray-500" />
                                             </button>
-                                            <span className="text-xs font-mono text-gray-500 min-w-[80px] text-center">
+                                            <span className="text-xs font-medium text-gray-500 min-w-[80px] text-center">
                                                 {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()}
                                             </span>
                                             <button onClick={() => navigateMonth(1)} className="p-1 hover:bg-gray-100 rounded transition-colors">

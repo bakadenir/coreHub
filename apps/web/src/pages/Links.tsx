@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import AddLinkModal from '../components/AddLinkModal';
 import EditLinkModal from '../components/EditLinkModal';
 import ActionMenu from '../components/ActionMenu';
@@ -104,18 +104,29 @@ export default function Links() {
         fetchLinks();
     }, [fetchLinks]);
 
-    // Sort links based on sortBy
-    const sortedLinks = [...links].sort((a, b) => {
-        switch (sortBy) {
-            case 'oldest':
-                return new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime();
-            case 'title':
-                return (a.title || '').localeCompare(b.title || '');
-            case 'newest':
-            default:
-                return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
-        }
-    });
+    // Memoize sortedLinks to prevent unnecessary recalculations
+    const sortedLinks = useMemo(() => {
+        return [...links].sort((a, b) => {
+            switch (sortBy) {
+                case 'oldest':
+                    return new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime();
+                case 'title':
+                    return (a.title || '').localeCompare(b.title || '');
+                case 'newest':
+                default:
+                    return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+            }
+        });
+    }, [links, sortBy]);
+
+    const selectedLink = selectedIndex !== null ? sortedLinks[selectedIndex] : null;
+
+    // Bubble selected link to top of sidebar list
+    const displayLinks = useMemo(() => {
+        if (!selectedLink) return sortedLinks;
+        const others = sortedLinks.filter(l => l.id !== selectedLink.id);
+        return [selectedLink, ...others];
+    }, [sortedLinks, selectedLink]);
 
     const handleEdit = (link: LinkItem) => {
         setEditingLink(link);
@@ -135,8 +146,23 @@ export default function Links() {
             const result = await linksApi.delete(String(linkToDelete.id));
             if (result.success) {
                 showToast('Link deleted successfully', 'success');
-                fetchLinks();
-                setSelectedIndex(null);
+                // Remove from local state immediately
+                const newLinks = links.filter(l => l.id !== linkToDelete.id);
+                setLinks(newLinks);
+
+                // Adjust selection index if needed
+                if (newLinks.length === 0) {
+                    setSelectedIndex(null);
+                } else if (selectedIndex !== null) {
+                    // If we deleted the link at, or before, the current index, we might need adjustment.
+                    // But since selectedIndex refers to sortedLinks, and sortedLinks will change...
+                    // Simply clamping to bound is usually sufficient to select "next" item in the shifting array.
+                    // If we deleted the LAST item, decrement index.
+                    // If we deleted middle item, index stays same (points to next item).
+                    if (selectedIndex >= newLinks.length) {
+                        setSelectedIndex(newLinks.length - 1);
+                    }
+                }
             } else {
                 showToast(result.error || 'Failed to delete link', 'error');
             }
@@ -180,7 +206,7 @@ export default function Links() {
         },
     ];
 
-    const selectedLink = selectedIndex !== null ? sortedLinks[selectedIndex] : null;
+
 
     return (
         <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-background-light">
@@ -379,11 +405,14 @@ export default function Links() {
                             ) : links.length === 0 ? (
                                 <EmptyState message="No links yet" icon="link" />
                             ) : (
-                                sortedLinks.map((link, index) => (
+                                displayLinks.map((link) => (
                                     <div
                                         key={link.id}
-                                        onClick={() => setSelectedIndex(index)}
-                                        className={`group flex flex-col p-3 rounded-xl border transition-all cursor-pointer ${selectedIndex === index
+                                        onClick={() => {
+                                            const realIndex = sortedLinks.findIndex(l => l.id === link.id);
+                                            setSelectedIndex(realIndex);
+                                        }}
+                                        className={`group flex flex-col p-3 rounded-xl border transition-all cursor-pointer ${selectedLink?.id === link.id
                                             ? 'bg-[#fdfdfd] border-border-light shadow-sm'
                                             : 'bg-background-light border-transparent hover:bg-gray-100'
                                             }`}
@@ -395,7 +424,7 @@ export default function Links() {
                                                     size={16}
                                                     className="size-8 rounded-lg"
                                                 />
-                                                <h4 className={`text-sm font-bold line-clamp-1 capitalize ${selectedIndex === index ? 'text-black' : 'text-text-primary font-medium'}`}>{link.title || 'Untitled'}</h4>
+                                                <h4 className={`text-sm font-bold line-clamp-1 capitalize ${selectedLink?.id === link.id ? 'text-black' : 'text-text-primary font-medium'}`}>{link.title || 'Untitled'}</h4>
                                             </div>
                                             <ActionMenu
                                                 items={getActionMenuItems(link)}

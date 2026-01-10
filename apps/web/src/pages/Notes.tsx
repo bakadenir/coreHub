@@ -125,6 +125,19 @@ export default function Notes() {
         }
     });
 
+    // Bubble selected note to top if one is selected
+    const displayNotes = useMemo(() => {
+        if (!selectedNoteId) return sortedNotes;
+
+        const selectedIndex = sortedNotes.findIndex(n => String(n.id) === selectedNoteId);
+        if (selectedIndex === -1) return sortedNotes;
+
+        const selected = sortedNotes[selectedIndex];
+        const others = [...sortedNotes];
+        others.splice(selectedIndex, 1);
+        return [selected, ...others];
+    }, [sortedNotes, selectedNoteId]);
+
     // Find the currently selected note object by ID - memoized to prevent unnecessary re-renders
     const selectedNote = useMemo(() =>
         notes.find(n => String(n.id) === selectedNoteId) || null,
@@ -343,10 +356,14 @@ export default function Notes() {
                 if (remainingNotes.length > 0) {
                     // If we deleted the selected note, select another one
                     if (String(noteToDelete.id) === selectedNoteId) {
-                        setSelectedNoteId(String(remainingNotes[0].id));
+                        const newNote = remainingNotes[0];
+                        setSelectedNoteId(String(newNote.id));
+                        loadNoteContent(newNote, String(newNote.id));
                     }
                 } else {
                     setSelectedNoteId(null);
+                    setEditingTitle('');
+                    setEditingContent('');
                 }
             } else {
                 showToast(result.error || 'Failed to delete note', 'error');
@@ -605,7 +622,7 @@ export default function Notes() {
                                         <div className="flex items-center justify-between text-xs text-gray-400 mt-auto pt-2 border-t border-gray-100">
                                             <span>{formatDate(note.updatedAt || note.createdAt)}</span>
                                             <div className="flex items-center gap-1.5">
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-200 text-gray-700">
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${note.contentType === 'markdown' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                                                     {note.contentType === 'markdown' ? 'MD' : 'Rich'}
                                                 </span>
                                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${note.isPublic ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'}`}>
@@ -666,7 +683,7 @@ export default function Notes() {
                             ) : notes.length === 0 ? (
                                 <EmptyState message="No notes yet" icon="note_add" />
                             ) : (
-                                sortedNotes.map((note) => (
+                                displayNotes.map((note) => (
                                     <div
                                         key={note.id}
                                         onClick={() => handleNoteSelect(String(note.id))}
@@ -684,7 +701,7 @@ export default function Notes() {
                                         <div className="flex items-center justify-between text-xs text-gray-400">
                                             <div className="flex items-center gap-2">
                                                 <span>{formatDate(note.updatedAt || note.createdAt)}</span>
-                                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-200 text-gray-700">
+                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${note.contentType === 'markdown' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                                                     {note.contentType === 'markdown' ? 'MD' : 'Rich'}
                                                 </span>
                                             </div>

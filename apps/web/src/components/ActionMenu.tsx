@@ -62,7 +62,10 @@ export default function ActionMenu({ items, trigger, className = '' }: ActionMen
                     {items.map((item, index) => (
                         <button
                             key={index}
-                            onClick={() => handleItemClick(item)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleItemClick(item);
+                            }}
                             disabled={item.disabled}
                             className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors
                                 ${item.variant === 'danger'

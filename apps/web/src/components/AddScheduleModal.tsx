@@ -32,7 +32,6 @@ export default function AddScheduleModal({ isOpen, onClose, defaultDate }: AddSc
     const [startTime, setStartTime] = useState('09:00');
     const [endTime, setEndTime] = useState('10:00');
     const [isAllDay, setIsAllDay] = useState(false);
-    const [color, setColor] = useState('blue');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Pickers State
@@ -59,7 +58,7 @@ export default function AddScheduleModal({ isOpen, onClose, defaultDate }: AddSc
             setStartTime('09:00');
             setEndTime('10:00');
             setIsAllDay(false);
-            setColor('blue');
+            setIsAllDay(false);
             setShowDatePicker(false);
             setShowStartTimePicker(false);
             setShowEndTimePicker(false);
@@ -222,6 +221,9 @@ export default function AddScheduleModal({ isOpen, onClose, defaultDate }: AddSc
             // Checking original file structure... it uses schedulesApi.create which likely takes specific fields.
             // Let's assume standard payload format.
 
+            // Random color assignment
+            const randomColor = EVENT_COLORS[Math.floor(Math.random() * EVENT_COLORS.length)].value;
+
             await schedulesApi.create({
                 title: title.trim(),
                 description: description.trim(),
@@ -229,7 +231,7 @@ export default function AddScheduleModal({ isOpen, onClose, defaultDate }: AddSc
                 startTime: startDateTime.toISOString(),
                 endTime: endDateTime.toISOString(),
                 isAllDay,
-                color,
+                color: randomColor,
             });
 
             showToast('Schedule added successfully!', 'success');
@@ -344,15 +346,7 @@ export default function AddScheduleModal({ isOpen, onClose, defaultDate }: AddSc
                             placeholder="e.g. Meeting Room A, Zoom, etc." value={location} onChange={(e) => setLocation(e.target.value.slice(0, 200))} maxLength={200} />
                     </div>
 
-                    {/* Color Picker */}
-                    <div className="space-y-2.5">
-                        <div className="flex items-center gap-3">
-                            {EVENT_COLORS.map((c) => (
-                                <button key={c.value} type="button" onClick={() => setColor(c.value)}
-                                    className={`w-6 h-6 rounded-full ${c.class} transition-all ${color === c.value ? 'ring-2 ring-offset-2 ring-gray-900 scale-110' : 'hover:scale-105 opacity-70 hover:opacity-100'}`} title={c.name} />
-                            ))}
-                        </div>
-                    </div>
+
 
                     {/* Date & Time Section */}
                     <div className="space-y-4 pt-1">
@@ -417,12 +411,16 @@ export default function AddScheduleModal({ isOpen, onClose, defaultDate }: AddSc
                                                 const isInRange = dateRange?.from && dateRange?.to && date > dateRange.from && date < dateRange.to;
                                                 const isSelected = isSelectedStart || isSelectedEnd;
                                                 const isToday = today.getDate() === day && today.getMonth() === calendarMonth.getMonth() && today.getFullYear() === calendarMonth.getFullYear();
+                                                const isPast = date < today;
 
                                                 let bgClass = '';
                                                 let textClass = 'text-gray-700 hover:bg-gray-50';
                                                 let roundedClass = 'rounded-lg';
 
-                                                if (isSelected) {
+                                                if (isPast) {
+                                                    textClass = 'text-gray-300 cursor-default';
+                                                    bgClass = '';
+                                                } else if (isSelected) {
                                                     bgClass = 'bg-zinc-900 shadow-sm relative z-10';
                                                     textClass = 'text-white font-medium';
                                                 } else if (isInRange) {
@@ -440,7 +438,8 @@ export default function AddScheduleModal({ isOpen, onClose, defaultDate }: AddSc
                                                 if (isSelectedEnd && dateRange?.from && dateRange.from?.getTime() !== dateRange.to?.getTime()) roundedClass = 'rounded-r-lg rounded-l-none';
 
                                                 return (
-                                                    <button key={day} onClick={() => handleDateClick(date)}
+                                                    <button key={day} onClick={() => !isPast && handleDateClick(date)}
+                                                        disabled={isPast}
                                                         className={`w-8 h-8 mx-auto flex items-center justify-center text-sm transition-all ${roundedClass} ${bgClass} ${textClass}`}>
                                                         {day}
                                                     </button>

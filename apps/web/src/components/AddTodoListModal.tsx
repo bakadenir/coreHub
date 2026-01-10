@@ -14,14 +14,12 @@ interface AddTodoListModalProps {
 export default function AddTodoListModal({ isOpen, onClose, onSuccess }: AddTodoListModalProps) {
     const { showToast } = useToast();
     const [name, setName] = useState('');
-    const [color, setColor] = useState('blue');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
             setName('');
-            setColor('blue');
         }
     }, [isOpen]);
 
@@ -41,19 +39,7 @@ export default function AddTodoListModal({ isOpen, onClose, onSuccess }: AddTodo
         };
     }, [isOpen]);
 
-    const getListColor = (color: string) => {
-        const colorMap: Record<string, string> = {
-            blue: 'bg-blue-500',
-            green: 'bg-green-500',
-            purple: 'bg-purple-500',
-            orange: 'bg-orange-500',
-            pink: 'bg-pink-500',
-            red: 'bg-red-500',
-            yellow: 'bg-yellow-500',
-            gray: 'bg-gray-500',
-        };
-        return colorMap[color] || 'bg-blue-500';
-    };
+
 
     const handleSave = async () => {
         if (!name.trim()) {
@@ -63,9 +49,12 @@ export default function AddTodoListModal({ isOpen, onClose, onSuccess }: AddTodo
 
         setIsSubmitting(true);
         try {
+            // Random color assignment
+            const randomColor = LIST_COLORS[Math.floor(Math.random() * LIST_COLORS.length)];
+
             const result = await todosApi.createList({
                 name: name.trim(),
-                color: color,
+                color: randomColor,
             });
 
             if (result.success) {
@@ -120,21 +109,7 @@ export default function AddTodoListModal({ isOpen, onClose, onSuccess }: AddTodo
                         />
                     </div>
 
-                    {/* Color Selection */}
-                    <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-500">Color</label>
-                        <div className="flex flex-wrap gap-2">
-                            {LIST_COLORS.map((c) => (
-                                <button
-                                    key={c}
-                                    type="button"
-                                    onClick={() => setColor(c)}
-                                    className={`w-8 h-8 rounded-full transition-all ${getListColor(c)} ${color === c ? 'ring-2 ring-offset-2 ring-zinc-900 scale-110' : 'hover:scale-105 opacity-80 hover:opacity-100'
-                                        }`}
-                                />
-                            ))}
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* Footer */}
