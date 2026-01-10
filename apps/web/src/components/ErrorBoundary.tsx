@@ -25,7 +25,11 @@ export class ErrorBoundary extends Component<Props, State> {
         console.error('ErrorBoundary caught an error:', error, errorInfo);
 
         // Auto-reload on chunk load error (deployment update)
-        if (error.message.includes('Failed to fetch dynamically imported module')) {
+        // Also handle "text/html" MIME type error which happens when server returns 404/index.html for a JS file
+        if (
+            error.message.includes('Failed to fetch dynamically imported module') ||
+            error.message.includes("'text/html' is not a valid JavaScript MIME type")
+        ) {
             const hasReloaded = sessionStorage.getItem('chunk_load_error_reload');
 
             if (!hasReloaded) {
