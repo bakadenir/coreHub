@@ -64,7 +64,7 @@ class ApiClient {
                 // Global 401 handling - auto logout
                 if (response.status === 401) {
                     await supabase.auth.signOut();
-                    window.location.href = '/login';
+                    window.location.href = '/auth';
                     return {
                         success: false,
                         error: 'Unauthorized',
