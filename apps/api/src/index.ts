@@ -21,7 +21,7 @@ import todosRouter from './routes/todos.routes';
 import usersRouter from './routes/users.routes';
 import adminRouter from './routes/admin.routes';
 import searchRouter from './routes/search.routes';
-import uploadRouter from './routes/upload.routes';
+
 import notificationsRouter from './routes/notifications.routes';
 import pushRouter from './routes/push.routes';
 import notificationSettingsRouter from './routes/notification-settings.routes';
@@ -54,9 +54,9 @@ app.use(helmet({
 
 // Security: Rate limiting to prevent DDoS attacks
 const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Limit each IP to 500 requests per windowMs (increased for normal usage)
-    message: { error: 'Too many requests', message: 'Please try again after 15 minutes' },
+    windowMs: 60 * 1000, // 1 minute
+    max: 120, // 120 requests per minute (standard rate)
+    message: { error: 'Too many requests', message: 'Please try again after 1 minute' },
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => req.path.includes('/sse'), // Skip rate limit for SSE connections
@@ -95,10 +95,10 @@ app.use('/api/schedules', schedulesRouter);
 app.use('/api/notes', notesRouter);
 app.use('/api/links', linksRouter);
 app.use('/api/todos', todosRouter);
-app.use('/api/users', authLimiter, usersRouter);
+app.use('/api/users', usersRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/search', searchRouter);
-app.use('/api/upload', uploadRouter);
+
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/notification-settings', notificationSettingsRouter);

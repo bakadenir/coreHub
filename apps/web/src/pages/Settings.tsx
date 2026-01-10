@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
-import AvatarUpload from '../components/AvatarUpload';
+import AvatarPicker from '../components/AvatarPicker';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { SettingsSkeleton } from '../components/Skeleton';
 import { usersApi, notificationsApi } from '../lib';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useUser } from '../hooks/useUser';
 import { ArrowLeft, RefreshCw, ChevronDown, MapPin, Loader2 } from 'lucide-react';
 
 
@@ -15,6 +16,7 @@ export default function Settings() {
     const navigate = useNavigate();
     const { user, refreshUser, signOut } = useAuth();
     const { showToast } = useToast();
+    const { refresh: refreshUserProfile } = useUser();
 
     // Profile form state
     const [name, setName] = useState('');
@@ -106,30 +108,18 @@ export default function Settings() {
 
         setIsSavingProfile(true);
         try {
-            // Upload avatar first if it's a new base64 image (not a URL)
-            if (avatar && avatar.startsWith('data:image/')) {
-                const uploadResult = await usersApi.uploadAvatar(avatar);
-                if (!uploadResult.success) {
-                    showToast(uploadResult.error || 'Failed to upload avatar', 'error');
-                    setIsSavingProfile(false);
-                    return;
-                }
-                // Avatar is now saved to server, update local state with URL
-                if (uploadResult.data?.avatarUrl) {
-                    setAvatar(uploadResult.data.avatarUrl);
-                }
-            }
-
-            // Update profile (name, bio, location - avatar already uploaded)
+            // Update profile including avatar URL (now using DiceBear URLs)
             const result = await usersApi.updateProfile({
                 name: name.trim(),
                 bio: bio.trim(),
                 location: location.trim(),
+                image: avatar, // Include avatar URL in profile update
             });
 
             if (result.success) {
                 showToast('Profile updated successfully', 'success');
                 refreshUser?.();
+                refreshUserProfile(); // Refresh SWR cache for Header
             } else {
                 showToast(result.error || 'Failed to update profile', 'error');
             }
@@ -337,7 +327,7 @@ export default function Settings() {
                         <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-8 shadow-sm">
                             {/* Profile Header */}
                             <div className="flex items-center gap-6 mb-8">
-                                <AvatarUpload
+                                <AvatarPicker
                                     currentAvatar={avatar}
                                     onAvatarChange={handleAvatarChange}
                                 />

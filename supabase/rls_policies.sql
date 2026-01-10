@@ -97,14 +97,19 @@ CREATE POLICY "push_subscriptions_all" ON public.push_subscriptions FOR ALL USIN
 -- ============================================
 -- FEEDBACK POLICIES
 -- ============================================
-CREATE POLICY "feedback_insert" ON public.feedback FOR INSERT WITH CHECK (true);
+-- Feedback INSERT: validate message is not empty
+CREATE POLICY "feedback_insert" ON public.feedback FOR INSERT WITH CHECK (message IS NOT NULL AND message <> '');
+-- Feedback SELECT: users can see their own feedback
 CREATE POLICY "feedback_select" ON public.feedback FOR SELECT USING (user_id IS NULL OR auth.uid() = user_id);
 
 -- ============================================
 -- DONATIONS POLICIES
 -- ============================================
-CREATE POLICY "donations_insert" ON public.donations FOR INSERT WITH CHECK (true);
+-- Donations INSERT: validate amount is positive
+CREATE POLICY "donations_insert" ON public.donations FOR INSERT WITH CHECK (amount > 0);
+-- Donations SELECT: users can see their own donations
 CREATE POLICY "donations_select_own" ON public.donations FOR SELECT USING (user_id IS NULL OR auth.uid() = user_id);
+-- Donations SELECT: anyone can see successful donations (for public display)
 CREATE POLICY "donations_select_public" ON public.donations FOR SELECT USING (status = 'success');
 
 -- ============================================

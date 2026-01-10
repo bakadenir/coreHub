@@ -17,7 +17,6 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
     const { user: authUser, signOut } = useAuth();
     const { user: profileData, isLoading: isUserLoading } = useUser(); // SWR cached fetch - deduped for 60s
     const [isSearchOpen, setIsSearchOpen] = useState(false);
-    const [isAvatarLoaded, setIsAvatarLoaded] = useState(false);
 
     // Global keyboard shortcut for search (Cmd+K, Ctrl+K, or /)
     useEffect(() => {
@@ -61,12 +60,7 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
     const fullAvatarUrl = getFullAvatarUrl(profileData?.image);
     const hasAvatar = fullAvatarUrl && fullAvatarUrl.trim() !== '';
 
-    // Reset avatar loading state when URL changes
-    useEffect(() => {
-        if (hasAvatar) {
-            setIsAvatarLoaded(false);
-        }
-    }, [fullAvatarUrl, hasAvatar]);
+
 
     return (
         <>
@@ -117,24 +111,37 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                                 </p>
                             </div>
                             <div className="relative h-9 w-9">
-                                {/* Skeleton loading state */}
-                                {(isUserLoading || (hasAvatar && !isAvatarLoaded)) && (
+                                {/* Skeleton loading only when user data is loading */}
+                                {isUserLoading && (
                                     <div className="absolute inset-0 rounded-full bg-gray-200 animate-pulse" />
                                 )}
-                                {/* Actual avatar or default icon */}
-                                {hasAvatar ? (
+                                {/* Actual avatar */}
+                                {hasAvatar && !isUserLoading ? (
                                     <img
                                         alt="Profile"
-                                        className={`h-9 w-9 rounded-full border border-gray-200 object-cover transition-opacity duration-200 ${isAvatarLoaded ? 'opacity-100' : 'opacity-0'}`}
+                                        className="h-9 w-9 rounded-full border border-gray-200 object-cover bg-white"
                                         src={fullAvatarUrl}
-                                        onLoad={() => setIsAvatarLoaded(true)}
-                                        onError={() => setIsAvatarLoaded(true)}
+                                        loading="eager"
+                                        decoding="async"
+                                        onError={(e) => {
+                                            // Fallback to default icon if image fails
+                                            e.currentTarget.style.display = 'none';
+                                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                        }}
                                     />
-                                ) : !isUserLoading ? (
+                                ) : null}
+                                {/* Default icon - shown when no avatar or as fallback */}
+                                {(!hasAvatar || isUserLoading) ? null : (
+                                    <div className="hidden h-9 w-9 rounded-full border border-gray-200 bg-gray-900 items-center justify-center">
+                                        <User size={18} className="text-white" />
+                                    </div>
+                                )}
+                                {/* Default icon when no avatar */}
+                                {!hasAvatar && !isUserLoading && (
                                     <div className="h-9 w-9 rounded-full border border-gray-200 bg-gray-900 flex items-center justify-center">
                                         <User size={18} className="text-white" />
                                     </div>
-                                ) : null}
+                                )}
                             </div>
                             <ChevronDown size={20} className="text-gray-500 group-hover:text-primary transition-colors" />
                             <div className="absolute top-full right-0 mt-2 w-48 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right z-50 py-1">
