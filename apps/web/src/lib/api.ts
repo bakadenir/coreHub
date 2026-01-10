@@ -61,6 +61,17 @@ class ApiClient {
             const data = await response.json();
 
             if (!response.ok) {
+                // Global 401 handling - auto logout
+                if (response.status === 401) {
+                    await supabase.auth.signOut();
+                    window.location.href = '/login';
+                    return {
+                        success: false,
+                        error: 'Unauthorized',
+                        message: 'Session expired. Please login again.',
+                    };
+                }
+
                 return {
                     success: false,
                     error: data.error || 'Request failed',
