@@ -188,7 +188,7 @@ export default function Landing() {
             <footer className="py-10 bg-[#fdfdfd] border-t border-gray-200 relative z-10">
                 <div className="w-full max-w-[1200px] mx-auto px-4 md:px-10 flex flex-col gap-6 items-center text-center">
                     <div className="flex items-center gap-2">
-                        <img src="/logo.png" alt="Logo" className="size-6 object-contain" />
+                        <img src="/logo.png" alt="Logo" width="24" height="24" className="size-6 object-contain" />
                         <span className="font-bold text-text-primary">coreHub</span>
                     </div>
                     <div className="flex gap-6">
