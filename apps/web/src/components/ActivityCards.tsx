@@ -21,7 +21,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { renderIcon } from '../lib/iconMap';
-import { Maximize2, GripVertical, ArrowUpRight } from 'lucide-react';
+import { Maximize2, GripVertical, ArrowUpRight, Circle, CheckCircle2 } from 'lucide-react';
 import type { PanelId, PanelConfig } from '../lib/activity-config';
 import { panelConfigs } from '../lib/activity-config';
 
@@ -269,6 +269,30 @@ export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderC
         }
     };
 
+    // Handle todo toggle
+    const handleTodoToggle = async (todo: Todo) => {
+        try {
+            const result = await todosApi.toggle(todo.id);
+            if (result.success) {
+                // Determine status for toast - inverted because we just toggled it but using local var
+                // actually easier to just say 'Todo updated' or specific status based on result if needed.
+                // But simplified:
+                const newStatus = !todo.isCompleted;
+                showToast(`Todo ${newStatus ? 'completed' : 'uncompleted'}`, 'success');
+
+                // Refresh todos
+                const todosRes = await todosApi.getAll();
+                if (todosRes.success && todosRes.data) {
+                    setTodos(todosRes.data);
+                }
+            } else {
+                showToast(result.error || 'Failed to toggle todo', 'error');
+            }
+        } catch {
+            showToast('Network error', 'error');
+        }
+    };
+
     const linkColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-yellow-500'];
 
     // Render panel content based on ID
@@ -368,15 +392,23 @@ export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderC
                 return todos.length === 0 ? (
                     <p className="text-sm text-gray-500">No tasks yet. Add a task!</p>
                 ) : (
-                    <div className="flex flex-col gap-2">
-                        {todos.slice(0, 2).map((todo) => (
-                            <div key={todo.id} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded group">
-                                <div className={`w-4 h-4 rounded-full border border-gray-300 flex items-center justify-center ${todo.isCompleted ? 'bg-gray-200 border-gray-200' : 'bg-white'}`}>
-                                    {todo.isCompleted && <div className="w-2 h-2 bg-gray-500 rounded-full" />}
-                                </div>
-                                <span className={`text-sm truncate flex-1 ${todo.isCompleted ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
-                                    {todo.title}
-                                </span>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                        {todos.slice(0, 4).map((todo) => (
+                            <div key={todo.id} className="p-2.5 bg-gray-50 rounded h-full flex items-center">
+                                <label className="flex items-center gap-3 cursor-pointer select-none w-full group/todo">
+                                    <div className={`shrink-0 transition-colors ${todo.isCompleted ? 'text-gray-900' : 'text-gray-300 group-hover/todo:text-gray-400'}`}>
+                                        {todo.isCompleted ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                                    </div>
+                                    <input
+                                        checked={todo.isCompleted}
+                                        onChange={() => handleTodoToggle(todo)}
+                                        className="sr-only"
+                                        type="checkbox"
+                                    />
+                                    <span className={`text-sm truncate ${todo.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                                        {todo.title}
+                                    </span>
+                                </label>
                             </div>
                         ))}
                     </div>
