@@ -2,10 +2,12 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { successResponse, errorResponse, serverErrorResponse } from '../utils/response';
 import { supabase } from '../config/supabase';
+import sharp from 'sharp';
 
 const router = Router();
 
 const BUCKET_NAME = 'avatars';
+const AVATAR_SIZE = 200; // 200x200 pixels
 
 // POST /api/upload/avatar - Upload avatar to Supabase Storage
 router.post('/avatar', authMiddleware, async (req: Request, res: Response) => {
@@ -22,17 +24,25 @@ router.post('/avatar', authMiddleware, async (req: Request, res: Response) => {
             return errorResponse(res, 'Bad Request', 'Invalid image format');
         }
 
-        const extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
         const base64Data = matches[2];
-        const buffer = Buffer.from(base64Data, 'base64');
+        const inputBuffer = Buffer.from(base64Data, 'base64');
 
-        // Check file size (max 500KB for avatar)
-        if (buffer.length > 500 * 1024) {
-            return errorResponse(res, 'Bad Request', 'Image too large. Max 500KB allowed.');
+        // Check input file size (max 5MB before processing)
+        if (inputBuffer.length > 5 * 1024 * 1024) {
+            return errorResponse(res, 'Bad Request', 'Image too large. Max 5MB allowed.');
         }
 
-        // Generate unique filename
-        const filename = `${req.user!.id}_${Date.now()}.${extension}`;
+        // Process image with Sharp: resize, crop to square, convert to WebP
+        const processedBuffer = await sharp(inputBuffer)
+            .resize(AVATAR_SIZE, AVATAR_SIZE, {
+                fit: 'cover',      // Crop to fill the square
+                position: 'center' // Center the crop
+            })
+            .webp({ quality: 80 }) // Convert to WebP with good quality
+            .toBuffer();
+
+        // Generate unique filename (always .webp now)
+        const filename = `${req.user!.id}_${Date.now()}.webp`;
 
         // Get current user to find old avatar URL
         const { data: userData } = await supabase.auth.admin.getUserById(req.user!.id);
@@ -40,7 +50,6 @@ router.post('/avatar', authMiddleware, async (req: Request, res: Response) => {
 
         // Delete old avatar from Supabase Storage if it exists
         if (oldAvatarUrl && oldAvatarUrl.includes(BUCKET_NAME)) {
-            // Extract filename from URL
             const urlParts = oldAvatarUrl.split('/');
             const oldFilename = urlParts[urlParts.length - 1];
             if (oldFilename) {
@@ -51,8 +60,8 @@ router.post('/avatar', authMiddleware, async (req: Request, res: Response) => {
         // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage
             .from(BUCKET_NAME)
-            .upload(filename, buffer, {
-                contentType: `image/${extension}`,
+            .upload(filename, processedBuffer, {
+                contentType: 'image/webp',
                 upsert: true,
             });
 
