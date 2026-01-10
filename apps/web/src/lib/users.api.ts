@@ -5,7 +5,7 @@ interface UpdateProfileData {
     name?: string;
     bio?: string;
     location?: string;
-    // Note: avatar is uploaded separately via uploadAvatar
+    image?: string; // Avatar URL from DiceBear
 }
 
 interface UploadAvatarResponse {
