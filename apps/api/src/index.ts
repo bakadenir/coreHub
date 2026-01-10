@@ -35,6 +35,10 @@ import { startScheduler } from './services/scheduler.service';
 
 const app = express();
 
+// Trust proxy for production (Railway, Heroku, etc.)
+// Required for rate limiting to work correctly behind reverse proxies
+app.set('trust proxy', 1);
+
 // Performance: Gzip compression for responses (60-80% size reduction)
 app.use(compression({
     level: 6, // Balanced compression level
