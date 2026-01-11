@@ -362,19 +362,37 @@ export default function Habits() {
     }, [fetchHabits]);
 
     const handleComplete = async (habitId: string, currentlyCompleted: boolean) => {
-        try {
-            const habit = habits.find(h => h.id === habitId);
-            const firstWord = habit?.name.split(' ')[0] || 'Habit';
+        // Optimistic update - update UI immediately
+        const previousHabits = [...habits];
+        const habit = habits.find(h => h.id === habitId);
+        const firstWord = habit?.name.split(' ')[0] || 'Habit';
+        const newStatus = !currentlyCompleted;
 
+        setHabits(prev => prev.map(h =>
+            h.id === habitId ? { ...h, completed: newStatus } : h
+        ));
+
+        // Show toast immediately
+        const statusText = newStatus ? 'Completed' : 'Uncompleted';
+        showToast(`${firstWord} ${statusText} 🎉`, 'success');
+
+        try {
+            let result;
             if (currentlyCompleted) {
-                await habitsApi.uncomplete(habitId);
-                showToast(`${firstWord} Uncompleted 🎉`, 'success');
+                result = await habitsApi.uncomplete(habitId);
             } else {
-                await habitsApi.complete(habitId);
-                showToast(`${firstWord} Completed 🎉`, 'success');
+                result = await habitsApi.complete(habitId);
             }
-            fetchHabits();
+
+            if (!result.success) {
+                // Rollback on error
+                setHabits(previousHabits);
+                showToast('Failed to update habit', 'error');
+            }
+            // Note: We don't need to fetchHabits() on success since UI is already updated
         } catch {
+            // Rollback on network error
+            setHabits(previousHabits);
             showToast('Failed to update habit', 'error');
         }
     };

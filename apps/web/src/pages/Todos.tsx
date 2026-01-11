@@ -164,24 +164,32 @@ export default function Todos() {
     };
 
     const handleToggle = async (todo: Todo) => {
+        // Optimistic update - update UI immediately
+        const previousTodos = [...todos];
+        const newStatus = !todo.isCompleted;
+
+        setTodos(prev => prev.map(t =>
+            t.id === todo.id ? { ...t, isCompleted: newStatus } : t
+        ));
+
+        // Show toast immediately
+        const firstWord = todo.title.split(' ')[0];
+        const statusText = newStatus ? 'Completed' : 'Uncompleted';
+        showToast(`${firstWord} ${statusText} 🎉`, 'success');
+
         try {
             const result = await todosApi.toggle(todo.id);
             if (result.success) {
-                fetchTodos();
+                // Silently refresh lists count in background
                 fetchLists();
-
-                // Format toast message: "[First word of title] [Completed/Uncompleted] 🎉"
-                // User requested "hanya kata pertama" (only first word)
-                const firstWord = todo.title.split(' ')[0];
-
-                // Determine new status
-                const newStatus = !todo.isCompleted ? 'Completed' : 'Uncompleted';
-
-                showToast(`${firstWord} ${newStatus} 🎉`, 'success');
             } else {
+                // Rollback on error
+                setTodos(previousTodos);
                 showToast(result.error || 'Failed to toggle todo', 'error');
             }
         } catch {
+            // Rollback on network error
+            setTodos(previousTodos);
             showToast('Network error', 'error');
         }
     };
