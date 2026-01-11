@@ -316,7 +316,7 @@ export default function Habits() {
     const [isEditHabitOpen, setIsEditHabitOpen] = useState(false);
     const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
     const [habits, setHabits] = useState<Habit[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true); // Only true on first load
     const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<'all' | 'today' | 'daily' | 'weekly' | 'archived'>('today');
     const { showToast } = useToast();
@@ -327,7 +327,10 @@ export default function Habits() {
     const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchHabits = useCallback(async () => {
-        setIsLoading(true);
+        // Only show loading on initial fetch (when no data yet)
+        if (habits.length === 0) {
+            setIsInitialLoading(true);
+        }
         setError(null);
         try {
             const filters: { frequency?: string; archived?: boolean } = {};
@@ -353,9 +356,9 @@ export default function Habits() {
         } catch {
             setError('Network error');
         } finally {
-            setIsLoading(false);
+            setIsInitialLoading(false);
         }
-    }, [filter]);
+    }, [filter, habits.length]);
 
     useEffect(() => {
         fetchHabits();
@@ -539,7 +542,7 @@ export default function Habits() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                {isLoading ? (
+                {isInitialLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {Array.from({ length: 4 }).map((_, i) => (
                             <HabitCardSkeleton key={i} />

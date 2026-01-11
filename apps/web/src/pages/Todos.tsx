@@ -22,7 +22,7 @@ type FilterView = 'all' | 'today' | 'upcoming' | 'completed';
 export default function Todos() {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [lists, setLists] = useState<TodoList[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true); // Only true on first load
     const [error, setError] = useState<string | null>(null);
     const [filterView, setFilterView] = useState<FilterView>('all');
     const [selectedListId, setSelectedListId] = useState<string | null>(null);
@@ -78,7 +78,10 @@ export default function Todos() {
     const [showNewListModal, setShowNewListModal] = useState(false);
 
     const fetchTodos = useCallback(async () => {
-        setIsLoading(true);
+        // Only show loading on initial fetch (when no data yet)
+        if (todos.length === 0) {
+            setIsInitialLoading(true);
+        }
         setError(null);
         try {
             const filters: TodoFilters = {};
@@ -95,8 +98,6 @@ export default function Todos() {
                 filters.completed = true;
             }
 
-
-
             const result = await todosApi.getAll(filters);
             if (result.success && result.data) {
                 setTodos(result.data);
@@ -106,9 +107,9 @@ export default function Todos() {
         } catch {
             setError('Network error');
         } finally {
-            setIsLoading(false);
+            setIsInitialLoading(false);
         }
-    }, [filterView, selectedListId]);
+    }, [filterView, selectedListId, todos.length]);
 
     const fetchLists = useCallback(async () => {
         try {
@@ -660,7 +661,7 @@ export default function Todos() {
 
                     {/* Todo List */}
                     <div className="flex-1 overflow-y-auto p-6">
-                        {isLoading ? (
+                        {isInitialLoading ? (
                             <TodoGridSkeleton count={6} />
                         ) : error ? (
                             <ErrorState message={error} onRetry={fetchTodos} />
