@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { todosApi } from '../lib';
 import type { Todo, TodoList, TodoFilters } from '../types';
-import { EmptyState, ErrorState } from '../hooks/useApi';
+import { EmptyState } from '../hooks/useApi';
 import { useTodos, useTodoLists } from '../hooks/useTodos';
 import { TodoGridSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
@@ -39,7 +39,6 @@ export default function Todos() {
     // Local state synced from SWR
     const [todos, setTodosLocal] = useState<Todo[]>([]);
     const [lists, setLists] = useState<TodoList[]>([]);
-    const [error, setError] = useState<string | null>(null);
 
     // Sync SWR data to local state
     useEffect(() => {
@@ -647,8 +646,6 @@ export default function Todos() {
                     <div className="flex-1 overflow-y-auto p-6">
                         {todosLoading && todos.length === 0 ? (
                             <TodoGridSkeleton count={6} />
-                        ) : error ? (
-                            <ErrorState message={error} onRetry={fetchTodos} />
                         ) : todos.length === 0 ? (
                             <EmptyState
                                 message="No tasks yet. Add one above!"
