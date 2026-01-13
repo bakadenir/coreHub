@@ -55,7 +55,7 @@ export default function Landing() {
                 <div className="max-w-[1200px] mx-auto px-4 md:px-10 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {/* Logo Icon */}
-                        <img src="/logo.png" alt="Logo" className="size-8 object-contain" />
+                        <img src="/logo.png" alt="Logo" width="32" height="32" className="size-8 object-contain" />
                         <h2 className="text-xl font-bold leading-tight tracking-tight text-text-primary">coreHub</h2>
                     </div>
                     {/* Desktop Navigation */}
@@ -209,12 +209,12 @@ export default function Landing() {
                         <Link to="/privacy" className="text-gray-400 hover:text-text-primary transition-colors">Privacy Policy</Link>
                         <Link to="/terms" className="text-gray-400 hover:text-text-primary transition-colors">Terms of Service</Link>
                     </div>
-                    <p className="text-sm text-text-secondary">© 2025 coreHub. All rights reserved. Code with <a href="https://www.linkedin.com/in/bakadenir/" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
+                    <p className="text-sm text-text-secondary">© 2025 coreHub. All rights reserved.</p>
                 </div>
             </footer>
 
             {/* Cookie Consent Banner */}
             <CookieConsent />
-        </div>
+        </div >
     );
 }

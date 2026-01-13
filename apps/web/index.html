@@ -52,13 +52,23 @@
   <link rel="preconnect" href="https://api.fontshare.com" crossorigin="anonymous" />
   <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin="anonymous" />
 
-  <!-- Fonts -->
+  <!-- Preload Critical Font (Geist Sans) -->
+  <link rel="preload" as="style" href="https://api.fontshare.com/v2/css?f[]=geist-sans@400,500,600,700&display=swap" />
+  
+  <!-- Critical Font with display=swap to prevent FOIT -->
   <link
-    href="https://api.fontshare.com/v2/css?f[]=geist-sans@100,200,300,400,500,600,700,800,900&f[]=geist-mono@100,200,300,400,500,600,700&display=swap"
+    href="https://api.fontshare.com/v2/css?f[]=geist-sans@400,500,600,700&display=swap"
     rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
-    rel="stylesheet" />
+  
+  <!-- Non-critical fonts loaded async -->
+  <link rel="preload" as="style" href="https://api.fontshare.com/v2/css?f[]=geist-mono@400,500,600,700&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=geist-mono@400,500,600,700&display=swap" /></noscript>
+  
+  <!-- Material Icons loaded async (not critical for FCP) -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" /></noscript>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" /></noscript>
 
   <!-- Structured Data (JSON-LD) -->
   <script type="application/ld+json">
