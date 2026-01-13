@@ -15,7 +15,7 @@ export default function Schedule() {
     const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
     const [events, setEvents] = useState<ScheduleEvent[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true); // Only true on first load
     const [error, setError] = useState<string | null>(null);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState<'month' | 'week' | 'day'>('month');
@@ -41,7 +41,10 @@ export default function Schedule() {
     };
 
     const fetchEvents = useCallback(async () => {
-        setIsLoading(true);
+        // Only show loading on initial fetch (when no data yet)
+        if (events.length === 0) {
+            setIsInitialLoading(true);
+        }
         setError(null);
         try {
             let startDate: Date;
@@ -86,9 +89,9 @@ export default function Schedule() {
         } catch {
             setError('Network error');
         } finally {
-            setIsLoading(false);
+            setIsInitialLoading(false);
         }
-    }, [currentDate, view]);
+    }, [currentDate, view, events.length]);
 
     useEffect(() => {
         fetchEvents();
@@ -349,7 +352,7 @@ export default function Schedule() {
             </header>
             <div className="flex flex-1 overflow-hidden">
                 <div className="flex-1 flex flex-col overflow-y-auto bg-[#fdfdfd]">
-                    {isLoading ? (
+                    {isInitialLoading ? (
                         <div className="flex-1 p-6">
                             <ScheduleEventListSkeleton count={6} />
                         </div>
@@ -587,7 +590,7 @@ export default function Schedule() {
                             </div>
                         )}
 
-                        {events.length === 0 && !isLoading && (
+                        {events.length === 0 && !isInitialLoading && (
                             <EmptyState message="No events this month" icon="event" />
                         )}
                     </div>

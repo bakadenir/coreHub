@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import AddLinkModal from '../components/AddLinkModal';
 import EditLinkModal from '../components/EditLinkModal';
 import ActionMenu from '../components/ActionMenu';
@@ -8,6 +8,7 @@ import type { LinkItem } from '../types';
 import { EmptyState, ErrorState } from '../hooks/useApi';
 import { LinkGridSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
+import { useLinks } from '../hooks/useLinks';
 import { Plus, ArrowUpDown, Search, Check, MoreHorizontal, Link as LinkLucide, ExternalLink, Pencil, Trash2, ArrowLeft } from 'lucide-react';
 
 // Extract domain safely - moved outside component
@@ -65,44 +66,19 @@ export default function Links() {
     const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
     const [isEditLinkOpen, setIsEditLinkOpen] = useState(false);
     const [editingLink, setEditingLink] = useState<LinkItem | null>(null);
-    const [links, setLinks] = useState<LinkItem[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
     const [showSortMenu, setShowSortMenu] = useState(false);
     const { showToast } = useToast();
 
+    // Use SWR hook for cached data fetching
+    const { links, isLoading, error, mutate } = useLinks(searchTerm);
+
     // Delete confirmation state
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [linkToDelete, setLinkToDelete] = useState<LinkItem | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    const fetchLinks = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const result = await linksApi.getAll(searchTerm ? { search: searchTerm } : {});
-            if (result.success && result.data) {
-                setLinks(result.data);
-                // Don't auto-reset to 0, set to null if out of bounds
-                setSelectedIndex(prev =>
-                    result.data && result.data.length > 0 && prev !== null && prev >= result.data.length ? null : prev
-                );
-            } else {
-                setError(result.error || 'Failed to fetch links');
-            }
-        } catch {
-            setError('Network error');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [searchTerm]);
-
-    useEffect(() => {
-        fetchLinks();
-    }, [fetchLinks]);
 
     // Memoize sortedLinks to prevent unnecessary recalculations
     const sortedLinks = useMemo(() => {
@@ -146,23 +122,9 @@ export default function Links() {
             const result = await linksApi.delete(String(linkToDelete.id));
             if (result.success) {
                 showToast('Link deleted successfully', 'success');
-                // Remove from local state immediately
-                const newLinks = links.filter(l => l.id !== linkToDelete.id);
-                setLinks(newLinks);
+                // Refresh data via SWR mutate
+                mutate();
 
-                // Adjust selection index if needed
-                if (newLinks.length === 0) {
-                    setSelectedIndex(null);
-                } else if (selectedIndex !== null) {
-                    // If we deleted the link at, or before, the current index, we might need adjustment.
-                    // But since selectedIndex refers to sortedLinks, and sortedLinks will change...
-                    // Simply clamping to bound is usually sufficient to select "next" item in the shifting array.
-                    // If we deleted the LAST item, decrement index.
-                    // If we deleted middle item, index stays same (points to next item).
-                    if (selectedIndex >= newLinks.length) {
-                        setSelectedIndex(newLinks.length - 1);
-                    }
-                }
             } else {
                 showToast(result.error || 'Failed to delete link', 'error');
             }
@@ -210,10 +172,10 @@ export default function Links() {
 
     return (
         <main className="flex-1 flex flex-col h-full relative overflow-hidden bg-background-light">
-            <AddLinkModal isOpen={isAddLinkOpen} onClose={() => { setIsAddLinkOpen(false); fetchLinks(); }} />
+            <AddLinkModal isOpen={isAddLinkOpen} onClose={() => { setIsAddLinkOpen(false); mutate(); }} />
             <EditLinkModal
                 isOpen={isEditLinkOpen}
-                onClose={() => { setIsEditLinkOpen(false); setEditingLink(null); fetchLinks(); }}
+                onClose={() => { setIsEditLinkOpen(false); setEditingLink(null); mutate(); }}
                 link={editingLink}
             />
             <ConfirmDialog
@@ -291,7 +253,7 @@ export default function Links() {
                         {isLoading ? (
                             <LinkGridSkeleton count={6} />
                         ) : error ? (
-                            <ErrorState message={error} onRetry={fetchLinks} />
+                            <ErrorState message={error} onRetry={() => mutate()} />
                         ) : links.length === 0 ? (
                             <div className="flex justify-center py-20">
                                 <EmptyState message="No links yet. Add your first link!" icon="link" />
@@ -401,7 +363,7 @@ export default function Links() {
                             {isLoading ? (
                                 <LinkGridSkeleton count={4} />
                             ) : error ? (
-                                <ErrorState message={error} onRetry={fetchLinks} />
+                                <ErrorState message={error} onRetry={() => mutate()} />
                             ) : links.length === 0 ? (
                                 <EmptyState message="No links yet" icon="link" />
                             ) : (
