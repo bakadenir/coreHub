@@ -603,7 +603,7 @@ export default function Settings() {
             </main>
 
             <footer className="w-full border-t border-border-light py-5 text-center text-sm text-gray-500 font-mono mt-12 bg-gray-50/50 relative z-10">
-                <p>© 2025 coreHub. All rights reserved. Code with <a href="https://linkedin.com/in/bakadenir" target="_blank" rel="noopener noreferrer" className="hover:underline">bakadenir</a></p>
+                <p>© 2025 coreHub. All rights reserved.</p>
             </footer>
 
             {/* Delete Account Confirmation Dialog */}

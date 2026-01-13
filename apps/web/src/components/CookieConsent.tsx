@@ -5,40 +5,41 @@ const COOKIE_CONSENT_KEY = 'corehub_cookie_consent';
 
 export default function CookieConsent() {
     const [isVisible, setIsVisible] = useState(false);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     useEffect(() => {
-        // Check if user has already consented - defer to after main content loads
-        const checkConsent = () => {
+        // Check consent status after a delay to avoid impacting LCP/FCP
+        const timer = setTimeout(() => {
             const hasConsented = localStorage.getItem(COOKIE_CONSENT_KEY);
             if (!hasConsented) {
                 setIsVisible(true);
+                // Trigger animation after mount
+                requestAnimationFrame(() => setIsAnimating(true));
             }
-        };
+        }, 2500); // Delay to not impact initial metrics
 
-        // Use requestIdleCallback for non-blocking load, fallback to setTimeout
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(checkConsent, { timeout: 2000 });
-        } else {
-            setTimeout(checkConsent, 1500);
-        }
+        return () => clearTimeout(timer);
     }, []);
 
     const handleAccept = () => {
         localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
-        setIsVisible(false);
+        setIsAnimating(false);
+        setTimeout(() => setIsVisible(false), 200);
     };
 
     const handleDecline = () => {
         localStorage.setItem(COOKIE_CONSENT_KEY, 'declined');
-        setIsVisible(false);
+        setIsAnimating(false);
+        setTimeout(() => setIsVisible(false), 200);
     };
 
+    // Reserve space but don't render if not visible (prevents CLS)
     if (!isVisible) return null;
 
     return (
         <div
-            className="fixed bottom-4 right-4 z-[100] max-w-xs animate-slideUp"
-            style={{ contain: 'layout' }} // Prevent CLS
+            className={`fixed bottom-4 right-4 z-[100] max-w-xs transition-all duration-200 ${isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+            style={{ contain: 'layout style' }}
         >
             <div className="bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl p-4 shadow-xl shadow-black/10">
                 {/* Header */}
