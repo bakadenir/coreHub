@@ -16,7 +16,7 @@ export default function Notes() {
     const location = useLocation();
     const [notes, setNotes] = useState<Note[]>([]);
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isInitialLoading, setIsInitialLoading] = useState(true); // Only true on first load
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
@@ -59,7 +59,10 @@ export default function Notes() {
     const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
 
     const fetchNotes = useCallback(async () => {
-        setIsLoading(true);
+        // Only show loading on initial fetch (when no data yet)
+        if (notes.length === 0) {
+            setIsInitialLoading(true);
+        }
         setError(null);
         try {
             const result = await notesApi.getAll(searchTerm ? { search: searchTerm } : {});
@@ -71,9 +74,9 @@ export default function Notes() {
         } catch {
             setError('Network error');
         } finally {
-            setIsLoading(false);
+            setIsInitialLoading(false);
         }
-    }, [searchTerm]);
+    }, [searchTerm, notes.length]);
 
     // Helper to load note content into editing state
     const loadNoteContent = useCallback((note: Note, noteId: string) => {
@@ -89,7 +92,7 @@ export default function Notes() {
 
     // Handle initial selection logic - only select if noteId is provided
     useEffect(() => {
-        if (!isLoading && notes.length > 0) {
+        if (!isInitialLoading && notes.length > 0) {
             // Only select a note if we have a specific noteId from navigation
             if (location.state?.noteId) {
                 const targetId = String(location.state.noteId);
@@ -102,7 +105,7 @@ export default function Notes() {
             }
             // Don't auto-select first note - leave empty state
         }
-    }, [notes, isLoading, location.state, selectedNoteId, loadNoteContent]);
+    }, [notes, isInitialLoading, location.state, selectedNoteId, loadNoteContent]);
 
     useEffect(() => {
         fetchNotes();
@@ -589,7 +592,7 @@ export default function Notes() {
                         </div>
 
                         {/* Notes Grid */}
-                        {isLoading ? (
+                        {isInitialLoading ? (
                             <NoteGridSkeleton count={6} />
                         ) : error ? (
                             <ErrorState message={error} onRetry={fetchNotes} />
@@ -676,7 +679,7 @@ export default function Notes() {
                         </div>
 
                         <div className="flex flex-col p-4 gap-2">
-                            {isLoading ? (
+                            {isInitialLoading ? (
                                 <NoteSidebarSkeleton count={5} />
                             ) : error ? (
                                 <ErrorState message={error} onRetry={fetchNotes} />

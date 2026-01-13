@@ -231,64 +231,68 @@ export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderC
         }
     };
 
-    // Handle habit toggle
+    // Handle habit toggle (Optimistic UI)
     const handleHabitToggle = async (habitId: string, currentlyCompleted: boolean) => {
-        try {
-            if (currentlyCompleted) {
-                await habitsApi.uncomplete(habitId);
-            } else {
-                await habitsApi.complete(habitId);
-                showToast('Habit completed! 🎉', 'success');
-            }
-            const habitsRes = await habitsApi.getAll();
-            if (habitsRes.success && habitsRes.data) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const currentDayIndex = (new Date().getDay() + 6) % 7;
+        // Store previous state for rollback
+        const previousHabits = [...habits];
+        const newStatus = !currentlyCompleted;
 
-                const todaysHabits = habitsRes.data.filter(habit => {
-                    if (habit.startDate) {
-                        const start = new Date(habit.startDate);
-                        start.setHours(0, 0, 0, 0);
-                        if (today < start) return false;
-                    }
-                    const freq = habit.frequency.toLowerCase();
-                    if (freq === 'daily') return true;
-                    if (freq === 'weekly') {
-                        if (habit.specificDays && habit.specificDays.length > 0) {
-                            return habit.specificDays.includes(currentDayIndex);
-                        }
-                        return false;
-                    }
-                    return true;
-                });
-                setHabits(todaysHabits);
+        // Optimistic update - update UI immediately
+        setHabits(prev => prev.map(h =>
+            h.id === habitId ? { ...h, completed: newStatus } : h
+        ));
+
+        // Show toast immediately
+        if (newStatus) {
+            showToast('Habit completed! 🎉', 'success');
+        }
+
+        try {
+            let result;
+            if (currentlyCompleted) {
+                result = await habitsApi.uncomplete(habitId);
+            } else {
+                result = await habitsApi.complete(habitId);
+            }
+
+            if (!result.success) {
+                // Rollback on error
+                setHabits(previousHabits);
+                showToast('Failed to update habit', 'error');
             }
         } catch {
+            // Rollback on network error
+            setHabits(previousHabits);
             showToast('Failed to update habit', 'error');
         }
     };
 
-    // Handle todo toggle
+    // Handle todo toggle (Optimistic UI)
     const handleTodoToggle = async (todo: Todo) => {
+        // Store previous state for rollback
+        const previousTodos = [...todos];
+        const newStatus = !todo.isCompleted;
+
+        // Optimistic update - update UI immediately
+        setTodos(prev => prev.map(t =>
+            t.id === todo.id ? { ...t, isCompleted: newStatus } : t
+        ));
+
+        // Show toast immediately
+        const firstWord = todo.title.split(' ')[0];
+        const statusText = newStatus ? 'Completed' : 'Uncompleted';
+        showToast(`${firstWord} ${statusText} 🎉`, 'success');
+
         try {
             const result = await todosApi.toggle(todo.id);
-            if (result.success) {
-                // Determine status for toast - inverted because we just toggled it but using local var
-                // actually easier to just say 'Todo updated' or specific status based on result if needed.
-                // But simplified:
-                const newStatus = !todo.isCompleted;
-                showToast(`Todo ${newStatus ? 'completed' : 'uncompleted'}`, 'success');
-
-                // Refresh todos
-                const todosRes = await todosApi.getAll();
-                if (todosRes.success && todosRes.data) {
-                    setTodos(todosRes.data);
-                }
-            } else {
+            if (!result.success) {
+                // Rollback on error
+                setTodos(previousTodos);
                 showToast(result.error || 'Failed to toggle todo', 'error');
             }
         } catch {
+            // Rollback on network error
+            setTodos(previousTodos);
             showToast('Network error', 'error');
         }
     };

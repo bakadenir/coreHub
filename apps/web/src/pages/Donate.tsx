@@ -97,7 +97,7 @@ export default function Donate() {
     const [donationMessage, setDonationMessage] = useState('');
     const [isDonating, setIsDonating] = useState(false);
     const [donationsList, setDonationsList] = useState<Donation[]>([]);
-    const [isLoadingDonations, setIsLoadingDonations] = useState(true);
+    const [isInitialLoadingDonations, setIsInitialLoadingDonations] = useState(true); // Only first load
     const [pendingDonation, setPendingDonation] = useState<Donation | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
 
@@ -131,7 +131,7 @@ export default function Donate() {
 
     // Reviews state
     const [reviews, setReviews] = useState<Review[]>([]);
-    const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+    const [isInitialLoadingReviews, setIsInitialLoadingReviews] = useState(true); // Only first load
     const [searchQuery, setSearchQuery] = useState('');
     const [filterRating, setFilterRating] = useState<number | 'all'>('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -194,7 +194,7 @@ export default function Donate() {
         } catch (error) {
             console.error('Error fetching reviews:', error);
         } finally {
-            setIsLoadingReviews(false);
+            setIsInitialLoadingReviews(false);
         }
     };
 
@@ -214,7 +214,7 @@ export default function Donate() {
             } catch (error) {
                 console.error('Error fetching donations:', error);
             } finally {
-                setIsLoadingDonations(false);
+                setIsInitialLoadingDonations(false);
             }
         };
         fetchDonations();
@@ -673,7 +673,7 @@ export default function Donate() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-light text-sm">
-                                {isLoadingDonations ? (
+                                {isInitialLoadingDonations ? (
                                     <DonationTableSkeleton rows={5} />
                                 ) : donationsList.length === 0 ? (
                                     <tr>
@@ -803,7 +803,7 @@ export default function Donate() {
                     {/* Reviews Section */}
                     <div className="mt-10">
                         {/* Rating Summary Header */}
-                        {!isLoadingReviews && reviews.length > 0 && (
+                        {!isInitialLoadingReviews && reviews.length > 0 && (
                             <div className="flex flex-col md:flex-row gap-8 mb-8 p-6 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-sm">
                                 {/* Average Rating */}
                                 <div className="flex flex-col items-center justify-center md:border-r border-gray-200 md:pr-8">
@@ -885,7 +885,7 @@ export default function Donate() {
                         </div>
 
                         {/* Reviews List */}
-                        {isLoadingReviews ? (
+                        {isInitialLoadingReviews ? (
                             <ReviewListSkeleton count={3} />
                         ) : filteredReviews.length === 0 ? (
                             <p className="text-sm text-gray-400 text-center py-12 bg-[#fdfdfd] border border-gray-200 rounded-xl">
@@ -949,7 +949,7 @@ export default function Donate() {
                         )}
 
                         {/* Pagination */}
-                        {!isLoadingReviews && totalPages > 1 && (
+                        {!isInitialLoadingReviews && totalPages > 1 && (
                             <div className="flex items-center justify-center gap-2 mt-6">
                                 <button
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
