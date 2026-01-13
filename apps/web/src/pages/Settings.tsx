@@ -8,6 +8,7 @@ import { usersApi, notificationsApi } from '../lib';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useUser } from '../hooks/useUser';
+import { useSettings } from '../hooks/useSettings';
 import { ArrowLeft, RefreshCw, ChevronDown, MapPin, Loader2 } from 'lucide-react';
 
 
@@ -17,6 +18,9 @@ export default function Settings() {
     const { user, refreshUser, signOut } = useAuth();
     const { showToast } = useToast();
     const { refresh: refreshUserProfile } = useUser();
+
+    // Use SWR hook for cached data with background sync
+    const { profile: cachedProfile, notifications: cachedNotifications, isLoading: swrLoading } = useSettings();
 
     // Profile form state
     const [name, setName] = useState('');
@@ -41,7 +45,6 @@ export default function Settings() {
     const [habitReminders, setHabitReminders] = useState(true);
     const [scheduleReminders, setScheduleReminders] = useState(true);
     const [scheduleReminderMinutes, setScheduleReminderMinutes] = useState(15);
-    const [isLoadingNotifSettings, setIsLoadingNotifSettings] = useState(false);
     const [isSavingNotifSetting, setIsSavingNotifSetting] = useState(false);
 
     // Helper to construct full URL for uploaded files
@@ -55,50 +58,22 @@ export default function Settings() {
         return imageUrl;
     };
 
-    // Load user data on mount - fetch from API for latest data
+    // Sync cached profile data to local state when available
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const result = await usersApi.getMe();
-                if (result.success && result.data) {
-                    setName(result.data.name || '');
-                    setBio(result.data.bio || '');
-                    setLocation(result.data.location || '');
-                    setAvatar(getFullAvatarUrl(result.data.image));
-                }
-            } catch {
-                // Fallback to session data
-                if (user) {
-                    setName(user.name || '');
-                    setBio(user.bio || '');
-                    setLocation('');
-                    setAvatar(user.avatar || '');
-                }
-            }
-        };
-        fetchUser();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        if (cachedProfile.name) {
+            setName(cachedProfile.name);
+            setBio(cachedProfile.bio || '');
+            setLocation(cachedProfile.location || '');
+            setAvatar(getFullAvatarUrl(cachedProfile.image));
+        }
+    }, [cachedProfile]);
 
-    // Load notification settings on mount
+    // Sync cached notification settings
     useEffect(() => {
-        const fetchNotificationSettings = async () => {
-            setIsLoadingNotifSettings(true);
-            try {
-                const result = await notificationsApi.getSettings();
-                if (result.success && result.data) {
-                    setHabitReminders(result.data.habitReminders);
-                    setScheduleReminders(result.data.scheduleReminders);
-                    setScheduleReminderMinutes(result.data.scheduleReminderMinutes);
-                }
-            } catch (error) {
-                console.error('Error fetching notification settings:', error);
-            } finally {
-                setIsLoadingNotifSettings(false);
-            }
-        };
-        fetchNotificationSettings();
-    }, []);
+        setHabitReminders(cachedNotifications.habitReminders);
+        setScheduleReminders(cachedNotifications.scheduleReminders);
+        setScheduleReminderMinutes(cachedNotifications.scheduleReminderMinutes);
+    }, [cachedNotifications]);
 
     const handleSaveProfile = async () => {
         if (!name.trim()) {
@@ -498,7 +473,7 @@ export default function Settings() {
                         <h2 className="text-3xl font-extrabold tracking-tight mb-8 text-text-primary">Notifications</h2>
 
                         <div className="bg-[#fdfdfd] border border-border-light rounded-xl p-8 shadow-sm">
-                            {isLoadingNotifSettings ? (
+                            {swrLoading ? (
                                 <SettingsSkeleton />
                             ) : (
                                 <div className="space-y-6">

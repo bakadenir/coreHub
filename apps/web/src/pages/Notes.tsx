@@ -6,6 +6,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 import { notesApi } from '../lib';
 import type { Note } from '../types';
 import { EmptyState, ErrorState } from '../hooks/useApi';
+import { useNotes } from '../hooks/useNotes';
 import { NoteGridSkeleton, NoteSidebarSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
 import { useLocation } from 'react-router-dom';
@@ -14,21 +15,30 @@ import DOMPurify from 'dompurify';
 
 export default function Notes() {
     const location = useLocation();
-    const [notes, setNotes] = useState<Note[]>([]);
-    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-    const [isInitialLoading, setIsInitialLoading] = useState(true); // Only true on first load
-    const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
     const [showSortMenu, setShowSortMenu] = useState(false);
     const { showToast } = useToast();
 
+    // Use SWR hook for cached data with background sync
+    const { notes: cachedNotes, isLoading: notesLoading, mutate: refreshNotes } = useNotes(searchTerm);
+
+    // Local state synced from SWR
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    // Sync SWR data to local state
+    useEffect(() => {
+        if (cachedNotes.length > 0 || !notesLoading) {
+            setNotes(cachedNotes);
+        }
+    }, [cachedNotes, notesLoading]);
+
     // Handle navigation from other pages (e.g. ActivityCards)
     useEffect(() => {
         if (location.state?.noteId) {
             setSelectedNoteId(String(location.state.noteId));
-            // Optional: Clear state so refresh doesn't keep selecting it, or keep it.
-            // keeping it is fine.
         }
     }, [location.state]);
 
@@ -58,25 +68,9 @@ export default function Notes() {
     // View mode state (edit or preview)
     const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
 
-    const fetchNotes = useCallback(async () => {
-        // Only show loading on initial fetch (when no data yet)
-        if (notes.length === 0) {
-            setIsInitialLoading(true);
-        }
-        setError(null);
-        try {
-            const result = await notesApi.getAll(searchTerm ? { search: searchTerm } : {});
-            if (result.success && result.data) {
-                setNotes(result.data);
-            } else {
-                setError(result.error || 'Failed to fetch notes');
-            }
-        } catch {
-            setError('Network error');
-        } finally {
-            setIsInitialLoading(false);
-        }
-    }, [searchTerm, notes.length]);
+    const fetchNotes = useCallback(() => {
+        refreshNotes();
+    }, [refreshNotes]);
 
     // Helper to load note content into editing state
     const loadNoteContent = useCallback((note: Note, noteId: string) => {
@@ -92,7 +86,7 @@ export default function Notes() {
 
     // Handle initial selection logic - only select if noteId is provided
     useEffect(() => {
-        if (!isInitialLoading && notes.length > 0) {
+        if (!notesLoading && notes.length > 0) {
             // Only select a note if we have a specific noteId from navigation
             if (location.state?.noteId) {
                 const targetId = String(location.state.noteId);
@@ -105,7 +99,7 @@ export default function Notes() {
             }
             // Don't auto-select first note - leave empty state
         }
-    }, [notes, isInitialLoading, location.state, selectedNoteId, loadNoteContent]);
+    }, [notes, notesLoading, location.state, selectedNoteId, loadNoteContent]);
 
     useEffect(() => {
         fetchNotes();
@@ -592,7 +586,7 @@ export default function Notes() {
                         </div>
 
                         {/* Notes Grid */}
-                        {isInitialLoading ? (
+                        {notesLoading && notes.length === 0 ? (
                             <NoteGridSkeleton count={6} />
                         ) : error ? (
                             <ErrorState message={error} onRetry={fetchNotes} />
@@ -679,7 +673,7 @@ export default function Notes() {
                         </div>
 
                         <div className="flex flex-col p-4 gap-2">
-                            {isInitialLoading ? (
+                            {notesLoading && notes.length === 0 ? (
                                 <NoteSidebarSkeleton count={5} />
                             ) : error ? (
                                 <ErrorState message={error} onRetry={fetchNotes} />

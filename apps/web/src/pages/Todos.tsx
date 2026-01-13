@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { todosApi } from '../lib';
 import type { Todo, TodoList, TodoFilters } from '../types';
 import { EmptyState, ErrorState } from '../hooks/useApi';
+import { useTodos, useTodoLists } from '../hooks/useTodos';
 import { TodoGridSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
 import ActionMenu from '../components/ActionMenu';
@@ -20,13 +21,38 @@ type FilterView = 'all' | 'today' | 'upcoming' | 'completed';
 
 
 export default function Todos() {
-    const [todos, setTodos] = useState<Todo[]>([]);
-    const [lists, setLists] = useState<TodoList[]>([]);
-    const [isInitialLoading, setIsInitialLoading] = useState(true); // Only true on first load
-    const [error, setError] = useState<string | null>(null);
     const [filterView, setFilterView] = useState<FilterView>('all');
     const [selectedListId, setSelectedListId] = useState<string | null>(null);
     const { showToast } = useToast();
+
+    // Build filters based on current view
+    const filters: TodoFilters = {};
+    if (selectedListId) filters.listId = selectedListId;
+    if (filterView === 'today') filters.dueDate = 'today';
+    else if (filterView === 'upcoming') filters.dueDate = 'upcoming';
+    else if (filterView === 'completed') filters.completed = true;
+
+    // Use SWR hooks for cached data with background sync
+    const { todos: cachedTodos, isLoading: todosLoading, refresh: refreshTodos, setTodos } = useTodos(filters);
+    const { lists: cachedLists, isLoading: listsLoading, refresh: refreshLists } = useTodoLists();
+
+    // Local state synced from SWR
+    const [todos, setTodosLocal] = useState<Todo[]>([]);
+    const [lists, setLists] = useState<TodoList[]>([]);
+    const [error, setError] = useState<string | null>(null);
+
+    // Sync SWR data to local state
+    useEffect(() => {
+        if (cachedTodos.length > 0 || !todosLoading) {
+            setTodosLocal(cachedTodos);
+        }
+    }, [cachedTodos, todosLoading]);
+
+    useEffect(() => {
+        if (cachedLists.length > 0 || !listsLoading) {
+            setLists(cachedLists);
+        }
+    }, [cachedLists, listsLoading]);
 
     // Quick add state
     const [quickAddValue, setQuickAddValue] = useState('');
@@ -78,54 +104,12 @@ export default function Todos() {
     const [showNewListModal, setShowNewListModal] = useState(false);
 
     const fetchTodos = useCallback(async () => {
-        // Only show loading on initial fetch (when no data yet)
-        if (todos.length === 0) {
-            setIsInitialLoading(true);
-        }
-        setError(null);
-        try {
-            const filters: TodoFilters = {};
-
-            if (selectedListId) {
-                filters.listId = selectedListId;
-            }
-
-            if (filterView === 'today') {
-                filters.dueDate = 'today';
-            } else if (filterView === 'upcoming') {
-                filters.dueDate = 'upcoming';
-            } else if (filterView === 'completed') {
-                filters.completed = true;
-            }
-
-            const result = await todosApi.getAll(filters);
-            if (result.success && result.data) {
-                setTodos(result.data);
-            } else {
-                setError(result.error || 'Failed to fetch todos');
-            }
-        } catch {
-            setError('Network error');
-        } finally {
-            setIsInitialLoading(false);
-        }
-    }, [filterView, selectedListId, todos.length]);
+        refreshTodos();
+    }, [refreshTodos]);
 
     const fetchLists = useCallback(async () => {
-        try {
-            const result = await todosApi.getLists();
-            if (result.success && result.data) {
-                setLists(result.data.lists);
-            }
-        } catch {
-            console.error('Failed to fetch lists');
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchTodos();
-        fetchLists();
-    }, [fetchTodos, fetchLists]);
+        refreshLists();
+    }, [refreshLists]);
 
     // Click outside handler for date picker
     useEffect(() => {
@@ -185,12 +169,12 @@ export default function Todos() {
                 fetchLists();
             } else {
                 // Rollback on error
-                setTodos(previousTodos);
+                setTodosLocal(previousTodos);
                 showToast(result.error || 'Failed to toggle todo', 'error');
             }
         } catch {
             // Rollback on network error
-            setTodos(previousTodos);
+            setTodosLocal(previousTodos);
             showToast('Network error', 'error');
         }
     };
@@ -661,7 +645,7 @@ export default function Todos() {
 
                     {/* Todo List */}
                     <div className="flex-1 overflow-y-auto p-6">
-                        {isInitialLoading ? (
+                        {todosLoading && todos.length === 0 ? (
                             <TodoGridSkeleton count={6} />
                         ) : error ? (
                             <ErrorState message={error} onRetry={fetchTodos} />
