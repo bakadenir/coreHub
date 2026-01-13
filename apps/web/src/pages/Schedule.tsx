@@ -5,7 +5,7 @@ import ActionMenu from '../components/ActionMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { schedulesApi } from '../lib';
 import type { ScheduleEvent } from '../types';
-import { EmptyState, ErrorState } from '../hooks/useApi';
+import { EmptyState } from '../hooks/useApi';
 import { useSchedule } from '../hooks/useSchedule';
 import { ScheduleEventListSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
@@ -56,7 +56,6 @@ export default function Schedule() {
 
     // Local state synced from SWR
     const [events, setEvents] = useState<ScheduleEvent[]>([]);
-    const [error, setError] = useState<string | null>(null);
 
     // Sync SWR data to local state
     useEffect(() => {
@@ -345,10 +344,6 @@ export default function Schedule() {
                     {eventsLoading && events.length === 0 ? (
                         <div className="flex-1 p-6">
                             <ScheduleEventListSkeleton count={6} />
-                        </div>
-                    ) : error ? (
-                        <div className="flex-1 flex items-center justify-center">
-                            <ErrorState message={error} onRetry={fetchEvents} />
                         </div>
                     ) : (
                         <>

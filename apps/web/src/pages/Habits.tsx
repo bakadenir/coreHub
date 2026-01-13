@@ -5,7 +5,7 @@ import ActionMenu from '../components/ActionMenu';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { habitsApi } from '../lib';
 import type { Habit } from '../types';
-import { EmptyState, ErrorState } from '../hooks/useApi';
+import { EmptyState } from '../hooks/useApi';
 import { useHabits } from '../hooks/useHabits';
 import { useToast } from '../context/ToastContext';
 import { CheckCircle, Clock, CalendarX, Circle, BarChart3, CalendarRange, Plus, Percent, Flame } from 'lucide-react';
@@ -326,11 +326,10 @@ export default function Habits() {
     if (filter === 'archived') swrFilters.archived = true;
 
     // Use SWR hook for cached data with background sync
-    const { habits: cachedHabits, isLoading: habitsLoading, refresh: refreshHabits, setHabits: setSWRHabits } = useHabits(swrFilters);
+    const { habits: cachedHabits, isLoading: habitsLoading, refresh: refreshHabits } = useHabits(swrFilters);
 
     // Local state for filtered habits
     const [habits, setHabits] = useState<Habit[]>([]);
-    const [error, setError] = useState<string | null>(null);
 
     // Sync SWR data to local state with client-side filtering
     useEffect(() => {
@@ -538,10 +537,6 @@ export default function Habits() {
                         {Array.from({ length: 4 }).map((_, i) => (
                             <HabitCardSkeleton key={i} />
                         ))}
-                    </div>
-                ) : error ? (
-                    <div className="flex-1 flex items-center justify-center">
-                        <ErrorState message={error} onRetry={fetchHabits} />
                     </div>
                 ) : habits.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center py-16">

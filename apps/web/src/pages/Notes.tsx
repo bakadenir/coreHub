@@ -5,7 +5,7 @@ import RichTextEditor from '../components/RichTextEditor';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { notesApi } from '../lib';
 import type { Note } from '../types';
-import { EmptyState, ErrorState } from '../hooks/useApi';
+import { EmptyState } from '../hooks/useApi';
 import { useNotes } from '../hooks/useNotes';
 import { NoteGridSkeleton, NoteSidebarSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
@@ -26,7 +26,6 @@ export default function Notes() {
     // Local state synced from SWR
     const [notes, setNotes] = useState<Note[]>([]);
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
 
     // Sync SWR data to local state
     useEffect(() => {
@@ -588,8 +587,6 @@ export default function Notes() {
                         {/* Notes Grid */}
                         {notesLoading && notes.length === 0 ? (
                             <NoteGridSkeleton count={6} />
-                        ) : error ? (
-                            <ErrorState message={error} onRetry={fetchNotes} />
                         ) : notes.length === 0 ? (
                             <div className="flex justify-center py-20">
                                 <EmptyState message="No notes yet. Create your first note!" icon="note_add" />
@@ -675,8 +672,6 @@ export default function Notes() {
                         <div className="flex flex-col p-4 gap-2">
                             {notesLoading && notes.length === 0 ? (
                                 <NoteSidebarSkeleton count={5} />
-                            ) : error ? (
-                                <ErrorState message={error} onRetry={fetchNotes} />
                             ) : notes.length === 0 ? (
                                 <EmptyState message="No notes yet" icon="note_add" />
                             ) : (
