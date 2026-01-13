@@ -6,6 +6,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { schedulesApi } from '../lib';
 import type { ScheduleEvent } from '../types';
 import { EmptyState, ErrorState } from '../hooks/useApi';
+import { useSchedule } from '../hooks/useSchedule';
 import { ScheduleEventListSkeleton } from '../components/Skeleton';
 import { useToast } from '../context/ToastContext';
 import { ChevronLeft, ChevronRight, Plus, MoreVertical, CalendarX, MapPin, CheckCircle } from 'lucide-react';
@@ -14,13 +15,55 @@ export default function Schedule() {
     const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
     const [isEditScheduleOpen, setIsEditScheduleOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
-    const [events, setEvents] = useState<ScheduleEvent[]>([]);
-    const [isInitialLoading, setIsInitialLoading] = useState(true); // Only true on first load
-    const [error, setError] = useState<string | null>(null);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState<'month' | 'week' | 'day'>('month');
     const [quickAddDate, setQuickAddDate] = useState<Date | undefined>(); // For quick add when clicking a day
     const { showToast } = useToast();
+
+    // Calculate date range for SWR key based on view
+    const getDateRange = useCallback(() => {
+        let startDate: Date;
+        let endDate: Date;
+
+        if (view === 'month') {
+            startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        } else if (view === 'week') {
+            const weekStart = new Date(currentDate);
+            const day = weekStart.getDay();
+            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+            weekStart.setDate(diff);
+            weekStart.setHours(0, 0, 0, 0);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            weekEnd.setHours(23, 59, 59, 999);
+            startDate = weekStart;
+            endDate = weekEnd;
+        } else {
+            startDate = new Date(currentDate);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(currentDate);
+            endDate.setHours(23, 59, 59, 999);
+        }
+
+        return { startDate: startDate.toISOString(), endDate: endDate.toISOString(), view };
+    }, [currentDate, view]);
+
+    const scheduleParams = getDateRange();
+
+    // Use SWR hook for cached data with background sync
+    const { events: cachedEvents, isLoading: eventsLoading, mutate: refreshEvents } = useSchedule(scheduleParams);
+
+    // Local state synced from SWR
+    const [events, setEvents] = useState<ScheduleEvent[]>([]);
+    const [error, setError] = useState<string | null>(null);
+
+    // Sync SWR data to local state
+    useEffect(() => {
+        if (cachedEvents.length > 0 || !eventsLoading) {
+            setEvents(cachedEvents);
+        }
+    }, [cachedEvents, eventsLoading]);
 
     // Delete confirmation state
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -37,65 +80,12 @@ export default function Schedule() {
     const handleAddModalClose = () => {
         setIsAddScheduleOpen(false);
         setQuickAddDate(undefined);
-        fetchEvents();
+        refreshEvents();
     };
 
-    const fetchEvents = useCallback(async () => {
-        // Only show loading on initial fetch (when no data yet)
-        if (events.length === 0) {
-            setIsInitialLoading(true);
-        }
-        setError(null);
-        try {
-            let startDate: Date;
-            let endDate: Date;
-
-            if (view === 'month') {
-                // Full month
-                startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-                endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-            } else if (view === 'week') {
-                // Current week (Mon-Sun)
-                const weekStart = new Date(currentDate);
-                const day = weekStart.getDay();
-                const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
-                weekStart.setDate(diff);
-                weekStart.setHours(0, 0, 0, 0);
-
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6);
-                weekEnd.setHours(23, 59, 59, 999);
-
-                startDate = weekStart;
-                endDate = weekEnd;
-            } else {
-                // Day view - single day
-                startDate = new Date(currentDate);
-                startDate.setHours(0, 0, 0, 0);
-                endDate = new Date(currentDate);
-                endDate.setHours(23, 59, 59, 999);
-            }
-
-            const result = await schedulesApi.getAll({
-                startDate: startDate.toISOString(),
-                endDate: endDate.toISOString(),
-                view
-            });
-            if (result.success && result.data) {
-                setEvents(result.data);
-            } else {
-                setError(result.error || 'Failed to fetch events');
-            }
-        } catch {
-            setError('Network error');
-        } finally {
-            setIsInitialLoading(false);
-        }
-    }, [currentDate, view, events.length]);
-
-    useEffect(() => {
-        fetchEvents();
-    }, [fetchEvents]);
+    const fetchEvents = useCallback(() => {
+        refreshEvents();
+    }, [refreshEvents]);
 
     const handleEdit = (event: ScheduleEvent) => {
         setEditingEvent(event);
@@ -352,7 +342,7 @@ export default function Schedule() {
             </header>
             <div className="flex flex-1 overflow-hidden">
                 <div className="flex-1 flex flex-col overflow-y-auto bg-[#fdfdfd]">
-                    {isInitialLoading ? (
+                    {eventsLoading && events.length === 0 ? (
                         <div className="flex-1 p-6">
                             <ScheduleEventListSkeleton count={6} />
                         </div>
@@ -393,22 +383,29 @@ export default function Schedule() {
                                                     <span className={`text-text-primary font-mono text-sm font-medium p-1 ${isToday ? 'flex items-center justify-center w-7 h-7 rounded-full bg-primary text-white shadow-md shadow-gray-500/30' : ''}`}>
                                                         {day}
                                                     </span>
-                                                    {dayEvents.slice(0, 3).map((event) => (
-                                                        <div
-                                                            key={event.id}
-                                                            onClick={(e) => { e.stopPropagation(); handleEdit(event); }}
-                                                            className={`bg-gray-50 border-l-2 ${getEventColor(event.color || 'blue')} text-gray-700 text-xs font-medium p-1 px-2 rounded-r-md truncate cursor-pointer hover:opacity-80 mb-0.5 flex items-center justify-between group/event`}
-                                                            title={event.title}
-                                                        >
-                                                            <span className="truncate">{formatTime(event.startTime)} {event.title}</span>
-                                                            <div className="opacity-0 group-hover/event:opacity-100" onClick={(e) => e.stopPropagation()}>
-                                                                <ActionMenu
-                                                                    items={getActionMenuItems(event)}
-                                                                    trigger={<MoreVertical size={12} />}
-                                                                />
+                                                    {dayEvents.slice(0, 3).map((event) => {
+                                                        const now = new Date();
+                                                        const eventEnd = event.endTime ? new Date(event.endTime) : new Date(new Date(event.startTime).getTime() + 60 * 60000);
+                                                        const isPast = eventEnd < now;
+                                                        return (
+                                                            <div
+                                                                key={event.id}
+                                                                onClick={isPast ? (e) => e.stopPropagation() : (e) => { e.stopPropagation(); handleEdit(event); }}
+                                                                className={`bg-gray-50 border-l-2 ${getEventColor(event.color || 'blue')} text-xs font-medium p-1 px-2 rounded-r-md truncate mb-0.5 flex items-center justify-between group/event ${isPast ? 'opacity-50 cursor-not-allowed text-gray-400 line-through' : 'text-gray-700 cursor-pointer hover:opacity-80'}`}
+                                                                title={event.title}
+                                                            >
+                                                                <span className="truncate">{formatTime(event.startTime)} {event.title}</span>
+                                                                {!isPast && (
+                                                                    <div className="opacity-0 group-hover/event:opacity-100" onClick={(e) => e.stopPropagation()}>
+                                                                        <ActionMenu
+                                                                            items={getActionMenuItems(event)}
+                                                                            trigger={<MoreVertical size={12} />}
+                                                                        />
+                                                                    </div>
+                                                                )}
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        );
+                                                    })}
                                                     {dayEvents.length > 3 && (
                                                         <div className="text-xs text-text-secondary pl-2">+{dayEvents.length - 3} more</div>
                                                     )}
@@ -450,16 +447,21 @@ export default function Schedule() {
                                                     {dayEvents.length === 0 ? (
                                                         <div className="text-xs text-text-secondary text-center py-4">No events</div>
                                                     ) : (
-                                                        dayEvents.map((event) => (
-                                                            <div
-                                                                key={event.id}
-                                                                onClick={() => handleEdit(event)}
-                                                                className={`bg-gray-50 border-l-2 ${getEventColor(event.color || 'blue')} text-gray-700 text-xs font-medium p-2 rounded-r-md cursor-pointer hover:opacity-80 flex flex-col gap-1`}
-                                                            >
-                                                                <span className="font-mono text-[10px] text-gray-500">{formatTime(event.startTime)}</span>
-                                                                <span className="truncate font-semibold">{event.title}</span>
-                                                            </div>
-                                                        ))
+                                                        dayEvents.map((event) => {
+                                                            const now = new Date();
+                                                            const eventEnd = event.endTime ? new Date(event.endTime) : new Date(new Date(event.startTime).getTime() + 60 * 60000);
+                                                            const isPast = eventEnd < now;
+                                                            return (
+                                                                <div
+                                                                    key={event.id}
+                                                                    onClick={isPast ? undefined : () => handleEdit(event)}
+                                                                    className={`bg-gray-50 border-l-2 ${getEventColor(event.color || 'blue')} text-xs font-medium p-2 rounded-r-md flex flex-col gap-1 ${isPast ? 'opacity-50 cursor-not-allowed' : 'text-gray-700 cursor-pointer hover:opacity-80'}`}
+                                                                >
+                                                                    <span className="font-mono text-[10px] text-gray-500">{formatTime(event.startTime)}</span>
+                                                                    <span className={`truncate font-semibold ${isPast ? 'text-gray-400 line-through' : ''}`}>{event.title}</span>
+                                                                </div>
+                                                            );
+                                                        })
                                                     )}
                                                 </div>
                                             );
@@ -468,56 +470,110 @@ export default function Schedule() {
                                 </>
                             )}
 
-                            {/* Day View */}
+                            {/* Day View - Hourly Timeline */}
                             {view === 'day' && (
-                                <div className="flex-1 p-4 overflow-y-auto">
-                                    {getEventsForDate(currentDate).length === 0 ? (
-                                        <div className="flex flex-col items-center justify-center h-full text-text-secondary">
-                                            <CalendarX size={48} className="mb-3" />
-                                            <p className="text-base font-medium">No events for this day</p>
+                                <div className="flex-1 overflow-y-auto">
+                                    {/* Hourly Timeline Grid */}
+                                    <div className="relative">
+                                        {/* Hour rows - 00:00 to 23:00 */}
+                                        {Array.from({ length: 24 }, (_, hour) => {
+                                            const hourStr = hour.toString().padStart(2, '0');
+                                            const eventsAtHour = getEventsForDate(currentDate).filter(event => {
+                                                const eventHour = new Date(event.startTime).getHours();
+                                                return eventHour === hour;
+                                            });
+
+                                            return (
+                                                <div
+                                                    key={hour}
+                                                    className="flex border-b border-gray-100 min-h-[60px] hover:bg-gray-50/50 transition-colors"
+                                                >
+                                                    {/* Time label */}
+                                                    <div className="w-16 md:w-20 flex-shrink-0 py-2 pr-3 text-right">
+                                                        <span className="text-xs font-medium text-gray-400">
+                                                            {hourStr}:00
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Events area */}
+                                                    <div className="flex-1 py-1 px-2 relative">
+                                                        {eventsAtHour.map(event => {
+                                                            const startTime = new Date(event.startTime);
+                                                            const endTime = event.endTime ? new Date(event.endTime) : null;
+                                                            const now = new Date();
+                                                            // Event is past if its end time (or start time if no end) is before now
+                                                            const eventEnd = endTime || new Date(startTime.getTime() + 60 * 60000);
+                                                            const isPast = eventEnd < now;
+                                                            const durationMinutes = endTime
+                                                                ? Math.round((endTime.getTime() - startTime.getTime()) / 60000)
+                                                                : 60;
+                                                            const heightPx = Math.max(50, Math.round(durationMinutes / 60 * 60));
+
+                                                            return (
+                                                                <div
+                                                                    key={event.id}
+                                                                    onClick={isPast ? undefined : () => handleEdit(event)}
+                                                                    style={{ minHeight: `${heightPx}px` }}
+                                                                    className={`mb-1 p-3 rounded-lg border-l-4 ${getEventColor(event.color || 'blue')} bg-[#fdfdfd] border border-gray-200 shadow-sm transition-all ${isPast ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}`}
+                                                                >
+                                                                    <div className="flex items-start justify-between">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="font-mono text-xs text-gray-500 mb-1">
+                                                                                {formatTime(event.startTime)}
+                                                                                {event.endTime && ` - ${formatTime(event.endTime)}`}
+                                                                            </div>
+                                                                            <h4 className={`font-semibold truncate ${isPast ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                                                                                {event.title}
+                                                                            </h4>
+                                                                            {event.location && (
+                                                                                <div className="flex items-center gap-1 text-gray-500 text-xs mt-1">
+                                                                                    <MapPin size={12} />
+                                                                                    <span className="truncate">{event.location}</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                        {!isPast && (
+                                                                            <div onClick={(e) => e.stopPropagation()}>
+                                                                                <ActionMenu
+                                                                                    items={getActionMenuItems(event)}
+                                                                                    trigger={<MoreVertical size={16} className="text-gray-400 hover:text-gray-600" />}
+                                                                                />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+
+                                        {/* Current time indicator */}
+                                        {currentDate.toDateString() === new Date().toDateString() && (
+                                            <div
+                                                className="absolute left-16 md:left-20 right-0 flex items-center z-10 pointer-events-none"
+                                                style={{
+                                                    top: `${(new Date().getHours() * 60 + new Date().getMinutes()) / (24 * 60) * 100}%`
+                                                }}
+                                            >
+                                                <div className="w-2 h-2 rounded-full bg-red-500 -ml-1"></div>
+                                                <div className="flex-1 h-[2px] bg-red-500"></div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Empty state overlay */}
+                                    {getEventsForDate(currentDate).length === 0 && (
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
+                                            <CalendarX size={48} className="mb-3 text-gray-300" />
+                                            <p className="text-base font-medium text-gray-500">No events for today</p>
                                             <button
                                                 onClick={() => setIsAddScheduleOpen(true)}
                                                 className="mt-4 px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium hover:bg-text-primary transition-colors"
                                             >
                                                 Add Event
                                             </button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3 max-w-2xl mx-auto">
-                                            {getEventsForDate(currentDate).map((event) => (
-                                                <div
-                                                    key={event.id}
-                                                    onClick={() => handleEdit(event)}
-                                                    className={`bg-[#fdfdfd] border border-border-light rounded-xl p-4 shadow-sm hover:shadow-md cursor-pointer transition-all border-l-4 ${getEventColor(event.color || 'blue')}`}
-                                                >
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <span className="font-mono text-sm font-medium text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
-                                                                    {formatTime(event.startTime)}
-                                                                    {event.endTime && ` - ${formatTime(event.endTime)}`}
-                                                                </span>
-                                                            </div>
-                                                            <h4 className="text-lg font-bold text-text-primary mb-1">{event.title}</h4>
-                                                            {event.location && (
-                                                                <div className="flex items-center gap-1.5 text-text-secondary text-sm mt-2">
-                                                                    <MapPin size={16} />
-                                                                    <span>{event.location}</span>
-                                                                </div>
-                                                            )}
-                                                            {event.description && (
-                                                                <p className="text-sm text-text-secondary mt-2">{event.description}</p>
-                                                            )}
-                                                        </div>
-                                                        <div onClick={(e) => e.stopPropagation()}>
-                                                            <ActionMenu
-                                                                items={getActionMenuItems(event)}
-                                                                trigger={<MoreVertical size={20} className="text-gray-400 hover:text-gray-600" />}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
                                         </div>
                                     )}
                                 </div>
@@ -590,7 +646,7 @@ export default function Schedule() {
                             </div>
                         )}
 
-                        {events.length === 0 && !isInitialLoading && (
+                        {events.length === 0 && !eventsLoading && (
                             <EmptyState message="No events this month" icon="event" />
                         )}
                     </div>

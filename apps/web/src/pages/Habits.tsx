@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AddHabitModal from '../components/AddHabitModal';
 import EditHabitModal from '../components/EditHabitModal';
 import ActionMenu from '../components/ActionMenu';
@@ -6,6 +6,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { habitsApi } from '../lib';
 import type { Habit } from '../types';
 import { EmptyState, ErrorState } from '../hooks/useApi';
+import { useHabits } from '../hooks/useHabits';
 import { useToast } from '../context/ToastContext';
 import { CheckCircle, Clock, CalendarX, Circle, BarChart3, CalendarRange, Plus, Percent, Flame } from 'lucide-react';
 import { iconMap } from '../lib/iconMap';
@@ -315,54 +316,44 @@ export default function Habits() {
     const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
     const [isEditHabitOpen, setIsEditHabitOpen] = useState(false);
     const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
-    const [habits, setHabits] = useState<Habit[]>([]);
-    const [isInitialLoading, setIsInitialLoading] = useState(true); // Only true on first load
-    const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<'all' | 'today' | 'daily' | 'weekly' | 'archived'>('today');
     const { showToast } = useToast();
+
+    // Build SWR filters based on current view
+    const swrFilters: { frequency?: string; archived?: boolean } = {};
+    if (filter === 'daily') swrFilters.frequency = 'daily';
+    if (filter === 'weekly') swrFilters.frequency = 'weekly';
+    if (filter === 'archived') swrFilters.archived = true;
+
+    // Use SWR hook for cached data with background sync
+    const { habits: cachedHabits, isLoading: habitsLoading, refresh: refreshHabits, setHabits: setSWRHabits } = useHabits(swrFilters);
+
+    // Local state for filtered habits
+    const [habits, setHabits] = useState<Habit[]>([]);
+    const [error, setError] = useState<string | null>(null);
+
+    // Sync SWR data to local state with client-side filtering
+    useEffect(() => {
+        if (cachedHabits.length > 0 || !habitsLoading) {
+            let filteredData = cachedHabits;
+            // Client-side filter for 'today' - only show habits that are due today
+            if (filter === 'today') {
+                filteredData = cachedHabits.filter(h =>
+                    h.hasStarted !== false && h.isDueToday !== false && !h.isArchived
+                );
+            }
+            setHabits(filteredData);
+        }
+    }, [cachedHabits, habitsLoading, filter]);
 
     // Delete confirmation state
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
     const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const fetchHabits = useCallback(async () => {
-        // Only show loading on initial fetch (when no data yet)
-        if (habits.length === 0) {
-            setIsInitialLoading(true);
-        }
-        setError(null);
-        try {
-            const filters: { frequency?: string; archived?: boolean } = {};
-            if (filter === 'daily') filters.frequency = 'daily';
-            if (filter === 'weekly') filters.frequency = 'weekly';
-            if (filter === 'archived') filters.archived = true;
-
-            const result = await habitsApi.getAll(filters);
-            if (result.success && result.data) {
-                let filteredData = result.data;
-
-                // Client-side filter for 'today' - only show habits that are due today
-                if (filter === 'today') {
-                    filteredData = result.data.filter(h =>
-                        h.hasStarted !== false && h.isDueToday !== false && !h.isArchived
-                    );
-                }
-
-                setHabits(filteredData);
-            } else {
-                setError(result.error || 'Failed to fetch habits');
-            }
-        } catch {
-            setError('Network error');
-        } finally {
-            setIsInitialLoading(false);
-        }
-    }, [filter, habits.length]);
-
-    useEffect(() => {
-        fetchHabits();
-    }, [fetchHabits]);
+    const fetchHabits = () => {
+        refreshHabits();
+    };
 
     const handleComplete = async (habitId: string, currentlyCompleted: boolean) => {
         // Optimistic update - update UI immediately
@@ -542,7 +533,7 @@ export default function Habits() {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
-                {isInitialLoading ? (
+                {habitsLoading && habits.length === 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {Array.from({ length: 4 }).map((_, i) => (
                             <HabitCardSkeleton key={i} />

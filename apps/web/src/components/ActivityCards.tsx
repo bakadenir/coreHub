@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { habitsApi, notesApi, linksApi, schedulesApi, todosApi } from '../lib';
+import { habitsApi, todosApi } from '../lib';
 import type { Habit, Note, LinkItem, ScheduleEvent, Todo } from '../types';
 import { useToast } from '../context/ToastContext';
+import { useDashboard } from '../hooks/useDashboard';
 import {
     DndContext,
     closestCenter,
@@ -99,14 +100,52 @@ export interface ActivityCardsProps {
 export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderChange }: ActivityCardsProps) {
     const navigate = useNavigate();
     const { showToast } = useToast();
+
+    // Use SWR hook for cached data with background sync
+    const {
+        habits: cachedHabits,
+        schedules: cachedSchedules,
+        notes: cachedNotes,
+        links: cachedLinks,
+        todos: cachedTodos,
+        isLoading: dashboardLoading,
+        refresh: refreshDashboard
+    } = useDashboard();
+
+    // Local state synced from SWR
     const [habits, setHabits] = useState<Habit[]>([]);
     const [schedule, setSchedule] = useState<ScheduleEvent[]>([]);
     const [notes, setNotes] = useState<Note[]>([]);
     const [links, setLinks] = useState<LinkItem[]>([]);
     const [todos, setTodos] = useState<Todo[]>([]);
-    const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-    // Removed internal panelOrder state and localStorage logic (moved to parent)
+    // Sync SWR data to local state
+    useEffect(() => {
+        if (cachedHabits.length > 0 || !dashboardLoading) setHabits(cachedHabits);
+    }, [cachedHabits, dashboardLoading]);
+
+    useEffect(() => {
+        if (cachedSchedules.length > 0 || !dashboardLoading) setSchedule(cachedSchedules);
+    }, [cachedSchedules, dashboardLoading]);
+
+    useEffect(() => {
+        if (cachedNotes.length > 0 || !dashboardLoading) setNotes(cachedNotes);
+    }, [cachedNotes, dashboardLoading]);
+
+    useEffect(() => {
+        if (cachedLinks.length > 0 || !dashboardLoading) setLinks(cachedLinks);
+    }, [cachedLinks, dashboardLoading]);
+
+    useEffect(() => {
+        if (cachedTodos.length > 0 || !dashboardLoading) setTodos(cachedTodos);
+    }, [cachedTodos, dashboardLoading]);
+
+    // Refresh on refreshTrigger change
+    useEffect(() => {
+        if (refreshTrigger > 0) {
+            refreshDashboard();
+        }
+    }, [refreshTrigger, refreshDashboard]);
 
     // Sensors for drag and drop
     const sensors = useSensors(
@@ -120,103 +159,6 @@ export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderC
         })
     );
 
-    const fetchData = useCallback(async () => {
-        // Don't show skeleton on refresh, only on initial load
-        try {
-            const [habitsRes, schedulesRes, notesRes, linksRes, todosRes] = await Promise.all([
-                habitsApi.getAll(),
-                schedulesApi.getAll(),
-                notesApi.getAll(),
-                linksApi.getAll(),
-                todosApi.getAll()
-            ]);
-
-            if (habitsRes.success && habitsRes.data) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                // Modal uses 0=Mon, ... 6=Sun. JS uses 0=Sun, 1=Mon.
-                // Convert JS day to Modal day: (day + 6) % 7
-                const currentDayIndex = (new Date().getDay() + 6) % 7;
-
-                const todaysHabits = habitsRes.data.filter(habit => {
-                    // Check start date
-                    if (habit.startDate) {
-                        const start = new Date(habit.startDate);
-                        start.setHours(0, 0, 0, 0);
-                        if (today < start) return false;
-                    }
-
-                    // Check frequency
-                    const freq = habit.frequency.toLowerCase();
-                    if (freq === 'daily') return true;
-                    if (freq === 'weekly') {
-                        if (habit.specificDays && habit.specificDays.length > 0) {
-                            return habit.specificDays.includes(currentDayIndex);
-                        }
-                        return false; // Weekly but no days selected -> hide
-                    }
-                    return true;
-                });
-
-                setHabits(todaysHabits);
-            }
-
-            if (schedulesRes.success && schedulesRes.data) {
-                const now = new Date();
-                now.setHours(0, 0, 0, 0);
-                const upcomingSchedules = schedulesRes.data.filter(event => {
-                    const eventDate = new Date(event.startTime);
-                    return eventDate >= now;
-                });
-                upcomingSchedules.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-                setSchedule(upcomingSchedules);
-            }
-
-            if (notesRes.success && notesRes.data) {
-                setNotes(notesRes.data);
-            }
-
-            if (linksRes.success && linksRes.data) {
-                setLinks(linksRes.data);
-            }
-
-            // Fix: todosApi.getAll() returns { success: boolean, data?: Todo[], error?: string }
-            // But checking the actual API response type might be needed. Assuming standard pattern.
-            // The result for todosApi.getAll() is the 5th element in the Promise.all array (index 4)
-            // Wait, Promise.all returns an array, but the destructuring above only took 4 elements.
-            // I need to update the destructuring.
-            // Actually, let's fix the destructuring in a separate chunk to be safe or just assume I fixed it in chunk 4 (I didn't).
-            // Let me fix chunk 4 destructuring logic first.
-            // Wait, I can't edit chunk 4 anymore. I will just handle the 5th element here by accessing it from the result array if I didn't verify index.
-            // Actually, looking at chunk 4 replacement:
-            // [habitsRes, schedulesRes, notesRes, linksRes] = await Promise.all(...)
-            // I need to add todosRes to that destructuring.
-            // So I will edit this chunk to be a no-op for now and fix the destructuring in the next tool call?
-            // No, I can do it in one go if I am careful.
-            // Let's look at the lines around 157.
-            // I will use a separate replacement for line 157 in a second.
-
-            // For this chunk (lines 210-212), I will append the todo setting logic.
-            if (linksRes.success && linksRes.data) {
-                setLinks(linksRes.data);
-            }
-
-            if (todosRes.success && todosRes.data) {
-                setTodos(todosRes.data);
-            }
-            // We need to access the todos result. Since I missed adding it to the destructuring variable list in the previous chunk replacement (I only added the call inside Promise.all array),
-            // I must update line 157 as well. I'll add a chunk for line 157.
-        } catch (error) {
-            console.error('Failed to fetch activity data:', error);
-        } finally {
-            setIsInitialLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData, refreshTrigger]);
 
 
 
@@ -420,7 +362,7 @@ export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderC
         }
     };
 
-    if (isInitialLoading) {
+    if (dashboardLoading && habits.length === 0) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {[1, 2, 3, 4].map(i => (

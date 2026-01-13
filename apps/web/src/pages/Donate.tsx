@@ -1,11 +1,11 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import { DonationTableSkeleton, ReviewListSkeleton } from '../components/Skeleton';
-import { feedbackApi, usersApi, donationsApi } from '../lib';
+import { feedbackApi, donationsApi } from '../lib';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { useDonate } from '../hooks/useDonate';
 import { ArrowLeft, Clock, Heart, Loader2, History, MessageSquare, Send, Edit3, BadgeCheck } from 'lucide-react';
 
 interface MidtransResult {
@@ -83,13 +83,15 @@ export default function Donate() {
         }
     }, [searchParams, navigate, showToast]);
 
+    // Use SWR hook for cached data with background sync
+    const { donations: cachedDonations, reviews: cachedReviews, userAvatar, isLoading: swrLoading } = useDonate();
+
     // Feedback form state
     const [rating, setRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [comment, setComment] = useState('');
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
     // Donation state
     const [donationAmount, setDonationAmount] = useState('');
@@ -97,9 +99,15 @@ export default function Donate() {
     const [donationMessage, setDonationMessage] = useState('');
     const [isDonating, setIsDonating] = useState(false);
     const [donationsList, setDonationsList] = useState<Donation[]>([]);
-    const [isInitialLoadingDonations, setIsInitialLoadingDonations] = useState(true); // Only first load
     const [pendingDonation, setPendingDonation] = useState<Donation | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+
+    // Sync cached data to local state when available
+    useEffect(() => {
+        if (cachedDonations.length > 0) {
+            setDonationsList(cachedDonations);
+        }
+    }, [cachedDonations]);
 
 
     // Helper to construct full URL for uploaded files
@@ -113,29 +121,19 @@ export default function Donate() {
         return imageUrl;
     };
 
-    // Fetch user avatar from API on mount
-    useEffect(() => {
-        const fetchUserAvatar = async () => {
-            try {
-                const result = await usersApi.getMe();
-                if (result.success && result.data) {
-                    const fullUrl = getFullAvatarUrl(result.data.image);
-                    setUserAvatar(fullUrl || null);
-                }
-            } catch {
-                // Silently fail - avatar is optional
-            }
-        };
-        fetchUserAvatar();
-    }, []);
-
-    // Reviews state
+    // Reviews state - use cached data from SWR
     const [reviews, setReviews] = useState<Review[]>([]);
-    const [isInitialLoadingReviews, setIsInitialLoadingReviews] = useState(true); // Only first load
     const [searchQuery, setSearchQuery] = useState('');
     const [filterRating, setFilterRating] = useState<number | 'all'>('all');
     const [currentPage, setCurrentPage] = useState(1);
     const REVIEWS_PER_PAGE = 5;
+
+    // Sync cached reviews to local state
+    useEffect(() => {
+        if (cachedReviews.length > 0) {
+            setReviews(cachedReviews);
+        }
+    }, [cachedReviews]);
 
     // User's own review state
     const [userReview, setUserReview] = useState<Review | null>(null);
@@ -184,7 +182,7 @@ export default function Donate() {
         setCurrentPage(1);
     };
 
-    // Fetch reviews function (reusable)
+    // Fetch reviews function (for refresh after submit)
     const fetchReviews = async () => {
         try {
             const result = await feedbackApi.getReviews(100); // Fetch more for pagination
@@ -193,33 +191,11 @@ export default function Donate() {
             }
         } catch (error) {
             console.error('Error fetching reviews:', error);
-        } finally {
-            setIsInitialLoadingReviews(false);
         }
     };
 
-    // Fetch public reviews on mount
+    // Load Midtrans Snap script
     useEffect(() => {
-        fetchReviews();
-    }, []);
-
-    // Fetch donations on mount
-    useEffect(() => {
-        const fetchDonations = async () => {
-            try {
-                const result = await donationsApi.getPublic(20);
-                if (result.success && result.data) {
-                    setDonationsList(result.data);
-                }
-            } catch (error) {
-                console.error('Error fetching donations:', error);
-            } finally {
-                setIsInitialLoadingDonations(false);
-            }
-        };
-        fetchDonations();
-
-        // Load Midtrans Snap script
         const script = document.createElement('script');
         script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
         script.setAttribute('data-client-key', import.meta.env.VITE_MIDTRANS_CLIENT_KEY || '');
@@ -229,7 +205,6 @@ export default function Donate() {
             document.head.removeChild(script);
         };
     }, []);
-
     // Fetch pending donation on mount (if logged in) and verify its status
     useEffect(() => {
         const fetchPending = async () => {
@@ -673,7 +648,7 @@ export default function Donate() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border-light text-sm">
-                                {isInitialLoadingDonations ? (
+                                {swrLoading && donationsList.length === 0 ? (
                                     <DonationTableSkeleton rows={5} />
                                 ) : donationsList.length === 0 ? (
                                     <tr>
@@ -803,7 +778,7 @@ export default function Donate() {
                     {/* Reviews Section */}
                     <div className="mt-10">
                         {/* Rating Summary Header */}
-                        {!isInitialLoadingReviews && reviews.length > 0 && (
+                        {reviews.length > 0 && (
                             <div className="flex flex-col md:flex-row gap-8 mb-8 p-6 bg-[#fdfdfd] border border-gray-200 rounded-xl shadow-sm">
                                 {/* Average Rating */}
                                 <div className="flex flex-col items-center justify-center md:border-r border-gray-200 md:pr-8">
@@ -885,7 +860,7 @@ export default function Donate() {
                         </div>
 
                         {/* Reviews List */}
-                        {isInitialLoadingReviews ? (
+                        {swrLoading && reviews.length === 0 ? (
                             <ReviewListSkeleton count={3} />
                         ) : filteredReviews.length === 0 ? (
                             <p className="text-sm text-gray-400 text-center py-12 bg-[#fdfdfd] border border-gray-200 rounded-xl">
@@ -949,7 +924,7 @@ export default function Donate() {
                         )}
 
                         {/* Pagination */}
-                        {!isInitialLoadingReviews && totalPages > 1 && (
+                        {reviews.length > 0 && totalPages > 1 && (
                             <div className="flex items-center justify-center gap-2 mt-6">
                                 <button
                                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}

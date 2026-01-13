@@ -1,58 +1,13 @@
-
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { useAuth } from '../context/AuthContext';
-import { usersApi, habitsApi, notesApi, linksApi } from '../lib';
-
-interface UserProfile {
-    id?: string;
-    name?: string;
-    email?: string;
-    role?: string;
-    image?: string;
-    bio?: string;
-    username?: string;
-    location?: string;
-}
-
-interface Stats {
-    habits: number;
-    notes: number;
-    links: number;
-}
+import { useProfile } from '../hooks/useProfile';
 
 export default function Profile() {
     const { user: sessionUser } = useAuth();
-    const [user, setUser] = useState<UserProfile | null>(null);
-    const [stats, setStats] = useState<Stats>({ habits: 0, notes: 0, links: 0 });
 
-    // Fetch user data and stats from API on mount
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [userResult, habitsResult, notesResult, linksResult] = await Promise.all([
-                    usersApi.getMe(),
-                    habitsApi.getAll({}),
-                    notesApi.getAll(),
-                    linksApi.getAll()
-                ]);
-
-                if (userResult.success && userResult.data) {
-                    setUser(userResult.data as unknown as UserProfile);
-                }
-
-                setStats({
-                    habits: habitsResult.success && habitsResult.data ? habitsResult.data.length : 0,
-                    notes: notesResult.success && notesResult.data ? notesResult.data.length : 0,
-                    links: linksResult.success && linksResult.data ? linksResult.data.length : 0,
-                });
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-        fetchData();
-    }, []);
+    // Use SWR hook for cached data with background sync
+    const { user, stats } = useProfile();
 
     // Helper to construct full URL for uploaded files
     const getFullAvatarUrl = (imageUrl: string | null | undefined): string => {
