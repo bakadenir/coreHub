@@ -83,10 +83,7 @@ export default function Todos() {
 
     const formatQuickAddDate = (date: Date | undefined) => {
         if (!date) return 'No date';
-        const today = getToday();
-        const tomorrow = getTomorrow();
-        if (date.getTime() === today.getTime()) return 'Today';
-        if (date.getTime() === tomorrow.getTime()) return 'Tomorrow';
+        // Always return the formatted date, ignoring "Today"/"Tomorrow" aliases
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
 
@@ -153,17 +150,32 @@ export default function Todos() {
         const newStatus = !todo.isCompleted;
 
         setTodos(prev => prev.map(t =>
-            t.id === todo.id ? { ...t, isCompleted: newStatus } : t
+            t.id === todo.id ? {
+                ...t,
+                isCompleted: newStatus,
+                // Clear due date if uncompleting
+                dueDate: !newStatus ? undefined : t.dueDate
+            } : t
         ));
 
         // Show toast immediately
         const firstWord = todo.title.split(' ')[0];
-        const statusText = newStatus ? 'Completed' : 'Uncompleted';
-        showToast(`${firstWord} ${statusText} 🎉`, 'success');
+        if (newStatus) {
+            showToast(`${firstWord} Completed 🎉`, 'success');
+        } else {
+            showToast(`${firstWord} Uncompleted`, 'success');
+        }
 
         try {
             const result = await todosApi.toggle(todo.id);
             if (result.success) {
+                // If uncompleting, explicitly clear the due date on the backend
+                if (!newStatus) {
+                    // Cast to any to bypass strict type checking if needed, assuming backend handles null/undefined to clear
+                    await todosApi.update(todo.id, { dueDate: null } as any);
+                    // Refresh todos to sync the null date
+                    fetchTodos();
+                }
                 // Silently refresh lists count in background
                 fetchLists();
             } else {
@@ -259,13 +271,9 @@ export default function Todos() {
         const date = new Date(dueDate);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
         const dateOnly = new Date(date);
         dateOnly.setHours(0, 0, 0, 0);
 
-        if (dateOnly.getTime() === today.getTime()) return 'Today';
-        if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow';
         if (dateOnly < today) return `Overdue: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };

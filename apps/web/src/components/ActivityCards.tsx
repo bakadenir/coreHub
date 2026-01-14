@@ -185,8 +185,12 @@ export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderC
         ));
 
         // Show toast immediately
+        const habit = habits.find(h => h.id === habitId);
+        const firstWord = habit?.name.split(' ')[0] || 'Habit';
         if (newStatus) {
-            showToast('Habit completed! 🎉', 'success');
+            showToast(`${firstWord} Completed 🎉`, 'success');
+        } else {
+            showToast(`${firstWord} Uncompleted`, 'success');
         }
 
         try {
@@ -222,8 +226,11 @@ export default function ActivityCards({ refreshTrigger = 0, panelOrder, onOrderC
 
         // Show toast immediately
         const firstWord = todo.title.split(' ')[0];
-        const statusText = newStatus ? 'Completed' : 'Uncompleted';
-        showToast(`${firstWord} ${statusText} 🎉`, 'success');
+        if (newStatus) {
+            showToast(`${firstWord} Completed 🎉`, 'success');
+        } else {
+            showToast(`${firstWord} Uncompleted`, 'success');
+        }
 
         try {
             const result = await todosApi.toggle(todo.id);

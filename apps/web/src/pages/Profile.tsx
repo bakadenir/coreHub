@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import { useAuth } from '../context/AuthContext';
 import { useProfile } from '../hooks/useProfile';
+import { User } from 'lucide-react';
 
 export default function Profile() {
     const { user: sessionUser } = useAuth();
@@ -23,9 +24,8 @@ export default function Profile() {
     const name = user?.name || sessionUser?.name || 'User';
     const bio = user?.bio || 'No bio yet.';
     const location = user?.location || 'Location not set';
-    const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=000&color=fff&size=200`;
     const userImage = getFullAvatarUrl(user?.image);
-    const avatar = (userImage && userImage.trim() !== '') ? userImage : defaultAvatar;
+    const hasAvatar = userImage && userImage.trim() !== '';
 
     return (
         <div className="flex flex-col min-h-screen bg-background-light font-sans text-text-primary relative overflow-hidden">
@@ -66,11 +66,17 @@ export default function Profile() {
                         {/* Avatar - Centered and overlapping top */}
                         <div className="absolute left-1/2 -translate-x-1/2 -top-16">
                             <div className="w-32 h-32 rounded-full shadow-2xl overflow-hidden">
-                                <img
-                                    alt="Profile"
-                                    className="w-full h-full object-cover"
-                                    src={avatar}
-                                />
+                                {hasAvatar ? (
+                                    <img
+                                        alt="Profile"
+                                        className="w-full h-full object-cover"
+                                        src={userImage}
+                                    />
+                                ) : (
+                                    <div className="w-full h-full rounded-full bg-gray-900 flex items-center justify-center">
+                                        <User size={48} className="text-white" />
+                                    </div>
+                                )}
                             </div>
                         </div>
 

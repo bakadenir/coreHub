@@ -13,6 +13,7 @@ interface UserSettings {
 interface NotificationSettings {
     habitReminders: boolean;
     scheduleReminders: boolean;
+    todoReminders: boolean;
     scheduleReminderMinutes: number;
 }
 
@@ -39,6 +40,7 @@ const fetcher = async (): Promise<SettingsData> => {
     const notifications: NotificationSettings = {
         habitReminders: notifResult.data?.habitReminders ?? true,
         scheduleReminders: notifResult.data?.scheduleReminders ?? true,
+        todoReminders: notifResult.data?.todoReminders ?? true,
         scheduleReminderMinutes: notifResult.data?.scheduleReminderMinutes ?? 15,
     };
 
@@ -53,7 +55,7 @@ export function useSettings() {
 
     return {
         profile: data?.profile || { name: '', bio: '', location: '', image: '' },
-        notifications: data?.notifications || { habitReminders: true, scheduleReminders: true, scheduleReminderMinutes: 15 },
+        notifications: data?.notifications || { habitReminders: true, scheduleReminders: true, todoReminders: true, scheduleReminderMinutes: 15 },
         isLoading,
         error: error?.message || null,
         mutate,

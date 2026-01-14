@@ -366,8 +366,11 @@ export default function Habits() {
         ));
 
         // Show toast immediately
-        const statusText = newStatus ? 'Completed' : 'Uncompleted';
-        showToast(`${firstWord} ${statusText} 🎉`, 'success');
+        if (newStatus) {
+            showToast(`${firstWord} Completed 🎉`, 'success');
+        } else {
+            showToast(`${firstWord} Uncompleted`, 'success');
+        }
 
         try {
             let result;

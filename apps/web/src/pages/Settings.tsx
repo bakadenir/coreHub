@@ -44,6 +44,7 @@ export default function Settings() {
     // Notification settings state
     const [habitReminders, setHabitReminders] = useState(true);
     const [scheduleReminders, setScheduleReminders] = useState(true);
+    const [todoReminders, setTodoReminders] = useState(true);
     const [scheduleReminderMinutes, setScheduleReminderMinutes] = useState(15);
     const [isSavingNotifSetting, setIsSavingNotifSetting] = useState(false);
 
@@ -72,6 +73,7 @@ export default function Settings() {
     useEffect(() => {
         setHabitReminders(cachedNotifications.habitReminders);
         setScheduleReminders(cachedNotifications.scheduleReminders);
+        setTodoReminders(cachedNotifications.todoReminders ?? true);
         setScheduleReminderMinutes(cachedNotifications.scheduleReminderMinutes);
     }, [cachedNotifications]);
 
@@ -242,7 +244,7 @@ export default function Settings() {
     };
 
     // Handler for updating notification settings
-    const updateNotificationSetting = async (key: 'habitReminders' | 'scheduleReminders' | 'scheduleReminderMinutes', value: boolean | number) => {
+    const updateNotificationSetting = async (key: 'habitReminders' | 'scheduleReminders' | 'todoReminders' | 'scheduleReminderMinutes', value: boolean | number) => {
         if (isSavingNotifSetting) return; // Prevent spam clicks
         setIsSavingNotifSetting(true);
         try {
@@ -250,6 +252,7 @@ export default function Settings() {
             if (result.success) {
                 if (key === 'habitReminders') setHabitReminders(value as boolean);
                 if (key === 'scheduleReminders') setScheduleReminders(value as boolean);
+                if (key === 'todoReminders') setTodoReminders(value as boolean);
                 if (key === 'scheduleReminderMinutes') setScheduleReminderMinutes(value as number);
                 showToast('Settings updated', 'success');
             } else {
@@ -542,6 +545,21 @@ export default function Settings() {
                                             className={`w-12 h-7 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${scheduleReminders ? 'bg-zinc-900' : 'bg-gray-300'} ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
                                             <div className={`w-6 h-6 bg-[#fdfdfd] rounded-full shadow-sm transition-all ${scheduleReminders ? 'ml-auto' : 'ml-0'}`}></div>
+                                        </button>
+                                    </div>
+
+                                    {/* Todo Reminders */}
+                                    <div className="flex items-center justify-between py-2">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900">Todo Reminders</h4>
+                                            <p className="text-sm text-gray-500">Get notified about todos due today (9 AM)</p>
+                                        </div>
+                                        <button
+                                            onClick={() => updateNotificationSetting('todoReminders', !todoReminders)}
+                                            disabled={isSavingNotifSetting}
+                                            className={`w-12 h-7 rounded-full flex items-center p-0.5 cursor-pointer transition-colors ${todoReminders ? 'bg-zinc-900' : 'bg-gray-300'} ${isSavingNotifSetting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            <div className={`w-6 h-6 bg-[#fdfdfd] rounded-full shadow-sm transition-all ${todoReminders ? 'ml-auto' : 'ml-0'}`}></div>
                                         </button>
                                     </div>
 

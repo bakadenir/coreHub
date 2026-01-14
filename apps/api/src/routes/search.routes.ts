@@ -8,7 +8,7 @@ const router = Router();
 router.use(authMiddleware);
 
 interface SearchResult {
-    type: 'habit' | 'note' | 'link' | 'schedule';
+    type: 'habit' | 'note' | 'link' | 'schedule' | 'todo';
     id: string;
     title: string;
     subtitle?: string;
@@ -103,6 +103,26 @@ router.get('/', async (req, res) => {
                 title: event.title,
                 subtitle: event.location || undefined,
                 icon: 'event',
+            });
+        }
+
+        // Search todos
+        const { data: todoResults } = await supabase
+            .from('todos')
+            .select('id, title, priority, is_completed')
+            .eq('user_id', userId)
+            .is('deleted_at', null)
+            .ilike('title', searchTerm)
+            .limit(5);
+
+        for (const todo of todoResults || []) {
+            const priorityLabel = todo.priority === 'high' ? '🔴 High' : todo.priority === 'medium' ? '🟡 Medium' : '🟢 Low';
+            results.push({
+                type: 'todo',
+                id: todo.id,
+                title: todo.title,
+                subtitle: todo.is_completed ? '✓ Completed' : priorityLabel,
+                icon: todo.is_completed ? 'check_circle' : 'checklist',
             });
         }
 

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
 import type { Notification } from '../lib/notifications.api';
-import { Bell, BellOff, CheckCircle, CalendarDays, Heart, X } from 'lucide-react';
+import { Bell, BellOff, CheckCircle, CalendarDays, Heart, X, ListTodo } from 'lucide-react';
 
 export default function NotificationBell() {
     const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
@@ -50,6 +50,8 @@ export default function NotificationBell() {
                 return <CheckCircle size={18} />;
             case 'schedule_reminder':
                 return <CalendarDays size={18} />;
+            case 'todo_reminder':
+                return <ListTodo size={18} />;
             case 'system':
                 return <Heart size={18} />;
             default:

@@ -3,11 +3,11 @@ import { api } from './api';
 export interface Notification {
     id: string;
     userId: string;
-    type: 'habit_reminder' | 'schedule_reminder' | 'system';
+    type: 'habit_reminder' | 'schedule_reminder' | 'todo_reminder' | 'system';
     title: string;
     message?: string;
     referenceId?: string;
-    referenceType?: 'habit' | 'schedule';
+    referenceType?: 'habit' | 'schedule' | 'todo';
     isRead: boolean;
     createdAt: string;
 }
@@ -17,6 +17,7 @@ export interface NotificationSettings {
     userId: string;
     habitReminders: boolean;
     scheduleReminders: boolean;
+    todoReminders: boolean;
     scheduleReminderMinutes: number;
     pushEnabled: boolean;
     updatedAt: string;
@@ -48,7 +49,7 @@ export const notificationsApi = {
         api.get<NotificationSettings>('/notification-settings'),
 
     // Update settings
-    updateSettings: (updates: Partial<Pick<NotificationSettings, 'habitReminders' | 'scheduleReminders' | 'scheduleReminderMinutes' | 'pushEnabled'>>) =>
+    updateSettings: (updates: Partial<Pick<NotificationSettings, 'habitReminders' | 'scheduleReminders' | 'todoReminders' | 'scheduleReminderMinutes' | 'pushEnabled'>>) =>
         api.patch<NotificationSettings>('/notification-settings', updates),
 };
 

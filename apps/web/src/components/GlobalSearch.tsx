@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchApi, type SearchResult } from '../lib/search.api';
 import { renderIcon } from '../lib/iconMap';
-import { Search, RefreshCw, SearchX, LayoutDashboard, Settings, Sparkles, FileText, Link as LinkIcon, CalendarDays, CornerDownLeft } from 'lucide-react';
+import { Search, RefreshCw, SearchX, LayoutDashboard, Settings, Sparkles, FileText, Link as LinkIcon, CalendarDays, CornerDownLeft, ListTodo } from 'lucide-react';
 
 interface GlobalSearchProps {
     isOpen: boolean;
@@ -44,6 +44,7 @@ const navigationItems: NavItem[] = [
     { id: 'nav-pomodoro', title: 'Pomodoro Timer', subtitle: 'Focus timer on dashboard', icon: 'timer', path: '/home', type: 'navigation', keywords: ['pomodoro', 'timer', 'focus', 'productivity', 'time management', 'waktu'] },
     { id: 'nav-quick-actions', title: 'Quick Actions', subtitle: 'Add habits, notes, links quickly', icon: 'add_circle', path: '/home', type: 'navigation', keywords: ['quick actions', 'add', 'create', 'new', 'tambah'] },
     { id: 'nav-activity', title: 'Your Activity', subtitle: 'Recent activities overview', icon: 'insights', path: '/home', type: 'navigation', keywords: ['activity', 'recent', 'overview', 'aktivitas'] },
+    { id: 'nav-todos', title: 'Todos', subtitle: 'Your todo list', icon: 'checklist', path: '/todos', type: 'navigation', keywords: ['todo', 'todos', 'task', 'tasks', 'checklist', 'tugas'] },
     { id: 'nav-clock', title: 'Clock Widget', subtitle: 'Time display on dashboard', icon: 'schedule', path: '/home', type: 'navigation', keywords: ['clock', 'time', 'jam', 'widget'] },
 
     // Specific Features
@@ -139,6 +140,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                 note: '/notes',
                 link: '/links',
                 schedule: '/schedule',
+                todo: '/todos',
             };
             navigate(routes[result.type] || '/home');
         }
@@ -167,6 +169,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             note: 'Note',
             link: 'Link',
             schedule: 'Event',
+            todo: 'Todo',
             navigation: 'Page',
         };
         return labels[type] || type;
@@ -178,6 +181,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             note: 'bg-blue-100 text-blue-700',
             link: 'bg-purple-100 text-purple-700',
             schedule: 'bg-orange-100 text-orange-700',
+            todo: 'bg-amber-100 text-amber-700',
             navigation: 'bg-gray-200 text-gray-700',
         };
         return colors[type] || 'bg-gray-100 text-gray-700';
@@ -272,6 +276,10 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
                                     <CalendarDays size={14} />
                                     Events
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 rounded-full text-xs text-gray-500">
+                                    <ListTodo size={14} />
+                                    Todos
                                 </span>
                             </div>
                         </div>

@@ -89,7 +89,49 @@ export class FeedbackService {
             .limit(limit);
 
         if (error) throw error;
-        return data || [];
+
+        // Enrich reviews with current user data for non-anonymous reviews
+        const enrichedData = await Promise.all((data || []).map(async (review) => {
+            // Skip anonymous reviews - use stored data
+            if (!review.user_id || review.name === 'Anonymous') {
+                return {
+                    id: review.id,
+                    name: review.name,
+                    avatar: review.avatar,
+                    rating: review.rating,
+                    comment: review.comment,
+                    createdAt: review.created_at,
+                };
+            }
+
+            // Get current user data from auth for non-anonymous reviews
+            try {
+                const { data: userData } = await supabase.auth.admin.getUserById(review.user_id);
+                const currentName = userData?.user?.user_metadata?.name || review.name;
+                const currentAvatar = userData?.user?.user_metadata?.image || review.avatar;
+
+                return {
+                    id: review.id,
+                    name: currentName,
+                    avatar: currentAvatar,
+                    rating: review.rating,
+                    comment: review.comment,
+                    createdAt: review.created_at,
+                };
+            } catch {
+                // Fallback to stored data if user fetch fails
+                return {
+                    id: review.id,
+                    name: review.name,
+                    avatar: review.avatar,
+                    rating: review.rating,
+                    comment: review.comment,
+                    createdAt: review.created_at,
+                };
+            }
+        }));
+
+        return enrichedData;
     }
 
     async getAllForAdmin(filter?: 'pending' | 'approved' | 'all') {

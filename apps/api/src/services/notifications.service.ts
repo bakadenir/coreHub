@@ -3,11 +3,11 @@ import { supabase } from '../config/supabase';
 // Create a new notification
 export async function createNotification(
     userId: string,
-    type: 'habit_reminder' | 'schedule_reminder' | 'system',
+    type: 'habit_reminder' | 'schedule_reminder' | 'todo_reminder' | 'system',
     title: string,
     message?: string,
     referenceId?: string,
-    referenceType?: 'habit' | 'schedule'
+    referenceType?: 'habit' | 'schedule' | 'todo'
 ) {
     const { data, error } = await supabase
         .from('notifications')
@@ -139,6 +139,7 @@ function transformSettings(settings: any) {
         habitReminders: settings.habit_reminders,
         scheduleReminders: settings.schedule_reminders,
         scheduleReminderMinutes: settings.schedule_reminder_minutes,
+        todoReminders: settings.todo_reminders ?? true, // Default to true
         pushEnabled: settings.push_enabled,
         updatedAt: settings.updated_at,
     };
@@ -169,6 +170,7 @@ export async function updateNotificationSettings(userId: string, updates: {
     habitReminders?: boolean;
     scheduleReminders?: boolean;
     scheduleReminderMinutes?: number;
+    todoReminders?: boolean;
     pushEnabled?: boolean;
 }) {
     await getNotificationSettings(userId);
@@ -177,6 +179,7 @@ export async function updateNotificationSettings(userId: string, updates: {
     if (updates.habitReminders !== undefined) updateData.habit_reminders = updates.habitReminders;
     if (updates.scheduleReminders !== undefined) updateData.schedule_reminders = updates.scheduleReminders;
     if (updates.scheduleReminderMinutes !== undefined) updateData.schedule_reminder_minutes = updates.scheduleReminderMinutes;
+    if (updates.todoReminders !== undefined) updateData.todo_reminders = updates.todoReminders;
     if (updates.pushEnabled !== undefined) updateData.push_enabled = updates.pushEnabled;
 
     const { data, error } = await supabase

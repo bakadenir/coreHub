@@ -3,6 +3,51 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, ty
 import { notificationsApi, type Notification } from '../lib/notifications.api';
 import { useAuth } from './AuthContext';
 
+// Extend Window interface for webkit prefix
+declare global {
+    interface Window {
+        webkitAudioContext: typeof AudioContext;
+    }
+}
+
+// Play notification sound using Web Audio API (short chime ~0.5s)
+const playNotificationSound = () => {
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioContextClass();
+
+        // Simple two-tone chime
+        const playTone = (frequency: number, startTime: number, duration: number) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+
+            // Envelope: quick attack, quick decay
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+            oscillator.start(startTime);
+            oscillator.stop(startTime + duration);
+        };
+
+        const now = audioContext.currentTime;
+        // Two gentle tones ascending
+        playTone(800, now, 0.15);
+        playTone(1000, now + 0.12, 0.2);
+
+        // Cleanup after sound finishes
+        setTimeout(() => audioContext.close(), 500);
+    } catch (e) {
+        console.warn('Could not play notification sound:', e);
+    }
+};
+
 interface NotificationContextType {
     notifications: Notification[];
     unreadCount: number;
@@ -20,7 +65,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // Use ref to track if initial fetch has been done
     const hasFetchedRef = useRef(false);
     // Use user.id for stable dependency instead of entire user object
@@ -115,6 +160,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
                         } else if (data.type === 'new_notification') {
                             setNotifications(prev => [data.notification, ...prev]);
                             setUnreadCount(prev => prev + 1);
+                            // 🔔 Play notification sound!
+                            playNotificationSound();
                         }
                     } catch (e) {
                         console.error('Error parsing SSE message:', e);

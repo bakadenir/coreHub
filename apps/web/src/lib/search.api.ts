@@ -1,7 +1,7 @@
 import { api } from './api';
 
 export interface SearchResult {
-    type: 'habit' | 'note' | 'link' | 'schedule';
+    type: 'habit' | 'note' | 'link' | 'schedule' | 'todo';
     id: string;
     title: string;
     subtitle?: string;

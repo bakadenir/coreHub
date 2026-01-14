@@ -243,21 +243,27 @@ export default function AddTodoModal({ isOpen, onClose, onSuccess }: AddTodoModa
                                             const isToday = today.getDate() === day &&
                                                 today.getMonth() === calendarMonth.getMonth() &&
                                                 today.getFullYear() === calendarMonth.getFullYear();
+                                            const isPast = date < today;
 
                                             return (
                                                 <button
                                                     key={day}
                                                     onClick={() => {
-                                                        setDueDate(date);
-                                                        setShowDatePicker(false);
+                                                        if (!isPast) {
+                                                            setDueDate(date);
+                                                            setShowDatePicker(false);
+                                                        }
                                                     }}
+                                                    disabled={isPast}
                                                     className={`
                                                         w-8 h-8 mx-auto flex items-center justify-center rounded-lg text-sm transition-all
-                                                        ${isSelected
-                                                            ? 'bg-zinc-900 text-white shadow-md font-medium'
-                                                            : isToday
-                                                                ? 'text-zinc-900 font-bold bg-gray-100'
-                                                                : 'text-gray-700 hover:bg-gray-50'
+                                                        ${isPast
+                                                            ? 'text-gray-300 cursor-not-allowed'
+                                                            : isSelected
+                                                                ? 'bg-zinc-900 text-white shadow-md font-medium'
+                                                                : isToday
+                                                                    ? 'text-zinc-900 font-bold bg-gray-100'
+                                                                    : 'text-gray-700 hover:bg-gray-50'
                                                         }
                                                     `}
                                                 >
