@@ -234,8 +234,25 @@ export default function RichTextEditor({
 
             // Use cursor position for accurate placement
             const coords = view.coordsAtPos($from.pos);
+            const lineHeight = coords.bottom - coords.top;
+
+            // Logic:
+            // Large headings (H1/H2, usually >35px line height) need vertical centering.
+            // Smaller headings (H3) and Text (usually ~24-32px) look best Top-aligned (user confirmed H3 was perfect).
+
+            let topPosition = coords.top - wrapperRect.top;
+
+            if (lineHeight > 35) {
+                // Center vertically for large lines
+                const centerY = (coords.top + coords.bottom) / 2;
+                topPosition = centerY - wrapperRect.top - 12; // 12 is half of icon height (24px)
+            } else {
+                // For smaller lines (Text/H3), keep default top alignment but nudge slightly for visual balance
+                // if needed. Reverting to strict top alignment as requested "perfect H3".
+            }
+
             setBlockHandlePos({
-                top: coords.top - wrapperRect.top,
+                top: topPosition,
                 visible: true,
             });
         } catch {
@@ -315,7 +332,9 @@ export default function RichTextEditor({
                 const start = view.coordsAtPos(from);
                 const end = view.coordsAtPos(to);
                 const containerRect = editorContainerRef.current.getBoundingClientRect();
-                const left = ((start.left + end.left) / 2) - containerRect.left;
+
+                // Calculate left position - align with start of selection and offset slightly left
+                const left = start.left - containerRect.left - 20;
 
                 // Calculate position - show above selection by default
                 let top = start.top - containerRect.top - 60;
@@ -327,7 +346,8 @@ export default function RichTextEditor({
 
                 setFloatingToolbarPos({
                     top: top,
-                    left: Math.max(10, Math.min(left, containerRect.width - 200))
+                    // Ensure it doesn't go off the left (min 0) or right edge (assuming toolbar width ~550px)
+                    left: Math.max(0, Math.min(left, containerRect.width - 550))
                 });
                 setShowFloatingToolbar(true);
             } else {
@@ -609,15 +629,14 @@ export default function RichTextEditor({
     }
 
     return (
-        <div className="rich-text-editor" ref={editorContainerRef}>
+        <div className="rich-text-editor relative" ref={editorContainerRef}>
             {/* Floating Toolbar - appears when text is selected */}
             {editable && showFloatingToolbar && (
                 <div
-                    className="absolute z-50 flex items-center gap-0.5 bg-zinc-900 rounded-xl shadow-2xl px-2 py-1.5 animate-fade-in border border-zinc-50/10"
+                    className="absolute z-50 flex items-center gap-0.5 bg-zinc-900 rounded-xl shadow-2xl px-2 py-1.5 border border-zinc-50/10"
                     style={{
                         top: floatingToolbarPos.top,
                         left: floatingToolbarPos.left,
-                        transform: 'translateX(-50%)'
                     }}
                     onMouseDown={(e) => e.preventDefault()}
                 >
@@ -1014,11 +1033,10 @@ export default function RichTextEditor({
             {/* YouTube Link Input Form */}
             {editable && showYoutubeInput && (
                 <div
-                    className="absolute z-50 bg-zinc-900 rounded-xl shadow-2xl px-2 py-1 animate-fade-in border border-zinc-50/10"
+                    className="absolute z-50 bg-zinc-900 rounded-xl shadow-2xl px-2 py-1 border border-zinc-50/10"
                     style={{
                         top: floatingToolbarPos.top + 45,
                         left: floatingToolbarPos.left,
-                        transform: 'translateX(-50%)'
                     }}
                     onMouseDown={(e) => e.preventDefault()}
                 >
@@ -1130,7 +1148,7 @@ export default function RichTextEditor({
                     <div
                         className="absolute z-10 h-6 flex items-center gap-0.5 block-handle"
                         style={{
-                            top: blockHandlePos.top,
+                            top: blockHandlePos.top - 2,
                             left: '0px',
                             transform: 'translateX(-100%) translateX(-8px)'
                         }}

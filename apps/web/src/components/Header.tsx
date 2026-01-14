@@ -26,10 +26,17 @@ export default function Header({ subtitle = 'Productivity, Simplified' }: Header
                 e.preventDefault();
                 setIsSearchOpen(true);
             }
-            // "/" key (but not when typing in an input)
-            if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
-                e.preventDefault();
-                setIsSearchOpen(true);
+            // "/" key (but not when typing in an input, textarea, or contentEditable)
+            if (e.key === '/') {
+                const target = e.target as HTMLElement;
+                const isEditable = ['INPUT', 'TEXTAREA'].includes(target?.tagName) ||
+                    target?.isContentEditable ||
+                    target?.closest('[contenteditable="true"]') ||
+                    target?.getAttribute('role') === 'textbox';
+                if (!isEditable) {
+                    e.preventDefault();
+                    setIsSearchOpen(true);
+                }
             }
         };
 

@@ -632,7 +632,7 @@ export default function Notes() {
                 </div>
             ) : (
                 /* ===== SIDEBAR + EDITOR VIEW (Note selected) ===== */
-                <div className="flex flex-1 overflow-hidden">
+                <div className="flex flex-1 overflow-y-hidden overflow-x-visible">
                     {/* Notes List Sidebar */}
                     <aside className="w-[320px] shrink-0 flex flex-col border-r border-border-light bg-background-light overflow-y-auto">
                         {/* Sidebar Header with Back Button */}
@@ -706,7 +706,7 @@ export default function Notes() {
                     </aside>
 
                     {/* Editor Area */}
-                    <div className="flex-1 flex flex-col bg-[#fdfdfd] overflow-hidden min-h-0">
+                    <div className="flex-1 flex flex-col bg-[#fdfdfd] overflow-y-hidden overflow-x-visible min-h-0">
                         {selectedNote ? (
                             <>
                                 <div className="flex items-center justify-between p-4 border-b border-border-light shrink-0">
@@ -784,8 +784,8 @@ export default function Notes() {
                                 </div>
 
                                 {/* Editor Content */}
-                                <div className="flex-1 min-h-0" style={{ overflowY: 'auto', scrollbarGutter: 'stable' }}>
-                                    <div className="max-w-5xl mx-auto px-6 py-12">
+                                <div className="flex-1 min-h-0" style={{ overflowY: 'auto', overflowX: 'visible', scrollbarGutter: 'stable' }}>
+                                    <div className="max-w-5xl mx-auto px-6 py-12 pl-24">
                                         <input
                                             ref={titleInputRef}
                                             value={editingTitle === 'Untitled' ? '' : editingTitle}
