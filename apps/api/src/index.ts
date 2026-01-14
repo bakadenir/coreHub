@@ -79,15 +79,34 @@ const authLimiter = rateLimit({
 app.use('/api/', generalLimiter);
 
 // Middleware - CORS must include all production domains
+const allowedOrigins = [
+    env.FRONTEND_URL,
+    'https://corehub.life',      // Production frontend
+    'https://www.corehub.life',  // Production frontend with www
+    'http://localhost:5173',
+    'http://localhost:5174',
+].filter(Boolean); // Remove any undefined/empty values
+
 app.use(cors({
-    origin: [
-        env.FRONTEND_URL,
-        'https://corehub.life',  // Production frontend
-        'http://localhost:5173',
-        'http://localhost:5174',
-    ],
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, Postman)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        // Log rejected origins for debugging in production
+        console.warn(`CORS blocked origin: ${origin}`);
+        return callback(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
+
+// Handle preflight requests explicitly
+app.options('*', cors());
 app.use(express.json({ limit: '2mb' }));  // Increased for base64 images
 
 // Static file serving for uploads
