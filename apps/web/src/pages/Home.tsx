@@ -498,7 +498,7 @@ export default function Home() {
                                                 </div>
                                             ) : (
                                                 <div className="flex-1 overflow-y-auto space-y-2">
-                                                    {schedules.map((schedule) => (
+                                                    {schedules.slice(0, 4).map((schedule) => (
                                                         <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-sm">
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>
@@ -506,6 +506,9 @@ export default function Home() {
                                                             </div>
                                                         </div>
                                                     ))}
+                                                    {schedules.length > 4 && (
+                                                        <p className="text-center text-xs text-gray-400">+{schedules.length - 4} more</p>
+                                                    )}
                                                 </div>
                                             )}
                                         </>
@@ -585,39 +588,41 @@ export default function Home() {
                                                 <p className="text-base font-medium">No schedule for this day</p>
                                             </div>
                                         ) : (
-                                            <div className="flex-1 flex items-center justify-center">
-                                                <div className="grid grid-cols-2 gap-3 w-full max-w-2xl">
-                                                    {schedules.slice(0, 6).map((schedule) => (
-                                                        <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 hover:border-gray-200 transition-colors">
-                                                            <div className="flex items-start gap-3">
-                                                                <div className="text-center min-w-[50px]">
-                                                                    <span className="text-base font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>
-                                                                    {schedule.endTime && (
-                                                                        <>
-                                                                            <div className="text-xs text-gray-400">to</div>
-                                                                            <span className="text-xs font-mono text-gray-500">{formatTime(schedule.endTime)}</span>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <h4 className="font-bold text-gray-900 mb-1 truncate">{schedule.title}</h4>
-                                                                    {schedule.location && (
-                                                                        <div className="flex items-center gap-1 text-sm text-gray-500 truncate">
-                                                                            <MapPin size={12} className="shrink-0" />
-                                                                            <span className="truncate">{schedule.location}</span>
-                                                                        </div>
-                                                                    )}
+                                            <>
+                                                <div className="flex-1 flex items-center justify-center">
+                                                    <div className={`grid gap-4 w-full ${schedules.length === 1 ? 'grid-cols-1 max-w-md' : schedules.length === 2 ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-4xl'} mx-auto`}>
+                                                        {schedules.slice(0, 6).map((schedule) => (
+                                                            <div key={schedule.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 hover:border-gray-200 transition-colors">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="text-center min-w-[50px]">
+                                                                        <span className="text-base font-mono font-bold text-primary">{formatTime(schedule.startTime)}</span>
+                                                                        {schedule.endTime && (
+                                                                            <>
+                                                                                <div className="text-xs text-gray-400">to</div>
+                                                                                <span className="text-xs font-mono text-gray-500">{formatTime(schedule.endTime)}</span>
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h4 className="font-bold text-gray-900 mb-1 truncate">{schedule.title}</h4>
+                                                                        {schedule.location && (
+                                                                            <div className="flex items-center gap-1 text-sm text-gray-500 truncate">
+                                                                                <MapPin size={12} className="shrink-0" />
+                                                                                <span className="truncate">{schedule.location}</span>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                    {schedules.length > 6 && (
-                                                        <div className="col-span-2 text-center text-sm text-gray-400 mt-2">
-                                                            +{schedules.length - 6} more schedules
-                                                        </div>
-                                                    )}
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </div>
+                                                {schedules.length > 6 && (
+                                                    <div className="text-center text-sm text-gray-400 mt-4">
+                                                        +{schedules.length - 6} more schedules
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </section>
                                 ) : (
@@ -633,7 +638,7 @@ export default function Home() {
                                             </div>
                                         ) : mainWidget === 'pomodoro' ? (
                                             // Pomodoro - use section container like other widgets
-                                            <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1">
+                                            <section className="bg-[#fdfdfd] border border-gray-200 rounded-xl p-5 flex flex-col relative overflow-hidden shadow-sm group flex-1 min-h-[300px]">
                                                 <div {...(dragHandle ? dragHandle.titleProps : { className: 'flex items-center mb-4' })}>
                                                     <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
                                                         {widgetLabels[mainWidget]}
@@ -666,10 +671,12 @@ export default function Home() {
 
                                 {/* Activity Cards - fixed at bottom */}
                                 <section className="shrink-0">
-                                    <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center justify-between mb-6">
                                         <h3 className="text-lg font-bold text-primary flex items-center gap-2">
                                             My Activity
+                                            <span className="h-px bg-gray-200 flex-1 w-24"></span>
                                         </h3>
+                                        <span className="h-px bg-gray-200 flex-1 mx-4"></span>
                                         {/* Settings Dropdown */}
                                         <div className="relative" ref={activitySettingsRef}>
                                             <button
@@ -729,7 +736,6 @@ export default function Home() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="h-px bg-gray-200 mb-6"></div>
                                     <ActivityCards
                                         refreshTrigger={refreshTrigger}
                                         panelOrder={panelOrder}

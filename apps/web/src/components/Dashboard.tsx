@@ -177,43 +177,45 @@ export default function Dashboard({ refreshTrigger = 0, hoveredDate = null, feat
                             <p className="text-sm">Hover over another date or add a new schedule</p>
                         </div>
                     ) : (
-                        <div className="flex-1 overflow-y-auto space-y-3">
-                            {schedules.slice(0, 3).map((schedule) => (
-                                <div
-                                    key={schedule.id}
-                                    className="bg-gray-50 border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors"
-                                >
-                                    <div className="flex items-start gap-4">
-                                        <div className="text-center min-w-[60px]">
-                                            <span className="text-lg font-mono font-bold text-primary">
-                                                {formatTime(schedule.startTime)}
-                                            </span>
-                                            {schedule.endTime && (
-                                                <>
-                                                    <div className="text-xs text-gray-400">to</div>
-                                                    <span className="text-sm font-mono text-gray-500">
-                                                        {formatTime(schedule.endTime)}
-                                                    </span>
-                                                </>
-                                            )}
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="font-bold text-gray-900 mb-1">{schedule.title}</h4>
-                                            {schedule.location && (
-                                                <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
-                                                    <MapPin size={14} />
-                                                    {schedule.location}
-                                                </div>
-                                            )}
-                                            {schedule.description && (
-                                                <p className="text-sm text-gray-600 line-clamp-2">{schedule.description}</p>
-                                            )}
+                        <div className="flex-1 overflow-y-auto">
+                            <div className={`grid gap-4 ${schedules.length === 1 ? 'grid-cols-1 max-w-md mx-auto' : schedules.length === 2 ? 'grid-cols-1 sm:grid-cols-2 max-w-2xl mx-auto' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
+                                {schedules.slice(0, 3).map((schedule) => (
+                                    <div
+                                        key={schedule.id}
+                                        className="bg-gray-50 border border-gray-100 rounded-lg p-4 hover:border-gray-200 transition-colors"
+                                    >
+                                        <div className="flex items-start gap-4">
+                                            <div className="text-center min-w-[60px]">
+                                                <span className="text-lg font-mono font-bold text-primary">
+                                                    {formatTime(schedule.startTime)}
+                                                </span>
+                                                {schedule.endTime && (
+                                                    <>
+                                                        <div className="text-xs text-gray-400">to</div>
+                                                        <span className="text-sm font-mono text-gray-500">
+                                                            {formatTime(schedule.endTime)}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </div>
+                                            <div className="flex-1">
+                                                <h4 className="font-bold text-gray-900 mb-1">{schedule.title}</h4>
+                                                {schedule.location && (
+                                                    <div className="flex items-center gap-1 text-sm text-gray-500 mb-1">
+                                                        <MapPin size={14} />
+                                                        {schedule.location}
+                                                    </div>
+                                                )}
+                                                {schedule.description && (
+                                                    <p className="text-sm text-gray-600 line-clamp-2">{schedule.description}</p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                             {schedules.length > 3 && (
-                                <p className="text-center text-sm text-gray-400">
+                                <p className="text-center text-sm text-gray-400 mt-4">
                                     +{schedules.length - 3} more schedule(s)
                                 </p>
                             )}
