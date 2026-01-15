@@ -166,7 +166,9 @@ export default function Settings() {
     };
 
     const handleChangePassword = async () => {
-        if (!currentPassword) {
+        const hasPassword = user?.providers?.includes('email');
+
+        if (hasPassword && !currentPassword) {
             showToast('Current password is required', 'error');
             return;
         }
@@ -191,16 +193,18 @@ export default function Settings() {
             // Import supabase client
             const { supabase } = await import('../lib/supabaseClient');
 
-            // First verify current password by trying to sign in
-            const { error: verifyError } = await supabase.auth.signInWithPassword({
-                email: user?.email || '',
-                password: currentPassword,
-            });
+            // Only verify current password if user has one (email provider)
+            if (hasPassword) {
+                const { error: verifyError } = await supabase.auth.signInWithPassword({
+                    email: user?.email || '',
+                    password: currentPassword,
+                });
 
-            if (verifyError) {
-                showToast('Current password is incorrect', 'error');
-                setIsSavingPassword(false);
-                return;
+                if (verifyError) {
+                    showToast('Current password is incorrect', 'error');
+                    setIsSavingPassword(false);
+                    return;
+                }
             }
 
             // Update password
@@ -211,10 +215,12 @@ export default function Settings() {
             if (error) {
                 showToast(error.message || 'Failed to change password', 'error');
             } else {
-                showToast('Password changed successfully', 'success');
+                showToast(hasPassword ? 'Password changed successfully' : 'Password set successfully', 'success');
                 setCurrentPassword('');
                 setNewPassword('');
                 setConfirmPassword('');
+                // If setting password for the first time, Supabase might not immediately add 'email' to providers in session
+                // We could force a refresh, but the user can now login with password + email
             }
         } catch {
             showToast('Network error', 'error');
@@ -419,20 +425,22 @@ export default function Settings() {
                                     <p className="text-xs text-gray-400">Email cannot be changed</p>
                                 </div>
 
-
-
                                 <div>
-                                    <h4 className="text-base font-bold text-text-primary mb-4">Change Password</h4>
+                                    <h4 className="text-base font-bold text-text-primary mb-4">
+                                        {user?.providers?.includes('email') ? 'Change Password' : 'Set Password'}
+                                    </h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2.5">
-                                            <label className="block text-sm font-medium text-gray-500">Current Password</label>
-                                            <input
-                                                type="password"
-                                                value={currentPassword}
-                                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                                className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
-                                            />
-                                        </div>
+                                        {user?.providers?.includes('email') && (
+                                            <div className="space-y-2.5">
+                                                <label className="block text-sm font-medium text-gray-500">Current Password</label>
+                                                <input
+                                                    type="password"
+                                                    value={currentPassword}
+                                                    onChange={(e) => setCurrentPassword(e.target.value)}
+                                                    className="w-full bg-[#fdfdfd] border border-gray-300 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-zinc-900 focus:ring-0 transition-colors text-[15px] shadow-sm outline-none"
+                                                />
+                                            </div>
+                                        )}
                                         <div className="space-y-6">
                                             <div className="space-y-2.5">
                                                 <label className="block text-sm font-medium text-gray-500">New Password</label>
@@ -457,13 +465,13 @@ export default function Settings() {
                                     <div className="flex justify-end mt-8">
                                         <button
                                             onClick={handleChangePassword}
-                                            disabled={isSavingPassword || !currentPassword || !newPassword || !confirmPassword}
+                                            disabled={isSavingPassword || (user?.providers?.includes('email') && !currentPassword) || !newPassword || !confirmPassword}
                                             className="px-5 py-2.5 text-sm font-medium bg-gray-900 text-white rounded-xl hover:bg-zinc-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                                         >
                                             {isSavingPassword && (
                                                 <RefreshCw size={16} className="animate-spin" />
                                             )}
-                                            Change Password
+                                            {user?.providers?.includes('email') ? 'Change Password' : 'Set Password'}
                                         </button>
                                     </div>
                                 </div>

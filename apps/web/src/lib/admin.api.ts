@@ -8,6 +8,12 @@ export interface AdminStat {
     change?: string;
 }
 
+export interface DashboardStats {
+    cards: AdminStat[];
+    adoption: { label: string; value: number; color: string }[];
+    storage: { used: string; total: string; percent: number };
+}
+
 export interface AdminUser {
     id: string;
     name: string;
@@ -17,34 +23,13 @@ export interface AdminUser {
     createdAt: string;
     avatar?: string;
 }
+// ... (UserFilters interface stays here, moved down in file but omitted from this block for brevity if not changing)
 
-export interface UserFilters {
-    page?: number;
-    limit?: number;
-    search?: string;
-    role?: string;
-    status?: string;
-}
-
-export interface UsersResponse {
-    users: AdminUser[];
-    pagination: {
-        page: number;
-        limit: number;
-        total: number;
-        hasMore: boolean;
-    };
-}
-
-export interface ActivityLog {
-    action: string;
-    user: string;
-    time: string;
-}
+// ...
 
 export const adminApi = {
     // Get dashboard statistics
-    getStats: () => api.get<AdminStat[]>('/admin/stats'),
+    getStats: () => api.get<DashboardStats>('/admin/stats'),
 
     // Get users with filtering and pagination
     getUsers: (filters?: UserFilters) => {

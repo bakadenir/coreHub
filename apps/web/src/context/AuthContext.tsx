@@ -11,6 +11,7 @@ interface User {
     avatar?: string;
     bio?: string;
     username?: string;
+    providers: string[];
 }
 
 interface AuthContextType {
@@ -35,6 +36,7 @@ function mapSupabaseUser(supabaseUser: SupabaseUser | null): User | null {
         avatar: supabaseUser.user_metadata?.image || supabaseUser.user_metadata?.avatar_url,
         bio: supabaseUser.user_metadata?.bio,
         username: supabaseUser.user_metadata?.username,
+        providers: supabaseUser.app_metadata?.providers || [],
     };
 }
 

@@ -44,12 +44,36 @@ export class AdminService {
             .select('*', { count: 'exact', head: true })
             .is('deleted_at', null);
 
-        return [
-            { label: 'Total Users', value: String(userCount || 0), icon: 'people', color: 'bg-blue-500' },
-            { label: 'Active Habits', value: String(habitCount || 0), icon: 'check_circle', color: 'bg-green-500' },
-            { label: 'Total Notes', value: String(noteCount || 0), icon: 'description', color: 'bg-purple-500' },
-            { label: 'Total Links', value: String(linkCount || 0), icon: 'link', color: 'bg-orange-500' },
-        ];
+        const { count: scheduleCount } = await supabase
+            .from('schedule_events')
+            .select('*', { count: 'exact', head: true })
+            .is('deleted_at', null);
+
+        const safeUserCount = userCount || 1; // Prevent division by zero
+
+        // Calculate rough "adoption" percentages (capped at 100)
+        // This is a proxy metric: Avg items per user * 20 (so 5 items = 100%)
+        const calculateAdoption = (count: number | null) => Math.min(Math.round(((count || 0) / safeUserCount) * 20), 100);
+
+        return {
+            cards: [
+                { label: 'Total Users', value: String(userCount || 0), icon: 'people', color: 'bg-blue-500' },
+                { label: 'Active Habits', value: String(habitCount || 0), icon: 'check_circle', color: 'bg-green-500' },
+                { label: 'Total Notes', value: String(noteCount || 0), icon: 'description', color: 'bg-purple-500' },
+                { label: 'Total Links', value: String(linkCount || 0), icon: 'link', color: 'bg-orange-500' },
+            ],
+            adoption: [
+                { label: 'Habit Tracker', value: calculateAdoption(habitCount), color: 'bg-green-500' },
+                { label: 'Notes', value: calculateAdoption(noteCount), color: 'bg-yellow-500' },
+                { label: 'Link Manager', value: calculateAdoption(linkCount), color: 'bg-blue-500' },
+                { label: 'Schedule', value: calculateAdoption(scheduleCount), color: 'bg-purple-500' }
+            ],
+            storage: {
+                used: '452 MB', // Placeholder/Estimated
+                total: '2 GB',
+                percent: 22
+            }
+        };
     }
 
     async getUsers(filters: UserFilters) {

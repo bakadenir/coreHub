@@ -17,6 +17,10 @@ export default function AdminDashboard() {
 
     // Real data states
     const [stats, setStats] = useState<AdminStat[]>([]);
+    const [analyticsData, setAnalyticsData] = useState<{
+        adoption: { label: string; value: number; color: string }[];
+        storage: { used: string; total: string; percent: number };
+    } | null>(null);
     const [recentUsers, setRecentUsers] = useState<AdminUser[]>([]);
     const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +43,11 @@ export default function AdminDashboard() {
             ]);
 
             if (statsRes.success && statsRes.data) {
-                setStats(statsRes.data);
+                setStats(statsRes.data.cards);
+                setAnalyticsData({
+                    adoption: statsRes.data.adoption,
+                    storage: statsRes.data.storage
+                });
             }
             if (usersRes.success && usersRes.data) {
                 setRecentUsers(usersRes.data.users);
@@ -56,10 +64,11 @@ export default function AdminDashboard() {
     }, [showToast]);
 
     useEffect(() => {
-        if (activeTab === 'Overview') {
+        // Fetch data on mount if user is admin
+        if (user?.role === 'admin') {
             fetchDashboardData();
         }
-    }, [activeTab, fetchDashboardData]);
+    }, [activeTab, fetchDashboardData, user]);
 
     const handleLogout = async () => {
         await signOut();
@@ -324,7 +333,7 @@ export default function AdminDashboard() {
                     )}
 
                     {activeTab === 'User Management' && <UserManagement />}
-                    {activeTab === 'Analytics' && <Analytics />}
+                    {activeTab === 'Analytics' && <Analytics data={analyticsData || undefined} />}
                     {activeTab === 'Content Moderation' && <ContentModeration />}
                     {activeTab === 'Settings' && <AdminSettings />}
 
