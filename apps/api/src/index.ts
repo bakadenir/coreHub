@@ -66,15 +66,6 @@ const generalLimiter = rateLimit({
     skip: (req) => req.path.includes('/sse'), // Skip rate limit for SSE connections
 });
 
-// Stricter rate limit for auth-related endpoints
-const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // Limit each IP to 20 auth requests per windowMs
-    message: { error: 'Too many login attempts', message: 'Please try again after 15 minutes' },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
 // Apply rate limiting to all API routes
 app.use('/api/', generalLimiter);
 

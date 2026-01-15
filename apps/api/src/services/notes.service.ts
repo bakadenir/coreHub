@@ -251,6 +251,7 @@ export class NotesService {
             id: data.id,
             title: data.title,
             content: data.content,
+            contentType: data.content_type || 'rich',
             authorName,
             authorImage,
             createdAt: data.created_at,

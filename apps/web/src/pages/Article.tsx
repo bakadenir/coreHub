@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { notesApi } from '../lib';
-import MarkdownRenderer from '../components/MarkdownRenderer';
 import { useAuth } from '../context/AuthContext';
+import MarkdownRenderer from '../components/MarkdownRenderer';
+import DOMPurify from 'dompurify';
 
 interface PublicNote {
     id: string;
     title: string;
     content: string;
+    contentType?: 'rich' | 'markdown';
     authorName: string;
     authorImage?: string | null;
     createdAt: string;
@@ -169,10 +171,10 @@ export default function Article() {
             {/* Dynamic Background */}
             <div className="absolute inset-0 z-0 pointer-events-none">
                 {/* Base bg */}
-                <div className="absolute inset-0 bg-gray-50/50"></div>
+                <div className="absolute inset-0 bg-gray-50/25"></div>
 
                 {/* Grid Overlay */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+                <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808009_1px,transparent_1px),linear-gradient(to_bottom,#80808009_1px,transparent_1px)] bg-[size:24px_24px]"></div>
 
                 {/* Gradient Fades */}
                 <div className="absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white to-transparent"></div>
@@ -213,16 +215,16 @@ export default function Article() {
             </header>
 
             {/* Article Content */}
-            <article className="max-w-4xl mx-auto px-6 py-12 relative z-10">
+            <article className="w-full max-w-4xl mx-auto px-6 py-12 relative z-10 min-h-[60vh]">
                 {/* Back to Home - Only for logged in users */}
                 {user && (
                     <div className="mb-8">
                         <Link
-                            to="/home"
+                            to="/notes"
                             className="inline-flex items-center gap-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors hover:translate-x-[-4px] duration-200"
                         >
                             <span className="material-icons-outlined text-base">arrow_back</span>
-                            Back to Home
+                            Back to Notes
                         </Link>
                     </div>
                 )}
@@ -233,7 +235,7 @@ export default function Article() {
                 </h1>
 
                 {/* Meta */}
-                <div className="flex items-center justify-between text-gray-500 mb-8 pb-8 border-b border-gray-100">
+                <div className="flex items-center justify-between text-gray-500 mb-6 pb-4 border-b-2 border-gray-200">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                             {article.authorImage ? (
@@ -317,7 +319,22 @@ export default function Article() {
 
                 {/* Content */}
                 <div className="article-content">
-                    <MarkdownRenderer content={article.content} />
+                    {article.contentType === 'markdown' ? (
+                        <MarkdownRenderer
+                            content={article.content}
+                            className="prose prose-gray max-w-none"
+                        />
+                    ) : (
+                        <div
+                            className="rich-text-content prose prose-gray max-w-none"
+                            style={{
+                                overflowWrap: 'break-word',
+                                wordWrap: 'break-word',
+                                wordBreak: 'break-word',
+                            }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(article.content) }}
+                        />
+                    )}
                 </div>
             </article>
 
@@ -369,6 +386,125 @@ export default function Article() {
             <footer className="w-full border-t border-border-light py-5 text-center text-sm text-gray-500 font-mono mt-auto bg-gray-50/50 relative z-10">
                 <p>© 2025 coreHub. All rights reserved.</p>
             </footer>
+
+            {/* Rich Text Content Styling - matches MarkdownRenderer styling */}
+            <style>{`
+                .rich-text-content {
+                    font-size: 15px;
+                    line-height: 1.6;
+                    color: #37352f;
+                }
+                .rich-text-content > *:first-child { margin-top: 0; }
+                .rich-text-content > *:last-child { margin-bottom: 0; }
+                
+                .rich-text-content h1 {
+                    font-size: 1.875rem;
+                    font-weight: 700;
+                    margin: 1.25rem 0 0.5rem;
+                    line-height: 1.3;
+                }
+                .rich-text-content h2 {
+                    font-size: 1.5rem;
+                    font-weight: 600;
+                    margin: 1rem 0 0.4rem;
+                    line-height: 1.3;
+                }
+                .rich-text-content h3 {
+                    font-size: 1.25rem;
+                    font-weight: 600;
+                    margin: 0.875rem 0 0.35rem;
+                    line-height: 1.4;
+                }
+                .rich-text-content h4,
+                .rich-text-content h5,
+                .rich-text-content h6 {
+                    font-size: 1rem;
+                    font-weight: 600;
+                    margin: 0.75rem 0 0.25rem;
+                    line-height: 1.4;
+                }
+                
+                .rich-text-content p {
+                    margin: 0.25rem 0;
+                }
+                
+                .rich-text-content ul {
+                    margin: 0.25rem 0;
+                    padding-left: 1.5rem;
+                    list-style-type: disc;
+                }
+                .rich-text-content ol {
+                    margin: 0.25rem 0;
+                    padding-left: 1.5rem;
+                    list-style-type: decimal;
+                }
+                .rich-text-content li {
+                    margin: 0.125rem 0;
+                    display: list-item;
+                }
+                
+                .rich-text-content blockquote {
+                    margin: 0.5rem 0;
+                    padding: 0.25rem 0 0.25rem 1rem;
+                    border-left: 3px solid #e5e5e5;
+                    color: #6b7280;
+                }
+                
+                .rich-text-content hr {
+                    margin: 1rem 0;
+                    border: none;
+                    border-top: 1px solid #e5e5e5;
+                }
+                
+                .rich-text-content table {
+                    margin: 0.5rem 0;
+                    border-collapse: collapse;
+                    font-size: 14px;
+                    width: 100%;
+                }
+                .rich-text-content th,
+                .rich-text-content td {
+                    padding: 0.4rem 0.75rem;
+                    border: 1px solid #e5e7eb;
+                    text-align: left;
+                }
+                .rich-text-content th {
+                    background: #f9fafb;
+                    font-weight: 500;
+                }
+                
+                .rich-text-content a {
+                    color: #18181b;
+                    text-decoration: underline;
+                }
+                .rich-text-content a:hover {
+                    color: #000;
+                }
+                
+                .rich-text-content strong { font-weight: 600; }
+                .rich-text-content del { color: #9ca3af; }
+                
+                .rich-text-content code {
+                    background: #f3f4f6;
+                    color: #e11d48;
+                    padding: 0.125rem 0.25rem;
+                    border-radius: 0.25rem;
+                    font-size: 0.8125rem;
+                }
+                .rich-text-content pre {
+                    background: #f7f7f7;
+                    padding: 0.75rem 1rem;
+                    margin: 0.75rem 0;
+                    overflow-x: auto;
+                    font-size: 0.8125rem;
+                    line-height: 1.5;
+                }
+                .rich-text-content pre code {
+                    background: transparent;
+                    color: inherit;
+                    padding: 0;
+                }
+            `}</style>
         </div>
     );
 }

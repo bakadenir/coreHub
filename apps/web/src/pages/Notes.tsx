@@ -27,12 +27,19 @@ export default function Notes() {
     const [notes, setNotes] = useState<Note[]>([]);
     const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
 
-    // Sync SWR data to local state
+    // Sync SWR data to local state - use JSON comparison to avoid infinite loops
+    const cachedNotesJson = JSON.stringify(cachedNotes);
     useEffect(() => {
         if (cachedNotes.length > 0 || !notesLoading) {
-            setNotes(cachedNotes);
+            setNotes(prevNotes => {
+                // Only update if contents actually changed
+                if (JSON.stringify(prevNotes) !== cachedNotesJson) {
+                    return cachedNotes;
+                }
+                return prevNotes;
+            });
         }
-    }, [cachedNotes, notesLoading]);
+    }, [cachedNotesJson, notesLoading]);
 
     // Handle navigation from other pages (e.g. ActivityCards)
     useEffect(() => {

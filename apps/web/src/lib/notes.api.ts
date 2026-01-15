@@ -19,6 +19,7 @@ interface PublicNote {
     id: string;
     title: string;
     content: string;
+    contentType?: 'rich' | 'markdown';
     authorName: string;
     authorImage?: string | null;
     createdAt: string;
