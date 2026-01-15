@@ -1,102 +1,141 @@
 # 📊 Monitoring & Observability Guide
 
+Panduan untuk setup monitoring, error tracking, dan observability untuk CoreHub.
+
+---
+
 ## 1. Error Tracking (Sentry)
+
+Sentry sudah terintegrasi di backend (`@sentry/node`).
 
 ### Setup
 
-1. **Create Sentry Account**
-   - Go to [sentry.io](https://sentry.io)
-   - Create new project → Node.js
-   - Copy the DSN
+1. **Create Sentry Account** di [sentry.io](https://sentry.io)
+2. **Create new project** → Node.js
+3. **Copy DSN** dan tambahkan ke environment:
 
-2. **Add Environment Variable in Railway**
-   ```
-   SENTRY_DSN=https://xxxx@xxxx.ingest.sentry.io/xxxx
-   ```
+```env
+# apps/api/.env
+SENTRY_DSN=https://xxxx@xxxx.ingest.sentry.io/xxxx
+```
 
-3. **Sentry is now integrated!**
-   - Errors automatically reported
-   - Dashboard at sentry.io
+### Features
+- ✅ Automatic error capturing
+- ✅ Transaction tracing (10% sample rate)
+- ✅ Performance monitoring
+- ✅ Release tracking
 
 ---
 
 ## 2. Uptime Monitoring
 
-### Free Options
+### Recommended: UptimeRobot (Free)
 
-#### UptimeRobot (Recommended)
-1. Go to [uptimerobot.com](https://uptimerobot.com)
-2. Create free account
-3. Add monitors:
-   - **API Health**: `https://corehub-api-production.up.railway.app/api/health`
-   - **Frontend**: `https://corehub.life`
-4. Set check interval: 5 minutes
-5. Add alert contacts (email, Slack, Discord)
+1. Sign up di [uptimerobot.com](https://uptimerobot.com)
+2. Add monitors:
 
-#### Better Uptime
-1. Go to [betteruptime.com](https://betteruptime.com)
-2. Free tier includes 10 monitors
-3. More features than UptimeRobot
+| Monitor | URL | Interval |
+|---------|-----|----------|
+| API Health | `https://your-api-domain.com/api/health` | 5 min |
+| Frontend | `https://your-frontend-domain.com` | 5 min |
 
-#### Cronitor
-1. Go to [cronitor.io](https://cronitor.io)
-2. Good for both uptime and cron job monitoring
+3. Setup alerts: Email, Slack, Discord, etc.
+
+### Alternatives
+- [Better Uptime](https://betteruptime.com) - Free tier, more features
+- [Cronitor](https://cronitor.io) - Good for cron job monitoring
 
 ---
 
-## 3. Application Performance Monitoring (APM)
+## 3. Application Performance Monitoring
 
-### Already Included
-- **Sentry Performance**: Included in Sentry integration
-- Transaction tracing at 10% sample rate
+### Included with Sentry
+- Transaction tracing
+- Request duration tracking
+- Database query performance
 
-### Additional Options
-- **Datadog** (paid)
-- **New Relic** (free tier available)
-- **Grafana Cloud** (free tier)
+### Additional Options (Paid)
+- Datadog
+- New Relic (free tier available)
+- Grafana Cloud (free tier)
 
 ---
 
 ## 4. Log Management
 
-### Current
-- Console logging to Railway logs
+### Current Setup
+- Console logging to hosting platform logs (Railway, Render, etc.)
 
 ### Upgrade Options
-- **Logtail** (free 1GB/month)
-- **Papertrail** (free tier)
-- **Better Stack** (includes logs + uptime)
+| Service | Free Tier | Link |
+|---------|-----------|------|
+| Logtail | 1GB/month | [logtail.com](https://logtail.com) |
+| Papertrail | 100MB/month | [papertrail.com](https://papertrail.com) |
+| Better Stack | Included with uptime | [betterstack.com](https://betterstack.com) |
 
 ---
 
 ## 5. Status Page
 
+Buat public status page untuk users.
+
 ### Free Options
-- **Instatus** (free)
-- **Atlassian Statuspage** (free for small teams)
-- **Better Uptime Status Pages** (included)
+- [Instatus](https://instatus.com) - Free, easy setup
+- [Atlassian Statuspage](https://www.atlassian.com/software/statuspage) - Free for small teams
+- [Better Uptime](https://betteruptime.com) - Includes status pages
 
 ### Setup Instatus
-1. Go to [instatus.com](https://instatus.com)
-2. Create free status page
-3. Connect monitors from UptimeRobot
-4. Share status page URL with users
+1. Sign up di [instatus.com](https://instatus.com)
+2. Create status page
+3. Connect monitors dari UptimeRobot
+4. Share URL: `status.yourapp.com`
+
+---
+
+## 6. Health Check Endpoint
+
+Backend sudah include health check endpoint:
+
+```
+GET /api/health
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-01-15T12:00:00.000Z"
+}
+```
 
 ---
 
 ## Quick Setup Checklist
 
-- [ ] Sign up for Sentry → Add SENTRY_DSN to Railway
-- [ ] Sign up for UptimeRobot → Add health check monitors
-- [ ] (Optional) Create status page on Instatus
-- [ ] Test: Trigger an error and verify it appears in Sentry
+### Minimum (Free)
+- [ ] Sign up Sentry → Add `SENTRY_DSN` to environment
+- [ ] Sign up UptimeRobot → Add health check monitors
+- [ ] Test: Trigger error, verify appears in Sentry
+
+### Recommended
+- [ ] Create status page on Instatus
+- [ ] Setup Slack/Discord alerts
+- [ ] Configure log aggregation (Logtail)
 
 ---
 
-## Recommended Minimum Setup (Free)
+## Summary
 
-| Service | Purpose | Link |
+| Service | Purpose | Cost |
 |---------|---------|------|
-| Sentry | Error tracking | sentry.io |
-| UptimeRobot | Uptime monitoring | uptimerobot.com |
-| Railway Logs | Application logs | railway.app |
+| **Sentry** | Error tracking + APM | Free tier |
+| **UptimeRobot** | Uptime monitoring | Free |
+| **Instatus** | Status page | Free |
+| **Platform Logs** | Application logs | Included |
+
+---
+
+## Related
+
+- [README.md](../README.md) - Project documentation
+- [SETUP.md](../SETUP.md) - Development setup

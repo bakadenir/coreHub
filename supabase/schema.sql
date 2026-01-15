@@ -260,5 +260,62 @@ CREATE INDEX IF NOT EXISTS idx_donations_status ON public.donations(status);
 CREATE INDEX IF NOT EXISTS idx_donations_user_id ON public.donations(user_id);
 
 -- ============================================
--- DONE! Now run rls_policies_v2.sql
+-- ACTIVITY LOGS TABLE (Admin Audit Trail)
 -- ============================================
+CREATE TABLE IF NOT EXISTS public.activity_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    user_name TEXT,
+    action TEXT NOT NULL,
+    details JSONB DEFAULT '{}',
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user_id ON public.activity_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON public.activity_logs(created_at DESC);
+
+-- ============================================
+-- PROFILES TABLE (Extended User Info)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    username TEXT UNIQUE,
+    full_name TEXT,
+    avatar_url TEXT,
+    bio TEXT,
+    website TEXT,
+    timezone TEXT DEFAULT 'Asia/Jakarta',
+    theme TEXT DEFAULT 'system', -- light, dark, system
+    locale TEXT DEFAULT 'id',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
+
+-- ============================================
+-- CONTENT REPORTS TABLE (User Reports)
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.content_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    reporter_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    reported_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    content_type TEXT NOT NULL, -- 'note', 'user', 'comment'
+    content_id UUID,
+    reason TEXT NOT NULL,
+    description TEXT,
+    status TEXT DEFAULT 'pending', -- pending, reviewed, resolved, dismissed
+    reviewed_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_reports_status ON public.content_reports(status);
+CREATE INDEX IF NOT EXISTS idx_content_reports_reporter ON public.content_reports(reporter_id);
+
+-- ============================================
+-- DONE! Now run rls_policies.sql
+-- ============================================
+

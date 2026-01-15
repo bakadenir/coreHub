@@ -113,5 +113,38 @@ CREATE POLICY "donations_select_own" ON public.donations FOR SELECT USING (user_
 CREATE POLICY "donations_select_public" ON public.donations FOR SELECT USING (status = 'success');
 
 -- ============================================
+-- ACTIVITY LOGS POLICIES
+-- Note: Logs are inserted via service_role (backend), 
+-- users should not have direct access
+-- ============================================
+ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+-- Backend uses service_role to insert, so no user INSERT policy needed
+-- No SELECT policy for regular users (admin access via backend only)
+
+-- ============================================
+-- PROFILES POLICIES
+-- ============================================
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+-- Users can read all profiles (for displaying author names, etc.)
+CREATE POLICY "profiles_select_all" ON public.profiles FOR SELECT USING (true);
+-- Users can only update their own profile
+CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+-- Users can insert their own profile (on registration)
+CREATE POLICY "profiles_insert_own" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- ============================================
+-- CONTENT REPORTS POLICIES
+-- ============================================
+ALTER TABLE public.content_reports ENABLE ROW LEVEL SECURITY;
+-- Users can submit reports (INSERT)
+CREATE POLICY "content_reports_insert" ON public.content_reports 
+    FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+-- Users can view their own submitted reports
+CREATE POLICY "content_reports_select_own" ON public.content_reports 
+    FOR SELECT USING (auth.uid() = reporter_id);
+-- Admin access is via service_role (backend), no special policy needed
+
+-- ============================================
 -- DONE! RLS policies applied.
 -- ============================================
+
