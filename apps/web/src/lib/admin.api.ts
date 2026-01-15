@@ -22,6 +22,7 @@ export interface AdminUser {
     status: string;
     createdAt: string;
     avatar?: string;
+    lastSignInAt?: string;
 }
 export interface UserFilters {
     page?: number;
@@ -29,6 +30,8 @@ export interface UserFilters {
     search?: string;
     role?: string;
     status?: string;
+    sortBy?: 'created_at' | 'last_sign_in_at';
+    sortOrder?: 'asc' | 'desc';
 }
 
 export interface UsersResponse {
@@ -59,6 +62,8 @@ export const adminApi = {
         if (filters?.search) params.set('search', filters.search);
         if (filters?.role) params.set('role', filters.role);
         if (filters?.status) params.set('status', filters.status);
+        if (filters?.sortBy) params.set('sortBy', filters.sortBy);
+        if (filters?.sortOrder) params.set('sortOrder', filters.sortOrder);
         const query = params.toString() ? `?${params.toString()}` : '';
         return api.get<UsersResponse>(`/admin/users${query}`);
     },

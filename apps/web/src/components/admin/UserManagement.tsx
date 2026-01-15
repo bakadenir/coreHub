@@ -13,6 +13,8 @@ export default function UserManagement() {
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState({ total: 0, hasMore: false });
+    const [sortBy, setSortBy] = useState<'created_at' | 'last_sign_in_at'>('created_at');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
     // Confirm dialog state
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -31,6 +33,8 @@ export default function UserManagement() {
                 limit: 20,
                 search: searchTerm || undefined,
                 role: filterRole || undefined,
+                sortBy,
+                sortOrder,
             });
             if (result.success && result.data) {
                 setUsers(result.data.users);
@@ -41,7 +45,7 @@ export default function UserManagement() {
         } finally {
             setIsLoading(false);
         }
-    }, [page, searchTerm, filterRole, showToast]);
+    }, [page, searchTerm, filterRole, sortBy, sortOrder, showToast]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -224,6 +228,23 @@ export default function UserManagement() {
                 <div className="flex gap-2">
                     <select
                         className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-zinc-900 bg-[#fdfdfd]"
+                        value={sortBy}
+                        onChange={(e) => { setSortBy(e.target.value as any); setPage(1); }}
+                    >
+                        <option value="created_at">Joined Date</option>
+                        <option value="last_sign_in_at">Last Active</option>
+                    </select>
+                    <button
+                        onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                        className="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center min-w-[42px]"
+                        title={sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
+                    >
+                        <span className="material-icons-outlined text-gray-500">
+                            {sortOrder === 'asc' ? 'arrow_upward' : 'arrow_downward'}
+                        </span>
+                    </button>
+                    <select
+                        className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-zinc-900 bg-[#fdfdfd]"
                         value={filterRole}
                         onChange={(e) => { setFilterRole(e.target.value); setPage(1); }}
                     >
@@ -244,6 +265,7 @@ export default function UserManagement() {
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Active</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Joined</th>
                                 <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Actions</th>
                             </tr>
@@ -256,12 +278,13 @@ export default function UserManagement() {
                                         <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 rounded"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 rounded"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 rounded"></div></td>
+                                        <td className="px-6 py-4"><div className="h-4 w-24 bg-gray-200 rounded"></div></td>
                                         <td className="px-6 py-4"><div className="h-4 w-8 bg-gray-200 rounded ml-auto"></div></td>
                                     </tr>
                                 ))
                             ) : users.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
                                         <span className="material-icons-outlined text-4xl mb-2 block">person_off</span>
                                         No users found
                                     </td>
@@ -298,6 +321,15 @@ export default function UserManagement() {
                                                     <span className={`w-1.5 h-1.5 rounded-full ${isBanned ? 'bg-red-500' : 'bg-green-500'}`}></span>
                                                     {isBanned ? 'Banned' : 'Active'}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-xs font-mono text-gray-500">
+                                                {user.lastSignInAt ? (
+                                                    <span title={new Date(user.lastSignInAt).toLocaleString()}>
+                                                        {formatDate(user.lastSignInAt)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400">Never</span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500 font-mono">
                                                 {formatDate(user.createdAt)}

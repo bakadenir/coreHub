@@ -6,6 +6,8 @@ export interface UserFilters {
     search?: string;
     role?: string;
     status?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
 }
 
 export interface PaginationParams {
@@ -26,8 +28,28 @@ export class AdminService {
         }
     }
 
+    private async _getAllUsers() {
+        let allUsers: any[] = [];
+        let page = 1;
+        let hasMore = true;
+
+        while (hasMore) {
+            const { data, error } = await supabase.auth.admin.listUsers({
+                page,
+                perPage: 1000,
+            });
+            if (error) throw error;
+            allUsers = [...allUsers, ...data.users];
+            hasMore = data.users.length === 1000;
+            page++;
+        }
+        return allUsers;
+    }
+
     async getStats() {
-        const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        // Use auth.admin.listUsers to get the total count of registered users
+        const { data: authData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+        const userCount = authData && 'total' in authData ? (authData as any).total : 0;
 
         const { count: habitCount } = await supabase
             .from('habits')
@@ -55,12 +77,48 @@ export class AdminService {
         // This is a proxy metric: Avg items per user * 20 (so 5 items = 100%)
         const calculateAdoption = (count: number | null) => Math.min(Math.round(((count || 0) / safeUserCount) * 20), 100);
 
+        // --- Daily Analytics ---
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayIso = today.toISOString();
+
+        // New Users Today
+        const { count: newUsersToday } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', todayIso);
+
+        // Active Users Today (Distinct users in activity_logs)
+        // Note: Supabase doesn't support 'distinct' in simple count queries easily via JS client without RPC.
+        // For now, we'll fetch small amount of data or use a workaround. 
+        // Better approach for scale: Create a DB function `get_daily_active_users`.
+        // Current workaround: Fetch logs from today and count unique user_ids in memory (limit to 1000 for perf).
+        const { data: recentLogs } = await supabase
+            .from('activity_logs')
+            .select('user_id')
+            .gte('created_at', todayIso)
+            .limit(1000); // Sample size limit
+
+        const activeUsersToday = recentLogs ? new Set(recentLogs.map(l => l.user_id)).size : 0;
+
+
+        // Deadactive Users (Inactive > 30 days)
+        // Fetch all users to check last_sign_in_at
+        const allUsers = await this._getAllUsers();
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const deadactiveCount = allUsers.filter((u: any) => {
+            if (!u.last_sign_in_at) return true; // Never signed in
+            return new Date(u.last_sign_in_at) < thirtyDaysAgo;
+        }).length;
+
         return {
             cards: [
                 { label: 'Total Users', value: String(userCount || 0), icon: 'people', color: 'bg-blue-500' },
-                { label: 'Active Habits', value: String(habitCount || 0), icon: 'check_circle', color: 'bg-green-500' },
-                { label: 'Total Notes', value: String(noteCount || 0), icon: 'description', color: 'bg-purple-500' },
-                { label: 'Total Links', value: String(linkCount || 0), icon: 'link', color: 'bg-orange-500' },
+                { label: 'New Today', value: `+${newUsersToday || 0}`, icon: 'person_add', color: 'bg-green-500' },
+                { label: 'Active Today', value: String(activeUsersToday), icon: 'trending_up', color: 'bg-orange-500' },
+                { label: 'Deadactive', value: String(deadactiveCount), icon: 'person_off', color: 'bg-zinc-500' },
             ],
             adoption: [
                 { label: 'Habit Tracker', value: calculateAdoption(habitCount), color: 'bg-green-500' },
@@ -77,13 +135,81 @@ export class AdminService {
     }
 
     async getUsers(filters: UserFilters) {
-        const { page, limit, search, role } = filters;
+        const { page, limit, search, role, sortBy, sortOrder } = filters;
         const offset = (page - 1) * limit;
 
-        // Get users from Supabase Auth
+        // Strategy 1: If sorting is required, we MUST fetch all users to sort correctly
+        // because Supabase ListUsers API doesn't support sorting by last_sign_in_at.
+        if (sortBy) {
+
+            // Fetch all users to check last_sign_in_at
+            const allUsers = await this._getAllUsers();
+
+            let mappedUsers = allUsers.map(u => ({
+                id: u.id,
+                name: u.user_metadata?.name || u.email?.split('@')[0] || 'Unknown',
+                email: u.email || '',
+                role: u.user_metadata?.role || 'user',
+                status: 'Active',
+                createdAt: u.created_at,
+                avatar: u.user_metadata?.image || null,
+                lastSignInAt: u.last_sign_in_at,
+            }));
+
+            // Filter (in memory)
+            if (role) {
+                mappedUsers = mappedUsers.filter(u => u.role === role);
+            }
+            if (search) {
+                const searchLower = search.toLowerCase();
+                mappedUsers = mappedUsers.filter(u =>
+                    u.name.toLowerCase().includes(searchLower) ||
+                    u.email.toLowerCase().includes(searchLower)
+                );
+            }
+
+            // Sort
+            mappedUsers.sort((a, b) => {
+                let timeA = 0;
+                let timeB = 0;
+
+                if (sortBy === 'created_at') {
+                    timeA = new Date(a.createdAt).getTime();
+                    timeB = new Date(b.createdAt).getTime();
+                } else if (sortBy === 'last_sign_in_at') {
+                    timeA = a.lastSignInAt ? new Date(a.lastSignInAt).getTime() : 0;
+                    timeB = b.lastSignInAt ? new Date(b.lastSignInAt).getTime() : 0;
+                }
+
+                if (sortOrder === 'asc') {
+                    // Ascending: 0 (Never) -> Oldest -> Newest
+                    return timeA - timeB;
+                } else {
+                    // Descending: Newest -> Oldest -> 0 (Never)
+                    if (timeA === 0) return 1; // 0 goes to end
+                    if (timeB === 0) return -1;
+                    return timeB - timeA;
+                }
+            });
+
+            // Paginate the sorted result
+            const paginatedUsers = mappedUsers.slice(offset, offset + limit);
+
+            return {
+                users: paginatedUsers,
+                pagination: {
+                    page,
+                    limit,
+                    total: mappedUsers.length,
+                    hasMore: offset + limit < mappedUsers.length,
+                },
+            };
+        }
+
+        // Strategy 2: Default Pagination (Efficient for standard view)
         const { data: authData, error } = await supabase.auth.admin.listUsers({
             page,
-            perPage: limit,
+            perPage: limit || 50,
         });
 
         if (error) throw error;
@@ -96,9 +222,10 @@ export class AdminService {
             status: 'Active',
             createdAt: u.created_at,
             avatar: u.user_metadata?.image || null,
+            lastSignInAt: u.last_sign_in_at,
         }));
 
-        // Filter by role
+        // Filter by role (Note: This filters the PAGE, which is imperfect but standard for this API without search index)
         if (role) {
             users = users.filter(u => u.role === role);
         }
@@ -113,12 +240,12 @@ export class AdminService {
         }
 
         return {
-            users: users.slice(offset, offset + limit),
+            users: users.slice(0, limit), // Slice handled by array map above mostly, but ensure limit
             pagination: {
                 page,
                 limit,
-                total: users.length,
-                hasMore: offset + limit < users.length,
+                total: authData.total, // Total from API
+                hasMore: offset + limit < authData.total,
             },
         };
     }

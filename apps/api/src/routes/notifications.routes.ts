@@ -93,4 +93,27 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     }
 });
 
+// Trigger admin notification (internal use or protected)
+router.post('/trigger-admin', authMiddleware, async (req, res) => {
+    try {
+        const { title, message, type, referenceId, referenceType } = req.body;
+
+        // Optional: Add logic to verify if the caller is allowed to trigger this
+        // For now, any authenticated user (e.g. upon self-registration) can trigger "New User" alert
+
+        await notificationsService.notifyAdmins(
+            title,
+            message,
+            type || 'system',
+            referenceId,
+            referenceType
+        );
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error triggering admin notification:', error);
+        res.status(500).json({ success: false, error: 'Failed to trigger notification' });
+    }
+});
+
 export default router;

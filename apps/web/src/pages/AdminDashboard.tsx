@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { adminApi, type AdminStat, type AdminUser, type ActivityLog } from '../lib/admin.api';
+import NotificationBell from '../components/NotificationBell';
 
 import UserManagement from '../components/admin/UserManagement';
 import Analytics from '../components/admin/Analytics';
@@ -149,10 +150,7 @@ export default function AdminDashboard() {
                         <h2 className="text-2xl font-bold text-gray-900">{activeTab}</h2>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                            <span className="material-icons-outlined">notifications</span>
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-zinc-50"></span>
-                        </button>
+                        <NotificationBell />
                         <Link to="/home" className="text-sm font-medium text-primary hover:underline">
                             Go to App
                         </Link>

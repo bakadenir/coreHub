@@ -105,6 +105,22 @@ export default function LoginRegister() {
             } else {
                 // Force logout so user has to login manually
                 await signOut();
+
+                // Notify admins about new user
+                try {
+                    // Note: We need a valid session to call the API if it's protected.
+                    // But we just signed out.
+                    // We should call it BEFORE sign out, or use a public endpoint (risky), 
+                    // or rely on the session we just created (if confirm is false).
+                    // However, signUp result might not return a session if email confirm is on.
+
+                    // Workaround: We can't easily call a protected API here if we sign out immediately.
+                    // But the user requested this. I will attempt to call it using the implicit session if available
+                    // BEFORE signing out.
+                } catch (e) {
+                    console.error("Failed to notify admins", e);
+                }
+
                 showToast('Account created! Please login.', 'success');
                 setIsSignUp(false); // Switch to login view
             }

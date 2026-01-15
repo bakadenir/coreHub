@@ -25,13 +25,15 @@ router.get('/stats', async (_req, res) => {
 // GET /api/admin/users - List all users
 router.get('/users', async (req, res) => {
     try {
-        const { page, limit, search, role, status } = req.query;
+        const { page, limit, search, role, status, sortBy, sortOrder } = req.query;
         const users = await adminService.getUsers({
             page: page ? Number(page) : 1,
             limit: limit ? Number(limit) : 20,
             search: search as string,
             role: role as string,
             status: status as string,
+            sortBy: sortBy as 'created_at' | 'last_sign_in_at',
+            sortOrder: sortOrder as 'asc' | 'desc',
         });
         return successResponse(res, users);
     } catch (error) {

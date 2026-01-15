@@ -246,3 +246,56 @@ export async function removePushSubscription(userId: string, endpoint: string) {
     if (error) throw error;
     return data;
 }
+// Notify all admins
+export async function notifyAdmins(
+    title: string,
+    message: string,
+    type: 'system' | 'todo_reminder' = 'system',
+    referenceId?: string,
+    referenceType?: 'habit' | 'schedule' | 'todo'
+) {
+    // 1. Find all admin IDs
+    // Note: This iterates all users. For large scale, use a separate 'admins' table or 'profiles' table with index.
+    let adminIds: string[] = [];
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+        const { data: { users }, error } = await supabase.auth.admin.listUsers({
+            page,
+            perPage: 1000,
+        });
+
+        if (error) {
+            console.error('Error listing users for admin notification:', error);
+            break;
+        }
+
+        const admins = users
+            .filter(u => u.user_metadata?.role === 'admin')
+            .map(u => u.id);
+
+        adminIds = [...adminIds, ...admins];
+        hasMore = users.length === 1000;
+        page++;
+    }
+
+    if (adminIds.length === 0) return;
+
+    // 2. Create notifications for each admin
+    const notifications = adminIds.map(userId => ({
+        user_id: userId,
+        type,
+        title,
+        message,
+        reference_id: referenceId,
+        reference_type: referenceType,
+        is_read: false,
+    }));
+
+    const { error } = await supabase
+        .from('notifications')
+        .insert(notifications);
+
+    if (error) throw error;
+}
