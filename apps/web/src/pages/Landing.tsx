@@ -235,6 +235,8 @@ export default function Landing() {
                     <div className="flex gap-4 text-sm">
                         <Link to="/privacy" className="text-gray-400 hover:text-text-primary transition-colors">Privacy Policy</Link>
                         <Link to="/terms" className="text-gray-400 hover:text-text-primary transition-colors">Terms of Service</Link>
+                        <Link to="/cookies" className="text-gray-400 hover:text-text-primary transition-colors">Cookie Policy</Link>
+                        <Link to="/contact" className="text-gray-400 hover:text-text-primary transition-colors">Contact</Link>
                     </div>
                     <p className="text-sm text-text-secondary">© 2025 coreHub. All rights reserved.</p>
                 </div>

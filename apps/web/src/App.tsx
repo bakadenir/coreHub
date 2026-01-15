@@ -21,6 +21,8 @@ const Notifications = lazy(() => import('./pages/Notifications'));
 const Article = lazy(() => import('./pages/Article'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const CookiePolicy = lazy(() => import('./pages/CookiePolicy'));
+const Contact = lazy(() => import('./pages/Contact'));
 const Donate = lazy(() => import('./pages/Donate'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -54,6 +56,8 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/cookies" element={<CookiePolicy />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/note/:slug" element={<Article />} />
 
             {/* Main protected routes with shared layout */}

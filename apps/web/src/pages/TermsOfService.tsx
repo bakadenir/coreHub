@@ -21,7 +21,7 @@ export default function TermsOfService() {
             <main className="flex-1 flex flex-col items-center p-6 sm:p-8 lg:p-12">
                 <div className="w-full max-w-3xl">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Terms of Service</h1>
-                    <p className="text-gray-500 mb-8">Last updated: January 1, 2026</p>
+                    <p className="text-gray-500 mb-8">Last updated: January 15, 2026</p>
 
                     <div className="prose prose-gray max-w-none space-y-8">
                         {/* Introduction */}
@@ -41,13 +41,14 @@ export default function TermsOfService() {
                                 coreHub is a personal productivity platform that provides the following features:
                             </p>
                             <ul className="list-disc list-inside text-gray-600 space-y-1">
-                                <li><strong>Notes:</strong> Create, edit, organize, and pin personal notes</li>
+                                <li><strong>Notes:</strong> Create, edit, organize, pin, and share notes publicly with unique URLs</li>
                                 <li><strong>Links:</strong> Save and manage bookmarks with automatic metadata fetching</li>
-                                <li><strong>Habits:</strong> Track daily and weekly habits with completion tracking</li>
+                                <li><strong>Habits:</strong> Track daily and weekly habits with completion tracking and streaks</li>
                                 <li><strong>Schedule:</strong> Manage calendar events and appointments</li>
-                                <li><strong>Todos:</strong> Organize tasks with smart lists, priorities, and subtasks</li>
+                                <li><strong>Todos:</strong> Organize tasks with smart lists, priorities, subtasks, and due dates</li>
                                 <li><strong>Pomodoro Timer:</strong> Focus timer with customizable work/break intervals</li>
                                 <li><strong>Dashboard:</strong> Customizable widgets for quick access to your data</li>
+                                <li><strong>Notifications:</strong> In-app notification system for reminders and updates</li>
                             </ul>
                         </section>
 
@@ -88,11 +89,16 @@ export default function TermsOfService() {
                         {/* User Content */}
                         <section>
                             <h2 className="text-xl font-semibold text-gray-900 mb-3">5. User Content</h2>
-                            <p className="text-gray-600 leading-relaxed">
+                            <p className="text-gray-600 leading-relaxed mb-3">
                                 You retain ownership of all content you create within coreHub (notes, links, habits, schedules, todos).
                                 By using our service, you grant us a limited license to store, process, and display your content
                                 solely for the purpose of providing the service to you. We do not claim ownership of your content
                                 and will not share it with third parties except as required by law.
+                            </p>
+                            <p className="text-gray-600 leading-relaxed">
+                                <strong>Public Sharing:</strong> When you choose to make a note public, you are granting permission
+                                for anyone with the link to view that content. You can revoke public access at any time. You are
+                                responsible for ensuring that publicly shared content does not violate any laws or third-party rights.
                             </p>
                         </section>
 
@@ -140,8 +146,9 @@ export default function TermsOfService() {
                         <section>
                             <h2 className="text-xl font-semibold text-gray-900 mb-3">10. Contact Us</h2>
                             <p className="text-gray-600 leading-relaxed">
-                                If you have any questions about these Terms, please contact us through the support section
-                                in your account settings or via our official communication channels.
+                                If you have any questions about these Terms, please contact us at{' '}
+                                <a href="mailto:bakadenir@gmail.com" className="text-primary hover:underline">bakadenir@gmail.com</a>{' '}
+                                or visit our <a href="/contact" className="text-primary hover:underline">Contact page</a>.
                             </p>
                         </section>
                     </div>
@@ -149,7 +156,7 @@ export default function TermsOfService() {
                     {/* Back Link */}
                     <div className="mt-12 pt-8 border-t border-gray-200">
                         <a href="/" className="text-primary hover:underline font-medium">
-                            ← Back to Home
+                            ← Back to coreHub
                         </a>
                     </div>
                 </div>

@@ -21,7 +21,7 @@ export default function PrivacyPolicy() {
             <main className="flex-1 flex flex-col items-center p-6 sm:p-8 lg:p-12">
                 <div className="w-full max-w-3xl">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">Privacy Policy</h1>
-                    <p className="text-gray-500 mb-8">Last updated: January 1, 2026</p>
+                    <p className="text-gray-500 mb-8">Last updated: January 15, 2026</p>
 
                     <div className="prose prose-gray max-w-none space-y-8">
                         {/* Introduction */}
@@ -48,12 +48,13 @@ export default function PrivacyPolicy() {
 
                             <h3 className="text-lg font-medium text-gray-800 mb-2 mt-4">2.2 User Content</h3>
                             <ul className="list-disc list-inside text-gray-600 space-y-1">
-                                <li>Notes and their content</li>
+                                <li>Notes and their content (including publicly shared notes)</li>
                                 <li>Saved links and bookmarks</li>
                                 <li>Habit tracking data and completion history</li>
                                 <li>Schedule events and appointments</li>
                                 <li>Todo lists, tasks, and subtasks</li>
                                 <li>Dashboard widget configurations</li>
+                                <li>Notification preferences and settings</li>
                             </ul>
 
                             <h3 className="text-lg font-medium text-gray-800 mb-2 mt-4">2.3 Technical Information</h3>
@@ -123,7 +124,12 @@ export default function PrivacyPolicy() {
                                 <li>When required by law or legal process</li>
                                 <li>To protect our rights or prevent fraud</li>
                                 <li>With service providers who assist in operating coreHub (under strict confidentiality)</li>
+                                <li>When you explicitly choose to share content publicly (e.g., shared notes with public links)</li>
                             </ul>
+                            <p className="text-gray-600 leading-relaxed mt-3">
+                                <strong>Public Sharing:</strong> When you make a note public, it becomes accessible via a unique URL.
+                                Your display name and profile picture may be shown as the author. You can revoke public access at any time.
+                            </p>
                         </section>
 
                         {/* Your Rights */}
@@ -188,8 +194,9 @@ export default function PrivacyPolicy() {
                         <section>
                             <h2 className="text-xl font-semibold text-gray-900 mb-3">12. Contact Us</h2>
                             <p className="text-gray-600 leading-relaxed">
-                                If you have any questions about this Privacy Policy or our data practices, please contact us
-                                through the support section in your account settings or via our official communication channels.
+                                If you have any questions about this Privacy Policy or our data practices, please contact us at{' '}
+                                <a href="mailto:bakadenir@gmail.com" className="text-primary hover:underline">bakadenir@gmail.com</a>{' '}
+                                or visit our <a href="/contact" className="text-primary hover:underline">Contact page</a>.
                             </p>
                         </section>
                     </div>
@@ -197,7 +204,7 @@ export default function PrivacyPolicy() {
                     {/* Back Link */}
                     <div className="mt-12 pt-8 border-t border-gray-200">
                         <a href="/" className="text-primary hover:underline font-medium">
-                            ← Back to Home
+                            ← Back to coreHub
                         </a>
                     </div>
                 </div>

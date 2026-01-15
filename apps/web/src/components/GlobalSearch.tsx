@@ -55,6 +55,8 @@ const navigationItems: NavItem[] = [
     // Legal
     { id: 'nav-privacy', title: 'Privacy Policy', subtitle: 'Our privacy policy', icon: 'privacy_tip', path: '/privacy', type: 'navigation', keywords: ['privacy', 'policy', 'data', 'privasi', 'kebijakan'] },
     { id: 'nav-terms', title: 'Terms of Service', subtitle: 'Terms and conditions', icon: 'gavel', path: '/terms', type: 'navigation', keywords: ['terms', 'service', 'conditions', 'syarat', 'ketentuan'] },
+    { id: 'nav-cookies', title: 'Cookie Policy', subtitle: 'Cookie usage policy', icon: 'cookie', path: '/cookies', type: 'navigation', keywords: ['cookie', 'cookies', 'policy', 'browser', 'tracking'] },
+    { id: 'nav-contact', title: 'Contact', subtitle: 'Get in touch with us', icon: 'mail', path: '/contact', type: 'navigation', keywords: ['contact', 'email', 'support', 'help', 'kontak', 'hubungi'] },
 ];
 
 export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
