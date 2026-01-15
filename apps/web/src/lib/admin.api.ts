@@ -23,9 +23,29 @@ export interface AdminUser {
     createdAt: string;
     avatar?: string;
 }
-// ... (UserFilters interface stays here, moved down in file but omitted from this block for brevity if not changing)
+export interface UserFilters {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: string;
+    status?: string;
+}
 
-// ...
+export interface UsersResponse {
+    users: AdminUser[];
+    pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        hasMore: boolean;
+    };
+}
+
+export interface ActivityLog {
+    action: string;
+    user: string;
+    time: string;
+}
 
 export const adminApi = {
     // Get dashboard statistics
