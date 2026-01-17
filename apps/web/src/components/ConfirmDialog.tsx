@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, AlertTriangle, HelpCircle, RefreshCw } from 'lucide-react';
 
 interface ConfirmDialogProps {
@@ -90,7 +91,8 @@ export default function ConfirmDialog({
     // Display title with item name if provided
     const displayTitle = itemName ? `Confirm deletion of ${itemName}` : title;
 
-    return (
+    // Use Portal to render at document.body level
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
             {/* Backdrop */}
             <div
@@ -164,6 +166,7 @@ export default function ConfirmDialog({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

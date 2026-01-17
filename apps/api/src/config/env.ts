@@ -16,6 +16,9 @@ const envSchema = z.object({
     VAPID_PUBLIC_KEY: z.string().optional(),
     VAPID_PRIVATE_KEY: z.string().optional(),
     VAPID_SUBJECT: z.string().optional(),
+    // Optional: Resend for email (OTP verification)
+    RESEND_API_KEY: z.string().optional(),
+    EMAIL_FROM: z.string().default('onboarding@resend.dev'),
 });
 
 const parsed = envSchema.safeParse(process.env);
