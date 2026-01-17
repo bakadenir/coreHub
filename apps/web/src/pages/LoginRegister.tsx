@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import FloatingInput from '../components/FloatingInput';
-import { signIn, signUp, signOut } from '../lib/auth';
-import { AlertCircle } from 'lucide-react';
+import OTPInput from '../components/OTPInput';
+import { signIn, signUp, signOut, otp } from '../lib/auth';
+import { AlertCircle, Mail, ArrowLeft } from 'lucide-react';
 
 export default function LoginRegister() {
     const navigate = useNavigate();
@@ -31,6 +32,11 @@ export default function LoginRegister() {
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // OTP Verification State
+    const [showOTP, setShowOTP] = useState(false);
+    const [otpEmail, setOtpEmail] = useState('');
+    const [resendTimer, setResendTimer] = useState(0);
 
     // Redirect to dashboard if already logged in
     // Prevent redirect while form is submitting (isLoading) to handle register->signOut flow
@@ -71,8 +77,28 @@ export default function LoginRegister() {
 
                 setErrors({ login: errorMsg });
             } else {
-                showToast('Welcome back!', 'success');
-                // Navigation handled by useEffect
+                // Check if email is verified before allowing login
+                const isVerified = await otp.checkVerified(loginData.email);
+
+                if (!isVerified) {
+                    // Email not verified - sign out and show OTP step
+                    await signOut();
+                    setOtpEmail(loginData.email);
+
+                    // Send OTP to verify
+                    const otpResult = await otp.send(loginData.email);
+                    if (otpResult.success) {
+                        setShowOTP(true);
+                        setIsSignUp(true); // Show the register/OTP side
+                        setResendTimer(60);
+                        setErrors({ login: 'Please verify your email first. We sent a verification code.' });
+                    } else {
+                        setErrors({ login: 'Email not verified. Failed to send verification code.' });
+                    }
+                } else {
+                    showToast('Welcome back!', 'success');
+                    // Navigation handled by useEffect
+                }
             }
         } catch (err) {
             setErrors({ login: err instanceof Error ? err.message : 'An error occurred' });
@@ -101,28 +127,53 @@ export default function LoginRegister() {
             });
 
             if (result.error) {
+                // Check if error is "already registered" - might be unverified user
+                const errorMsg = result.error.message?.toLowerCase() || '';
+                if (errorMsg.includes('already') || errorMsg.includes('registered') || errorMsg.includes('exists')) {
+                    // Check if email is verified
+                    const isVerified = await otp.checkVerified(registerData.email);
+
+                    if (!isVerified) {
+                        // User exists but not verified - resend OTP
+                        const otpResult = await otp.send(registerData.email);
+
+                        if (otpResult.success) {
+                            setOtpEmail(registerData.email);
+                            setShowOTP(true);
+                            setIsSignUp(true);
+                            setResendTimer(60);
+                            showToast('Verification code resent to your email', 'success');
+                            return; // Exit early, don't show error
+                        } else if (otpResult.retryAfter) {
+                            // Rate limited - show OTP screen with remaining timer
+                            setOtpEmail(registerData.email);
+                            setShowOTP(true);
+                            setIsSignUp(true);
+                            setResendTimer(otpResult.retryAfter);
+                            showToast(`Please wait ${otpResult.retryAfter}s before requesting new code`, 'info');
+                            return;
+                        }
+                    }
+                }
+                // Show original error if not unverified user case
                 setErrors({ register: result.error.message });
             } else {
-                // Force logout so user has to login manually
-                await signOut();
+                // Send OTP for email verification first
+                const otpResult = await otp.send(registerData.email);
 
-                // Notify admins about new user
-                try {
-                    // Note: We need a valid session to call the API if it's protected.
-                    // But we just signed out.
-                    // We should call it BEFORE sign out, or use a public endpoint (risky), 
-                    // or rely on the session we just created (if confirm is false).
-                    // However, signUp result might not return a session if email confirm is on.
+                if (otpResult.success) {
+                    // Set all states before signOut to prevent race condition
+                    setOtpEmail(registerData.email);
+                    setShowOTP(true);
+                    setIsSignUp(true); // Keep register side visible for OTP
+                    setResendTimer(60);
+                    showToast('Verification code sent to your email', 'success');
 
-                    // Workaround: We can't easily call a protected API here if we sign out immediately.
-                    // But the user requested this. I will attempt to call it using the implicit session if available
-                    // BEFORE signing out.
-                } catch (e) {
-                    console.error("Failed to notify admins", e);
+                    // Now sign out after states are set
+                    await signOut();
+                } else {
+                    setErrors({ register: otpResult.error || 'Failed to send verification code' });
                 }
-
-                showToast('Account created! Please login.', 'success');
-                setIsSignUp(false); // Switch to login view
             }
         } catch (err) {
             setErrors({ register: err instanceof Error ? err.message : 'An error occurred' });
@@ -130,6 +181,49 @@ export default function LoginRegister() {
             setIsLoading(false);
         }
     };
+
+    // Handle OTP verification
+    const handleVerifyOTP = useCallback(async (code: string) => {
+        setIsLoading(true);
+        setErrors({});
+
+        const result = await otp.verify(otpEmail, code);
+
+        if (result.success) {
+            showToast('Email verified! Please login.', 'success');
+            setShowOTP(false);
+            setIsSignUp(false); // Switch to login
+            setRegisterData({ username: '', email: '', password: '', confirmPassword: '' });
+        } else {
+            setErrors({ otp: result.error || 'Invalid code' });
+        }
+
+        setIsLoading(false);
+    }, [otpEmail, showToast]);
+
+    // Handle resend OTP
+    const handleResendOTP = async () => {
+        if (resendTimer > 0) return;
+
+        setIsLoading(true);
+        const result = await otp.send(otpEmail);
+
+        if (result.success) {
+            setResendTimer(60);
+            showToast('New code sent!', 'success');
+        } else {
+            setErrors({ otp: 'Failed to resend code' });
+        }
+        setIsLoading(false);
+    };
+
+    // Resend timer countdown
+    useEffect(() => {
+        if (resendTimer > 0) {
+            const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [resendTimer]);
 
     if (authLoading) return null;
 
@@ -200,70 +294,120 @@ export default function LoginRegister() {
                     {/* Sign Up Form Container */}
                     <div className={`absolute top-0 h-full w-1/2 transition-all duration-700 ease-in-out left-0 flex flex-col items-center justify-center p-12 bg-[#fdfdfd]
                         ${isSignUp ? 'translate-x-full z-50' : 'z-10'}`}>
-                        <form onSubmit={handleRegister} className="w-full flex flex-col items-center" noValidate>
-                            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-4">Create Account</h2>
 
-                            {socialButtons}
-
-                            <span className="text-sm text-gray-500 mb-6">or use your email for registration</span>
-
-                            <div className="w-full flex flex-col gap-4">
-                                <FloatingInput
-                                    label="Email"
-                                    id="register-email"
-                                    name="email"
-                                    type="email"
-                                    value={registerData.email}
-                                    onChange={e => setRegisterData({ ...registerData, email: e.target.value })}
-                                    className="!mb-0"
-                                />
-                                <FloatingInput
-                                    label="Password"
-                                    id="register-password"
-                                    name="password"
-                                    type="password"
-                                    value={registerData.password}
-                                    onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
-                                    className="!mb-0"
-                                />
-                                <FloatingInput
-                                    label="Confirm Password"
-                                    id="confirm-password"
-                                    name="confirmPassword"
-                                    type="password"
-                                    value={registerData.confirmPassword}
-                                    onChange={e => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                                    className="!mb-0"
-                                />
-                            </div>
-
-                            {errors.register && (
-                                <p className="flex items-center gap-2 text-sm text-red-600 font-medium animate-fade-in pl-1 mt-2 w-full text-left justify-start">
-                                    <AlertCircle size={16} />
-                                    {errors.register}
+                        {/* OTP Verification Step */}
+                        {showOTP ? (
+                            <div className="w-full flex flex-col items-center animate-fade-in relative">
+                                <div className="w-16 h-16 bg-zinc-50 border border-zinc-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                                    <Mail size={24} className="text-zinc-900" />
+                                </div>
+                                <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-2">Verify your email</h2>
+                                <p className="text-sm text-gray-500 mb-8 text-center max-w-[280px]">
+                                    We sent a 6-digit verification code to<br />
+                                    <span className="font-semibold text-gray-900">{otpEmail}</span>
                                 </p>
-                            )}
 
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="mt-4 flex w-full justify-center items-center gap-2 rounded-xl bg-zinc-900 px-3 py-2.5 text-sm font-bold text-white shadow-md hover:bg-zinc-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Signing Up...
-                                    </>
-                                ) : 'Register'}
-                            </button>
+                                <OTPInput
+                                    onComplete={handleVerifyOTP}
+                                    disabled={isLoading}
+                                />
 
-                            <p className="mt-4 text-center text-xs text-gray-500">
-                                By continuing, you agree to our <Link to="/terms" className="underline hover:text-black">Terms of Service</Link> and <Link to="/privacy" className="underline hover:text-black">Privacy Policy</Link>.
-                            </p>
-                        </form>
+                                {errors.otp && (
+                                    <p className="flex items-center gap-2 text-sm text-red-600 font-medium animate-fade-in mt-6 px-1">
+                                        <AlertCircle size={16} />
+                                        {errors.otp}
+                                    </p>
+                                )}
+
+                                <div className="flex flex-col items-center gap-4 mt-8 w-full">
+                                    <button
+                                        type="button"
+                                        onClick={handleResendOTP}
+                                        disabled={resendTimer > 0 || isLoading}
+                                        className="text-sm font-semibold text-zinc-900 hover:text-zinc-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend code'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowOTP(false);
+                                            setErrors({});
+                                        }}
+                                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors py-2 px-4 rounded-lg hover:bg-gray-50"
+                                    >
+                                        <ArrowLeft size={16} />
+                                        Back to register
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            /* Registration Form */
+                            <form onSubmit={handleRegister} className="w-full flex flex-col items-center" noValidate>
+                                <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-4">Create Account</h2>
+
+                                {socialButtons}
+
+                                <span className="text-sm text-gray-500 mb-6">or use your email for registration</span>
+
+                                <div className="w-full flex flex-col gap-4">
+                                    <FloatingInput
+                                        label="Email"
+                                        id="register-email"
+                                        name="email"
+                                        type="email"
+                                        value={registerData.email}
+                                        onChange={e => setRegisterData({ ...registerData, email: e.target.value })}
+                                        className="!mb-0"
+                                    />
+                                    <FloatingInput
+                                        label="Password"
+                                        id="register-password"
+                                        name="password"
+                                        type="password"
+                                        value={registerData.password}
+                                        onChange={e => setRegisterData({ ...registerData, password: e.target.value })}
+                                        className="!mb-0"
+                                    />
+                                    <FloatingInput
+                                        label="Confirm Password"
+                                        id="confirm-password"
+                                        name="confirmPassword"
+                                        type="password"
+                                        value={registerData.confirmPassword}
+                                        onChange={e => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                                        className="!mb-0"
+                                    />
+                                </div>
+
+                                {errors.register && (
+                                    <p className="flex items-center gap-2 text-sm text-red-600 font-medium animate-fade-in pl-1 mt-2 w-full text-left justify-start">
+                                        <AlertCircle size={16} />
+                                        {errors.register}
+                                    </p>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="mt-4 flex w-full justify-center items-center gap-2 rounded-xl bg-zinc-900 px-3 py-2.5 text-sm font-bold text-white shadow-md hover:bg-zinc-800 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            Signing Up...
+                                        </>
+                                    ) : 'Register'}
+                                </button>
+
+                                <p className="mt-4 text-center text-xs text-gray-500">
+                                    By continuing, you agree to our <Link to="/terms" className="underline hover:text-black">Terms of Service</Link> and <Link to="/privacy" className="underline hover:text-black">Privacy Policy</Link>.
+                                </p>
+                            </form>
+                        )}
                     </div>
 
                     {/* Sign In Form Container */}

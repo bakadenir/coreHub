@@ -61,5 +61,50 @@ export const useSession = () => {
     return { data: null, isPending: false, refetch: () => { } };
 };
 
+// OTP Email Verification
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+export const otp = {
+    send: async (email: string): Promise<{ success: boolean; error?: string; retryAfter?: number }> => {
+        try {
+            const res = await fetch(`${API_URL}/api/auth/send-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+            if (!res.ok) return { success: false, error: data.error || 'Failed to send code', retryAfter: data.retryAfter };
+            return { success: true };
+        } catch {
+            return { success: false, error: 'Network error' };
+        }
+    },
+
+    verify: async (email: string, code: string): Promise<{ success: boolean; error?: string }> => {
+        try {
+            const res = await fetch(`${API_URL}/api/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, code }),
+            });
+            const data = await res.json();
+            if (!res.ok) return { success: false, error: data.error || 'Invalid code' };
+            return { success: true };
+        } catch {
+            return { success: false, error: 'Network error' };
+        }
+    },
+
+    checkVerified: async (email: string): Promise<boolean> => {
+        try {
+            const res = await fetch(`${API_URL}/api/auth/check-verified?email=${encodeURIComponent(email)}`);
+            const data = await res.json();
+            return data.verified === true;
+        } catch {
+            return false;
+        }
+    },
+};
+
 export default supabase;
 

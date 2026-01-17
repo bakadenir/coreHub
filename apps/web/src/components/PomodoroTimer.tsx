@@ -19,7 +19,7 @@ interface PomodoroState {
 
 const DEFAULT_CONFIG: PomodoroConfig = {
     focus: 25,
-    shortBreak: 0.05, // 3 seconds for testing
+    shortBreak: 5, // 5 minutes
     longBreak: 10,
 };
 

@@ -10,6 +10,7 @@ import MainLayout from './components/MainLayout';
 import { PageTitleUpdater } from './components/PageTitleUpdater';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 
 // Lazy loaded pages - heavy or less frequently accessed
 const Schedule = lazy(() => import('./pages/Schedule'));
@@ -47,6 +48,7 @@ function App() {
     <ErrorBoundary>
       <Suspense fallback={<PageLoader />}>
         <BrowserRouter>
+          <ScrollToTop />
           <PageTitleUpdater />
           <Routes>
             {/* Public routes */}
