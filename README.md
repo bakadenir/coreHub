@@ -19,13 +19,14 @@ Aplikasi produktivitas all-in-one untuk mengelola jadwal, catatan, link, todo, d
 - **👤 Admin Panel** - User management & activity logs
 - **🌐 Public Notes** - Share notes via public URL/slug
 - **💳 Donations** - Integrasi Midtrans untuk donasi
+- **📧 Email OTP** - Verifikasi email secure menggunakan Resend
 
 ## 🏗️ Tech Stack
 
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | React 19, Vite 7, Tailwind CSS 3, React Router v7, TipTap Editor |
-| **Backend** | Express.js, TypeScript, Node.js |
+| **Backend** | Express.js, TypeScript, Node.js, Resend (Email) |
 | **Database** | Supabase (PostgreSQL + Auth + RLS) |
 | **State Management** | SWR, React Context |
 | **UI Components** | Lucide Icons, dnd-kit (drag & drop) |
@@ -110,6 +111,10 @@ MIDTRANS_IS_PRODUCTION=false
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=mailto:admin@corehub.app
+
+# Optional - Resend (Email)
+RESEND_API_KEY=re_123456789
+EMAIL_FROM=onboarding@resend.dev
 ```
 
 **Frontend (`apps/web/.env`):**
@@ -268,8 +273,10 @@ npx kill-port 5173  # Frontend
 - Cek di Supabase Dashboard bahwa project aktif
 
 ### "Email not confirmed" on Login
-- Disable "Confirm email" di Supabase Dashboard → Authentication → Providers → Email
-- Atau confirm user secara manual di Dashboard
+- Sistem sekarang menggunakan **Resend OTP** untuk verifikasi email.
+- Pastikan `RESEND_API_KEY` dikonfigurasi di `.env` backend.
+- Cek email (atau console logs jika dev mode) untuk kode OTP.
+- Atau confirm user manual via Supabase Dashboard jika email service belum setup.
 
 ### Module Not Found
 ```bash
